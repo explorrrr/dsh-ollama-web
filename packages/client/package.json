@@ -31,7 +31,8 @@
     }
   },
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "prepublishOnly": "node ../../scripts/check-client.mjs"
   },
   "keywords": [
     "deepseek-harness",
