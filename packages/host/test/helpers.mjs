@@ -96,7 +96,15 @@ export function installFetch(handler) {
 export function installHangingFetch() {
   return installFetch((_input, init) => new Promise((_resolve, reject) => {
     const signal = init?.signal;
-    const fail = () => reject(new DOMException('Aborted', 'AbortError'));
+    // AbortSignal.timeout() uses an unref'ed timer, so a mock fetch that only
+    // waits on the signal can let Node's event loop drain before the deadline.
+    // Keep one ref'ed timer alive until the signal fires.
+    let keepAlive;
+    const fail = () => {
+      if (keepAlive !== undefined) clearTimeout(keepAlive);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    keepAlive = setTimeout(() => {}, 60_000);
     if (signal?.aborted === true) fail();
     else signal?.addEventListener('abort', fail, { once: true });
   }));
