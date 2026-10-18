@@ -4,6 +4,17 @@ Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deeps
 
 `web_fetch` stays on DSH's built-in HTTP provider, which is free and already has SSRF guards. Ollama fetch is deliberately not part of 1.0.
 
+## Status
+
+- `dsh-ollama-web@1.0.0` and `dsh-ollama-web-client@1.0.0` are published on npm.
+- GitHub Release: <https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.0.0>
+- The Plugins Configure card was verified on DSH 0.2.1-rc.2 (see
+  [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)).
+- npm provenance attestations are **not** attached to 1.0.0: npm required a
+  traditional 2FA first publish for the new package names. The GitHub Release
+  assets are built by GitHub Actions; later 1.0.x releases target trusted
+  publishing/provenance.
+
 ## Requirements
 
 - DSH 0.2.1-rc.2 (peer range `>=0.2.1-rc.1 <0.3.0`)

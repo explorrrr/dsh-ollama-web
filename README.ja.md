@@ -4,6 +4,17 @@ DeepSeek Harness（DSH）用の **Ollama Cloud Web検索provider** です。Web 
 
 `web_fetch` はDSH内蔵のHTTP providerのままです（無料・SSRF対策済み）。Ollama fetchは1.0には含めていません。
 
+## ステータス
+
+- `dsh-ollama-web@1.0.0` / `dsh-ollama-web-client@1.0.0` をnpmで公開済み。
+- GitHub Release: <https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.0.0>
+- PluginsのConfigureカードはDSH 0.2.1-rc.2で実機確認済み
+  （[docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)）。
+- 1.0.0にはnpm provenance attestationが付いていません。新規パッケージ名の
+  初回公開に従来の2FAが必要だったためです。GitHub ReleaseのassetsはGitHub
+  Actionsでビルドしており、今後の1.0.xはtrusted publishing/provenanceを
+  使う予定です。
+
 ## 必要環境
 
 - DSH 0.2.1-rc.2（peer: `>=0.2.1-rc.1 <0.3.0`）

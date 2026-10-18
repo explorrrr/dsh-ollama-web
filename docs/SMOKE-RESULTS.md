@@ -36,6 +36,11 @@ temporary directory, macOS. The user's desktop profile was not modified.
       `settings/describe`, `revision: 1`). Screenshot:
       [configure-card.png](configure-card.png).
 
+- [x] **npm registry install:** `dsh plugin --profile smoke add
+      dsh-ollama-web@1.0.0 dsh-ollama-web-client@1.0.0` installed both published
+      packages into an isolated profile; `--dump-config` composed the expected
+      host/client rows and `web.searchProvider: ollama`.
+
 ## Not yet verified
 
 - [ ] A live Ollama `/api/web_search` call with a real `OLLAMA_API_KEY`
