@@ -13,7 +13,8 @@ Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deeps
   [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)).
 - 1.0.0 remains available. The early `0.0.x` versions are bootstrap artifacts;
   use 1.0.x.
-- Verify provenance with `npm view dsh-ollama-web@1.0.1 dist.attestations`.
+- Verify provenance with `npm view dsh-ollama-web@1.0.1 dist.attestations`;
+  see [docs/PROVENANCE.md](docs/PROVENANCE.md).
 
 ## Requirements
 
