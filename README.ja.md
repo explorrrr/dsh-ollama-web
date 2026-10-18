@@ -93,8 +93,7 @@ Hostテストはmock `fetch`、e2eは `OLLAMA_API_KEY` がある時だけ実行�
 
 ## 公開前の設定
 
-- `packages/*/package.json` と `.github/CODEOWNERS` の `OWNER` を実際のGitHub
-  アカウントに置き換える。
+- リポジトリ情報が `explorrrr/dsh-ollama-web` を指していることを確認する（設定済み）。
 - npmのtrusted publishingを `dsh-ollama-web` と `dsh-ollama-web-client` の
   両方に設定する（repository、workflow `release.yml`、environment `npm`）。
 - npm名がまだ空いているか再確認する。

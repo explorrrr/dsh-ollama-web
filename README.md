@@ -93,7 +93,7 @@ The host tests use mocked `fetch`; e2e tests are opt-in with `OLLAMA_API_KEY`. T
 
 ## Before publishing
 
-- Replace `OWNER` in both `packages/*/package.json` and `.github/CODEOWNERS`.
+- Repository metadata already points to `explorrrr/dsh-ollama-web`; confirm it before publishing.
 - Configure npm trusted publishing for `dsh-ollama-web` and
   `dsh-ollama-web-client` (repository, workflow `release.yml`, environment
   `npm`).

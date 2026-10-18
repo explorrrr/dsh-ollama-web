@@ -62,6 +62,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OWNER/dsh-ollama-web.git"
+    "url": "git+https://github.com/explorrrr/dsh-ollama-web.git"
+  },
+  "homepage": "https://github.com/explorrrr/dsh-ollama-web#readme",
+  "bugs": {
+    "url": "https://github.com/explorrrr/dsh-ollama-web/issues"
   }
 }
