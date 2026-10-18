@@ -30,6 +30,14 @@ window.__ModuleLoader__.load({
       { name: 'maxResponseBytes', kind: 'number' },
     ];
 
+    const NUMERIC_RANGES = {
+      maxResults: [1, 10],
+      snippetMax: [1, 10000],
+      maxQueryChars: [1, 8192],
+      searchTimeoutMs: [1000, 120000],
+      maxResponseBytes: [65536, 10485760],
+    };
+
     const en = {
       title: 'Ollama web search',
       description: 'Ollama Cloud search provider. Fetch stays on the built-in HTTP provider.',
@@ -104,7 +112,10 @@ window.__ModuleLoader__.load({
       if (trimmed === '') return { op: 'unset', path: [field] };
       if (kind === 'number') {
         const parsed = Number(trimmed);
-        return Number.isFinite(parsed) ? { op: 'set', path: [field], value: parsed } : undefined;
+        if (!Number.isFinite(parsed)) return undefined;
+        const range = NUMERIC_RANGES[field];
+        if (range !== undefined && (parsed < range[0] || parsed > range[1])) return undefined;
+        return { op: 'set', path: [field], value: parsed };
       }
       return { op: 'set', path: [field], value: trimmed };
     }

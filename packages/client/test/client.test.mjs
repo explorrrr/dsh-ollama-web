@@ -237,6 +237,18 @@ test('an invalid number blocks saving', async () => {
   assert.equal(mutated, false);
 });
 
+test('out-of-range numbers are invalid', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  assert.equal(exports.parseDraft('0', 'number', 'maxResults'), undefined);
+  assert.equal(exports.parseDraft('11', 'number', 'maxResults'), undefined);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(exports.parseDraft('10', 'number', 'maxResults'))),
+    { op: 'set', path: ['maxResults'], value: 10 },
+  );
+  assert.deepEqual(Array.from(exports.invalidFields({ maxResponseBytes: '1' })), ['maxResponseBytes']);
+});
+
 test('an empty draft unsets the field back to its schema default', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
