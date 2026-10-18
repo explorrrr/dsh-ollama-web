@@ -1,6 +1,6 @@
 {
   "name": "dsh-ollama-web",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ollama Cloud web search provider for DeepSeek Harness",
   "type": "module",
   "main": "./dist/index.js",

@@ -6,14 +6,13 @@ DeepSeek Harness（DSH）用の **Ollama Cloud Web検索provider** です。Web 
 
 ## ステータス
 
-- `dsh-ollama-web@1.0.0` / `dsh-ollama-web-client@1.0.0` をnpmで公開済み。
-- GitHub Release: <https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.0.0>
+- `dsh-ollama-web@1.0.1` / `dsh-ollama-web-client@1.0.1` をnpmで公開済み
+  （GitHub Actionsからのnpm provenance付き）。
+- GitHub Release: <https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.0.1>
 - PluginsのConfigureカードはDSH 0.2.1-rc.2で実機確認済み
   （[docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)）。
-- 1.0.0にはnpm provenance attestationが付いていません。新規パッケージ名の
-  初回公開に従来の2FAが必要だったためです。GitHub ReleaseのassetsはGitHub
-  Actionsでビルドしており、今後の1.0.xはtrusted publishing/provenanceを
-  使う予定です。
+- 1.0.0も利用可能。初期の`0.0.x`はbootstrap版なので1.0.xを使用。
+- provenanceは `npm view dsh-ollama-web@1.0.1 dist.attestations` で確認。
 
 ## 必要環境
 
@@ -26,8 +25,8 @@ DeepSeek Harness（DSH）用の **Ollama Cloud Web検索provider** です。Web 
 HostとClientの2パッケージを入れます。
 
 ```bash
-dsh plugin --profile desktop add dsh-ollama-web@1.0.0
-dsh plugin --profile desktop add dsh-ollama-web-client@1.0.0
+dsh plugin --profile desktop add dsh-ollama-web@1.0.1
+dsh plugin --profile desktop add dsh-ollama-web-client@1.0.1
 ```
 
 Web UIの **Plugins → Add plugin** で2回追加しても構いません。
@@ -109,7 +108,7 @@ Hostテストはmock `fetch`、e2eは `OLLAMA_API_KEY` がある時だけ実行�
   両方に設定する（repository、workflow `release.yml`、environment `npm`）。
 - npm名がまだ空いているか再確認する。
 - `pnpm verify` と [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md) のブラウザ
-  スモークを実行してから `v1.0.0` をタグ付けする。
+  スモークを実行してから `v1.0.1` をタグ付けする。
 
 ## ライセンス
 

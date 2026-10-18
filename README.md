@@ -6,14 +6,14 @@ Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deeps
 
 ## Status
 
-- `dsh-ollama-web@1.0.0` and `dsh-ollama-web-client@1.0.0` are published on npm.
-- GitHub Release: <https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.0.0>
+- `dsh-ollama-web@1.0.1` and `dsh-ollama-web-client@1.0.1` are published on npm
+  with **npm provenance** from GitHub Actions.
+- GitHub Release: <https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.0.1>
 - The Plugins Configure card was verified on DSH 0.2.1-rc.2 (see
   [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)).
-- npm provenance attestations are **not** attached to 1.0.0: npm required a
-  traditional 2FA first publish for the new package names. The GitHub Release
-  assets are built by GitHub Actions; later 1.0.x releases target trusted
-  publishing/provenance.
+- 1.0.0 remains available. The early `0.0.x` versions are bootstrap artifacts;
+  use 1.0.x.
+- Verify provenance with `npm view dsh-ollama-web@1.0.1 dist.attestations`.
 
 ## Requirements
 
@@ -26,8 +26,8 @@ Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deeps
 Install both packages. The host package provides search; the client package provides the Configure card.
 
 ```bash
-dsh plugin --profile desktop add dsh-ollama-web@1.0.0
-dsh plugin --profile desktop add dsh-ollama-web-client@1.0.0
+dsh plugin --profile desktop add dsh-ollama-web@1.0.1
+dsh plugin --profile desktop add dsh-ollama-web-client@1.0.1
 ```
 
 Or use **Plugins -> Add plugin** in the Web UI twice.
@@ -110,7 +110,7 @@ The host tests use mocked `fetch`; e2e tests are opt-in with `OLLAMA_API_KEY`. T
   `npm`).
 - Confirm both npm names are still available.
 - Run `pnpm verify`, the browser smoke in [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md),
-  then tag `v1.0.0`.
+  then tag `v1.0.1`.
 
 ## License
 

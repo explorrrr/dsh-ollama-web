@@ -1,6 +1,6 @@
 {
   "name": "dsh-ollama-web-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Web UI settings card for the dsh-ollama-web search provider",
   "type": "module",
   "main": "./index.js",

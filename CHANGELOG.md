@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-10-18
+
+### Changed
+
+- Publish both packages through npm trusted publishing (OIDC); 1.0.1 carries
+  npm provenance attestations.
+- GitHub Release assets now download the exact published npm tarballs, so
+  `SHA512SUMS` matches npm.
+- Documentation records the provenance verification steps.
+
+### Notes
+
+- No runtime changes. 1.0.0 remains available; 1.0.1 is the recommended version.
+
 ## [1.0.0] - 2026-10-18
 
 ### Added

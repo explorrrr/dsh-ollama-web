@@ -59,11 +59,31 @@ jobs:
           else
             npm publish --provenance --access public
           fi
-      - name: Pack release artifacts
+      - name: Download published npm tarballs
         run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./packages/host/package.json').version")
+          CLIENT_VERSION=$(node -p "require('./packages/client/package.json').version")
+          test "$VERSION" = "$CLIENT_VERSION"
           mkdir -p dist
-          (cd packages/host && npm pack --pack-destination ../../dist)
-          (cd packages/client && npm pack --pack-destination ../../dist)
+          fetch_tarball() {
+            local pkg="$1"
+            local out="$2"
+            local url=""
+            for attempt in $(seq 1 24); do
+              if url=$(npm view "$pkg@$VERSION" dist.tarball 2>/dev/null) && [ -n "$url" ]; then
+                if curl -fsSL "$url" -o "$out"; then
+                  return 0
+                fi
+              fi
+              echo "Waiting for $pkg@$VERSION on the registry (attempt $attempt/24)..."
+              sleep 5
+            done
+            echo "Could not download $pkg@$VERSION" >&2
+            return 1
+          }
+          fetch_tarball dsh-ollama-web "dist/dsh-ollama-web-$VERSION.tgz"
+          fetch_tarball dsh-ollama-web-client "dist/dsh-ollama-web-client-$VERSION.tgz"
           (cd dist && shasum -a 512 ./*.tgz > SHA512SUMS)
           cat dist/SHA512SUMS
       - name: Ensure GitHub Release exists
