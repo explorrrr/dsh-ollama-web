@@ -2,10 +2,70 @@
 
 Date: 2026-10-18
 
+## 1.1.0
+
+`dsh-ollama-web@1.1.0` and `dsh-ollama-web-client@1.1.0` were published by
+GitHub Actions through npm trusted publishing (OIDC). No `NPM_TOKEN` is used.
+
+### Attestations
+
+| Package | Attestation |
+|---|---|
+| `dsh-ollama-web@1.1.0` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@1.1.0> |
+| `dsh-ollama-web-client@1.1.0` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web-client@1.1.0> |
+
+Both use SLSA provenance v1. Decoded build information:
+
+```text
+workflow.ref:        refs/tags/v1.1.0
+workflow.repository: https://github.com/explorrrr/dsh-ollama-web
+workflow.path:       .github/workflows/release.yml
+git commit:         1defc35c9d434909e7f3df460b28f7ea20bd3a83
+builder:             https://github.com/actions/runner/github-hosted
+```
+
+The tag commit is the same:
+
+```bash
+git rev-parse 'v1.1.0^{commit}'
+# 1defc35c9d434909e7f3df460b28f7ea20bd3a83
+```
+
+### Subject digests
+
+| Package | npm tarball SHA-512 | SLSA subject |
+|---|---|---|
+| `dsh-ollama-web@1.1.0` | `eb2d2ca3baa23105c6b2fa303de57c5b66223b756401f354b265040009dd9478030f50ff38060ee9e6952e52a534ec9ee6008789c60a55358359f233aceabcfc` | matches |
+| `dsh-ollama-web-client@1.1.0` | `2edf077cc2c390ce1a69b813b27ae190f0e9f26977c1e2765ab3a800ef4ac67c3fe23db44f155f4e6d6df05824c2f5f998b9255344c3d7adc9ff78b7b9d17172` | matches |
+
+The GitHub Release `v1.1.0` `SHA512SUMS` contains the same two hashes, computed
+from the npm tarballs downloaded by the release workflow.
+
+The workflow published both packages successfully and then failed its
+asset-listing step: `tar -tzf ... | grep -q` closed the pipe, making tar exit
+with SIGPIPE under `pipefail`. The GitHub Release assets for `v1.1.0` were
+created from the same published npm tarballs. The asset check was fixed on
+`main` for later releases.
+
+### Reproduce
+
+```bash
+npm view dsh-ollama-web@1.1.0 dist.attestations
+npm view dsh-ollama-web-client@1.1.0 dist.attestations
+
+mkdir -p /tmp/prov-check-110 && cd /tmp/prov-check-110
+for p in dsh-ollama-web dsh-ollama-web-client; do
+  curl -fsSL "$(npm view "$p@1.1.0" dist.tarball)" -o "$p-1.1.0.tgz"
+done
+shasum -a 512 ./*.tgz
+```
+
+## 1.0.1 (historical)
+
 `dsh-ollama-web@1.0.1` and `dsh-ollama-web-client@1.0.1` were published by
 GitHub Actions through npm trusted publishing (OIDC). No `NPM_TOKEN` is used.
 
-## Attestations
+### Attestations
 
 | Package | Attestation |
 |---|---|
@@ -29,7 +89,7 @@ git rev-parse 'v1.0.1^{commit}'
 # bdc8692955dd57c6b7bf040dcfef55eb624954b2
 ```
 
-## Subject digests
+### Subject digests
 
 | Package | npm tarball SHA-512 | SLSA subject |
 |---|---|---|
@@ -40,7 +100,7 @@ The GitHub Release `v1.0.1` `SHA512SUMS` contains the same two hashes; the
 release workflow downloads the published npm tarballs instead of packing local
 ones.
 
-## npm audit signatures
+### npm audit signatures
 
 ```text
 audited 14 packages in 1s
@@ -48,7 +108,7 @@ audited 14 packages in 1s
 4 packages have verified attestations
 ```
 
-## Reproduce
+### Reproduce
 
 ```bash
 npm view dsh-ollama-web@1.0.1 dist.attestations
@@ -65,4 +125,5 @@ shasum -a 512 ./*.tgz
 
 1.0.0 was the first publish of both package names. npm required a traditional
 2FA publish for that first version, so 1.0.0 has no provenance attestation.
-1.0.1 is the recommended version and has verified provenance.
+1.1.0 is the recommended version; 1.0.1 remains available with verified
+provenance.

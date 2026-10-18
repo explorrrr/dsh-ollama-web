@@ -85,6 +85,20 @@ The 1.1.1 artifacts and the local registry were temporary test fixtures. The
 isolated profile was deleted after the smoke; the user's desktop profile was
 untouched.
 
+## 1.1.0 publication
+
+- [x] npm published `dsh-ollama-web@1.1.0` and `dsh-ollama-web-client@1.1.0`
+      with trusted-publishing provenance. The SLSA subject SHA-512 values match
+      the npm tarballs; see [PROVENANCE.md](PROVENANCE.md).
+- [x] GitHub Release `v1.1.0` was created from the same published npm tarballs;
+      its `SHA512SUMS` matches the attestation subject digests.
+- [x] The release workflow published both packages successfully. Its
+      asset-listing step then hit a `tar | grep -q` SIGPIPE under `pipefail`;
+      the GitHub Release assets were created from the same tarballs and the
+      workflow check was fixed on `main` for later releases.
+- [ ] Updating from the published 1.1.0 to a later 1.1.x over the real npm
+      registry (the next release's verification).
+
 ## Not yet verified
 
 - [ ] A live Ollama `/api/web_search` call with a real `OLLAMA_API_KEY`
