@@ -43,6 +43,7 @@ window.__ModuleLoader__.load({
       maxQueryCharsHint: 'Maximum query length in characters. Integer 1-8192.',
       apiKey: 'API key',
       apiKeyHint: 'Write-only. Leave blank to keep the configured key; saved keys are never shown.',
+      apiKeySet: 'A key is configured. Leave blank to keep it.',
       maxResults: 'Results per search',
       maxResultsHint: 'Default when the tool sends no limit. Integer 1-10.',
       snippetMax: 'Snippet cap',
@@ -74,6 +75,7 @@ window.__ModuleLoader__.load({
       maxQueryCharsHint: 'クエリの最大文字数。1〜8192の整数。',
       apiKey: 'APIキー',
       apiKeyHint: '書き込み専用。空欄なら現在のキーを維持します。保存済みキーは表示されません。',
+      apiKeySet: 'キーは設定済みです。空欄なら維持します。',
       maxResults: '検索結果数',
       maxResultsHint: 'ツールが上限を送らない場合の既定値。1〜10の整数。',
       snippetMax: 'スニペット上限',
@@ -160,6 +162,10 @@ window.__ModuleLoader__.load({
         const ready = snapshot !== undefined && snapshot.status === 'ready';
         const writable = ready && snapshot.writable !== false;
         const value = (ready && snapshot.value) || {};
+        const secrets = ready && Array.isArray(snapshot.secrets) ? snapshot.secrets : [];
+        const keyConfigured = secrets.some((entry) => (
+          Array.isArray(entry?.path) && entry.path[0] === 'apiKey' && entry.set === true
+        ));
         const textOf = (field) => (
           staged[field.name] !== undefined
             ? staged[field.name]
@@ -243,8 +249,8 @@ window.__ModuleLoader__.load({
           hint: t('apiKeyHint'),
           disabled: !writable,
           text: keyDraft === undefined ? '' : keyDraft,
-          configured: false,
-          stateLabel: t('apiKeyHint'),
+          configured: keyConfigured,
+          stateLabel: keyConfigured ? t('apiKeySet') : t('apiKeyHint'),
           onEdit: (next) => {
             setStaged((prev) => {
               const copy = Object.assign({}, prev);
