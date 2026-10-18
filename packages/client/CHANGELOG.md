@@ -8,7 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
-- Clarify that `apiKeyEnv` accepts only `OLLAMA_*` environment variable names.
+- Clarify that `searchPath` must stay under the `baseURL` path prefix and that
+  `apiKeyEnv` accepts only `OLLAMA_*` environment variable names.
 
 ## [1.1.0] - 2026-10-18
 

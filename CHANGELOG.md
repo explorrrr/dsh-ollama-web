@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Keep `searchPath` under the configured `baseURL` path prefix. Percent-encoded
+  dot segments and encoded path separators are rejected before a request is
+  made.
 - Restrict `apiKeyEnv` to `OLLAMA_*` environment variable names. The settings
   card can no longer select unrelated environment variables or credential
   references as the Ollama search key.

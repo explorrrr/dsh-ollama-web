@@ -37,8 +37,9 @@ operator is responsible for the destination.
 - HTTPS-only search endpoint, no userinfo/query/fragment.
 - `apiKeyEnv` must match `^OLLAMA_[A-Za-z0-9_]+$`; other environment or
   credential references are rejected before a request is made.
-- Same-origin path validation; `..`, `?`, `#` and protocol-relative paths are
-  rejected.
+- Same-origin path validation that also keeps `searchPath` under the
+  `baseURL` path prefix. Literal and percent-encoded `..`, `?`, `#`,
+  backslashes and protocol-relative paths are rejected.
 - `redirect: "error"`.
 - Response byte cap, query cap, snippet cap and result cap.
 - `http(s)`-only result URLs; username/password URLs dropped.

@@ -60,7 +60,7 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 |---|---|---|
 | `baseURL` | `https://ollama.com` | 仅 HTTPS；禁止 userinfo/query/fragment |
 | `apiKeyEnv` | `OLLAMA_API_KEY` | `^OLLAMA_[A-Za-z0-9_]+$` |
-| `searchPath` | `/api/web_search` | 同一 origin 的绝对路径 |
+| `searchPath` | `/api/web_search` | baseURL 路径前缀下、同一 origin 的绝对路径 |
 | `maxResults` | `5` | 1-10 |
 | `snippetMax` | `2000` | 1-10000 个字符 |
 | `maxQueryChars` | `2048` | 1-8192 个字符 |
