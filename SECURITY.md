@@ -74,6 +74,8 @@ make an untrusted endpoint trustworthy.
 ## Key handling
 
 - Prefer `OLLAMA_API_KEY` or the credentials service over a literal `apiKey`.
+- `apiKeyEnv` only accepts `OLLAMA_*` names; unrelated environment variables
+  cannot be selected as the search credential.
 - The Web UI card is write-only: a saved key is never read back or displayed.
 - Keys are not logged and are not included in provider error messages.
 - Use a dedicated key and monitor Ollama usage/balance. Rotate the key if it is

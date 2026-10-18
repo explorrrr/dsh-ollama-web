@@ -5,8 +5,8 @@
 `dsh-ollama-web` is a DSH host plugin. It runs in the Node.js main process and
 is not confined by the workspace sandbox. It can read the user's files,
 credentials and sessions if it is malicious or compromised. The reviewed code
-only reads the configured Ollama API key and the search query, but users should
-still treat installing/updating this plugin as a trust decision.
+only reads the configured `OLLAMA_*` API-key reference and the search query, but
+users should still treat installing/updating this plugin as a trust decision.
 
 The client package runs in the Web GUI origin. Its bundle is intentionally
 small: no external `fetch`, no storage, no HTML sinks (`innerHTML` /
@@ -35,6 +35,8 @@ operator is responsible for the destination.
 ## Controls
 
 - HTTPS-only search endpoint, no userinfo/query/fragment.
+- `apiKeyEnv` must match `^OLLAMA_[A-Za-z0-9_]+$`; other environment or
+  credential references are rejected before a request is made.
 - Same-origin path validation; `..`, `?`, `#` and protocol-relative paths are
   rejected.
 - `redirect: "error"`.

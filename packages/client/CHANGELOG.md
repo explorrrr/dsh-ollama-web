@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Clarify that `apiKeyEnv` accepts only `OLLAMA_*` environment variable names.
+
 ## [1.1.0] - 2026-10-18
 
 ### Added

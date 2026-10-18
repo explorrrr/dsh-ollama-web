@@ -59,7 +59,7 @@ Host が `web_search` の検索先を提供し、Client が設定カードを提
 | フィールド | 既定 | 制約 |
 |---|---|---|
 | `baseURL` | `https://ollama.com` | HTTPSのみ。userinfo/query/fragment禁止 |
-| `apiKeyEnv` | `OLLAMA_API_KEY` | `^[A-Za-z_][A-Za-z0-9_]*$` |
+| `apiKeyEnv` | `OLLAMA_API_KEY` | `^OLLAMA_[A-Za-z0-9_]+$` |
 | `searchPath` | `/api/web_search` | 同一originの絶対パス |
 | `maxResults` | `5` | 1〜10 |
 | `snippetMax` | `2000` | 1〜10000文字 |
@@ -67,6 +67,8 @@ Host が `web_search` の検索先を提供し、Client が設定カードを提
 | `searchTimeoutMs` | `30000` | 1000〜120000 ms |
 | `maxResponseBytes` | `2097152` | 65536〜10485760 bytes |
 | `apiKey` | 未設定 | secret。カードか `OLLAMA_API_KEY` 推奨 |
+
+`apiKeyEnv` は `OLLAMA_*` の環境変数名のみ受け付けます。それ以外の環境変数や資格情報参照はリクエスト前に拒否されます。
 
 ## 使い方
 

@@ -59,7 +59,7 @@ Enter it in the settings card (**Plugins -> `dsh-ollama-web` -> `ollama-web` -> 
 | Field | Default | Constraint |
 |---|---|---|
 | `baseURL` | `https://ollama.com` | HTTPS only; no userinfo/query/fragment |
-| `apiKeyEnv` | `OLLAMA_API_KEY` | `^[A-Za-z_][A-Za-z0-9_]*$` |
+| `apiKeyEnv` | `OLLAMA_API_KEY` | `^OLLAMA_[A-Za-z0-9_]+$` |
 | `searchPath` | `/api/web_search` | Absolute path on the same origin |
 | `maxResults` | `5` | 1-10 |
 | `snippetMax` | `2000` | 1-10000 characters |
@@ -67,6 +67,8 @@ Enter it in the settings card (**Plugins -> `dsh-ollama-web` -> `ollama-web` -> 
 | `searchTimeoutMs` | `30000` | 1000-120000 ms |
 | `maxResponseBytes` | `2097152` | 65536-10485760 bytes |
 | `apiKey` | unset | Secret; prefer the card or `OLLAMA_API_KEY` |
+
+`apiKeyEnv` accepts only `OLLAMA_*` names. Other environment variables and credential references are rejected before a request is made.
 
 ## Usage
 

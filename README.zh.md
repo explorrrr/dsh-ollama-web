@@ -59,7 +59,7 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 | 字段 | 默认值 | 约束 |
 |---|---|---|
 | `baseURL` | `https://ollama.com` | 仅 HTTPS；禁止 userinfo/query/fragment |
-| `apiKeyEnv` | `OLLAMA_API_KEY` | `^[A-Za-z_][A-Za-z0-9_]*$` |
+| `apiKeyEnv` | `OLLAMA_API_KEY` | `^OLLAMA_[A-Za-z0-9_]+$` |
 | `searchPath` | `/api/web_search` | 同一 origin 的绝对路径 |
 | `maxResults` | `5` | 1-10 |
 | `snippetMax` | `2000` | 1-10000 个字符 |
@@ -67,6 +67,8 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 | `searchTimeoutMs` | `30000` | 1000-120000 ms |
 | `maxResponseBytes` | `2097152` | 65536-10485760 字节 |
 | `apiKey` | 未设置 | 密钥；优先使用设置卡片或 `OLLAMA_API_KEY` |
+
+`apiKeyEnv` 仅接受 `OLLAMA_*` 环境变量名；其他环境变量或凭据引用会在请求前被拒绝。
 
 ## 使用
 

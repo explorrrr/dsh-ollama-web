@@ -7,6 +7,8 @@ import type {
   PluginContext,
 } from './types.js';
 
+export const API_KEY_ENV_PATTERN = /^OLLAMA_[A-Za-z0-9_]+$/;
+
 export const DEFAULTS = {
   apiKeyEnv: 'OLLAMA_API_KEY',
   baseURL: 'https://ollama.com',
@@ -20,7 +22,7 @@ export const DEFAULTS = {
 
 export const Config = Schema.object({
   apiKey: Schema.string().role('secret').volatile(),
-  apiKeyEnv: Schema.string().role('credential-ref').default(DEFAULTS.apiKeyEnv).volatile(),
+  apiKeyEnv: Schema.string().role('credential-ref').default(DEFAULTS.apiKeyEnv).pattern(API_KEY_ENV_PATTERN).volatile(),
   baseURL: Schema.string().default(DEFAULTS.baseURL).volatile(),
   searchPath: Schema.string().default(DEFAULTS.searchPath).volatile(),
   maxResults: Schema.number().step(1).min(1).default(DEFAULTS.maxResults).volatile(),
@@ -104,8 +106,8 @@ export function snapshot(ctx: PluginContext, config: ConfigRefs): ResolvedOption
   const maxResponseBytes = clampInt(config.maxResponseBytes.get(), 65_536, 10_485_760, DEFAULTS.maxResponseBytes);
 
   let configError: string | undefined;
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(apiKeyEnv)) {
-    configError = 'apiKeyEnv must match ^[A-Za-z_][A-Za-z0-9_]*$';
+  if (!API_KEY_ENV_PATTERN.test(apiKeyEnv)) {
+    configError = 'apiKeyEnv must be an OLLAMA_ environment variable name';
   }
   if (apiKey !== undefined && /[\r\n]/.test(apiKey)) {
     configError = 'apiKey must not contain CR or LF';

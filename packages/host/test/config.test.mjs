@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Config, buildEndpoint, snapshot } from '../dist/config.js';
-import { makeConfig, makeCtx, makeProvider } from './helpers.mjs';
+import { installFetch, jsonResponse, makeConfig, makeCtx, makeProvider } from './helpers.mjs';
 
 test('config schema exposes the documented keys', () => {
   assert.deepEqual(Object.keys(Config.dict).sort(), [
@@ -69,11 +69,26 @@ test('numeric settings are clamped to safe bounds', () => {
   assert.equal(options.maxQueryChars, 8192);
 });
 
-test('invalid apiKeyEnv becomes a config error', () => {
+test('apiKeyEnv accepts only OLLAMA_ environment names', () => {
   const { ctx } = makeCtx();
-  const options = snapshot(ctx, makeConfig({ apiKeyEnv: 'not a ref' }));
-  assert.match(options.configError, /apiKeyEnv/);
-  assert.equal(makeProvider({ apiKeyEnv: 'not a ref' }).available(), false);
+  const valid = snapshot(ctx, makeConfig({ apiKeyEnv: 'OLLAMA_SEARCH_KEY' }));
+  assert.equal(valid.configError, undefined);
+  for (const value of ['not a ref', 'GITHUB_TOKEN', 'AWS_SECRET_ACCESS_KEY']) {
+    const options = snapshot(ctx, makeConfig({ apiKeyEnv: value }));
+    assert.match(options.configError, /OLLAMA_/);
+    assert.equal(makeProvider({ apiKeyEnv: value }).available(), false);
+  }
+});
+
+test('a non-OLLAMA apiKeyEnv never reaches fetch', async () => {
+  const provider = makeProvider({ apiKeyEnv: 'GITHUB_TOKEN' });
+  const mock = installFetch(() => jsonResponse({ results: [] }));
+  try {
+    await assert.rejects(provider.search({ query: 'x' }), /OLLAMA_/);
+    assert.equal(mock.calls.length, 0);
+  } finally {
+    mock.restore();
+  }
 });
 
 test('an API key containing CR/LF is rejected', () => {
