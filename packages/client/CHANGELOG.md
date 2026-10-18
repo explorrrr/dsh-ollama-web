@@ -6,12 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-18
+
 ### Added
 
-- Optional Buy Me a Coffee support callout on the Plugins Configure card,
-  linking to <https://buymeacoffee.com/explorrrr>. The link is a plain HTTPS
-  anchor and makes no request until clicked.
-- Simplified Chinese card copy (`zh`), checked for key parity with `en`/`ja`.
+- Update section in the Plugins Configure card and the bundle detail page:
+  current/latest versions, Check, Install, opt-in auto-update, restart guidance,
+  release notes and npm provenance links.
+- Same-origin `/ollama-web-update` RPC through DSH's `connection` service. The
+  client makes no external network request and resolves `connection` at render
+  time so older deployments still load the search card.
+- Tests for the update states, RPC mapping, detail-section subject filtering and
+  the second stylesheet.
+- Optional Buy Me a Coffee support callout and Simplified Chinese card copy.
+
+### Security
+
+- The client only sends update method names and booleans; versions, URLs and
+  paths are never accepted from the browser.
+- No external `fetch`, storage, HTML sinks, `postMessage` or `window.open` were
+  added.
 
 ## [1.0.0] - 2026-10-18
 

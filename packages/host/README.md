@@ -9,6 +9,15 @@ security notes and compatibility. This package registers the `ollama` search
 provider on `ctx.web` and talks only to `https://ollama.com/api/web_search` by
 default.
 
+## Updates
+
+The host also owns the `/ollama-web-update` RPC used by the Configure card and
+the bundle detail section. On request (or while auto-update is enabled) it reads
+the npm registry / npmmirror, verifies the release SHA-512 integrity, safely
+extracts and atomically replaces the installed host and client packages. It
+never sends the Ollama API key, queries or session data. See
+[docs/UPDATES.md](../../docs/UPDATES.md).
+
 ## Support
 
 If this package saves you time, you can buy me a coffee at

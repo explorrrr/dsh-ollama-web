@@ -22,6 +22,9 @@ function makeReact() {
         },
       ];
     },
+    useEffect(effect) {
+      return effect();
+    },
     createElement(type, props, ...children) {
       return { type, props: { ...props, children } };
     },
@@ -52,6 +55,8 @@ function loadClient(react, document) {
     SettingsForm: 'SettingsForm',
     SettingsValueField: 'SettingsValueField',
     SettingsSecretField: 'SettingsSecretField',
+    Button: 'Button',
+    Switch: 'Switch',
   };
   const exports = definition.factory((id) => {
     required.push(id);
@@ -62,12 +67,15 @@ function loadClient(react, document) {
   return { exports, required, definition };
 }
 
-function mockContext() {
-  const calls = { registered: null, injected: null, served: null, locale: null };
+function mockContext(connection) {
+  const calls = { registrations: [], injections: [], served: null, locale: null };
   const ctx = {
     effect(fn) {
       const dispose = fn();
       return typeof dispose === 'function' ? dispose : () => {};
+    },
+    get(name) {
+      return name === 'connection' ? connection : undefined;
     },
     locale: {
       bind() {
@@ -86,16 +94,120 @@ function mockContext() {
     },
     slots: {
       inject(name, fn) {
-        calls.injected = name;
+        calls.injections.push(name);
         return fn();
       },
       register(options, component) {
-        calls.registered = { options, component };
+        calls.registrations.push({ options, component });
         return () => {};
       },
     },
   };
   return { ctx, calls };
+}
+
+function registration(calls, name) {
+  const found = calls.registrations.find((entry) => entry.options.name === name);
+  assert.ok(found, `missing slot registration ${name}`);
+  return found;
+}
+
+function rowRegistration(calls) {
+  return registration(calls, 'plugins.row.config');
+}
+
+function walk(node, visit) {
+  if (Array.isArray(node)) {
+    for (const child of node) walk(child, visit);
+    return;
+  }
+  if (node === null || node === undefined) return;
+  if (typeof node !== 'object') {
+    visit(node);
+    return;
+  }
+  visit(node);
+  if (node.props && node.props.children !== undefined) walk(node.props.children, visit);
+}
+
+function flatText(node) {
+  const parts = [];
+  walk(node, (value) => {
+    if (typeof value === 'string' || typeof value === 'number') parts.push(String(value));
+  });
+  return parts.join(' ');
+}
+
+function findElement(tree, predicate) {
+  let found;
+  walk(tree, (node) => {
+    if (found === undefined && node && typeof node === 'object' && predicate(node)) found = node;
+  });
+  return found;
+}
+
+function findButton(tree, label) {
+  return findElement(tree, (node) => node.type === 'Button' && flatText(node.props.children).includes(label));
+}
+
+function findSwitch(tree) {
+  return findElement(tree, (node) => node.type === 'Switch');
+}
+
+function statusLine(tree) {
+  return findElement(tree, (node) => node.type === 'p' && node.props['aria-live'] === 'polite');
+}
+
+async function flush() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
+}
+
+const BASE_STATUS = {
+  available: true,
+  profile: { name: 'desktop', restartKind: 'app' },
+  running: { host: '1.0.0' },
+  current: { host: '1.0.0', client: '1.0.0' },
+  latest: {
+    host: '1.1.0',
+    client: '1.1.0',
+    publishedAt: '2026-10-01T00:00:00.000Z',
+    eligibleAt: '2026-10-01T01:00:00.000Z',
+    releaseUrl: 'https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.1.0',
+    provenance: true,
+  },
+  state: 'update',
+  phase: 'idle',
+  checkedAt: '2026-10-02T00:00:00.000Z',
+  autoUpdate: false,
+  installed: null,
+  error: null,
+  busy: false,
+  ageLimited: false,
+  ageUnknown: false,
+  staleProcess: false,
+  versionsMatch: true,
+  clientInstalled: true,
+};
+
+function fakeConnection(status = BASE_STATUS, overrides = {}) {
+  const calls = [];
+  const rpc = {
+    call: async (channel, method, payload) => {
+      calls.push({ channel, method, payload });
+      if (Object.prototype.hasOwnProperty.call(overrides, method)) {
+        return overrides[method](payload);
+      }
+      return { ok: true, value: status };
+    },
+  };
+  return { connection: { rpc }, calls };
+}
+
+function makeSection(exports, react, connection) {
+  const Section = exports.makeUpdateSection((key) => key, () => connection);
+  return Section;
 }
 
 test('bundle requires only react and the official primitives', () => {
@@ -107,7 +219,7 @@ test('bundle requires only react and the official primitives', () => {
   ]);
 });
 
-test('bundle contains no network, storage or HTML sink calls', () => {
+test('bundle contains no external network, storage or HTML sink calls', () => {
   for (const pattern of [
     /\bfetch\s*\(/,
     /XMLHttpRequest/,
@@ -122,33 +234,38 @@ test('bundle contains no network, storage or HTML sink calls', () => {
   ]) {
     assert.doesNotMatch(source, pattern);
   }
+  assert.match(source, /ollama-web-update/);
+  assert.match(source, /plugins\.detail\.section/);
 });
 
-test('apply registers the row config slot with the host bundle key', () => {
+test('apply registers the row config and detail section slots', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext();
+  const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
   assert.equal(calls.served[0], 'ollama-web');
-  assert.equal(calls.injected, 'plugins.row.config');
-  assert.equal(calls.registered.options.name, 'plugins.row.config');
-  assert.equal(calls.registered.options.key, 'dsh-ollama-web#ollama-web');
-  assert.equal(typeof calls.registered.component, 'function');
+  assert.ok(calls.injections.includes('plugins.row.config'));
+  assert.ok(calls.injections.includes('plugins.detail.section'));
+  const row = rowRegistration(calls);
+  assert.equal(row.options.key, 'dsh-ollama-web#ollama-web');
+  assert.equal(typeof row.component, 'function');
+  const detail = registration(calls, 'plugins.detail.section');
+  assert.equal(detail.options.id, 'dsh-ollama-web-updates');
   assert.deepEqual(Object.keys(calls.locale.dictionaries).sort(), ['en', 'ja', 'zh']);
 });
 
 test('summary view is the localized description', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext();
+  const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
-  assert.equal(calls.registered.component({ view: 'summary' }), 'description');
+  assert.equal(rowRegistration(calls).component({ view: 'summary' }), 'description');
 });
 
-test('page view renders eight value fields plus the secret field', () => {
+test('page view renders eight value fields, the secret field, support, and updates', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext();
+  const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
   const form = {
     state: {
@@ -159,7 +276,7 @@ test('page view renders eight value fields plus the secret field', () => {
     },
     mutate: async () => true,
   };
-  const tree = react.render(calls.registered.component, { view: 'page', form });
+  const tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   assert.equal(tree.type, 'SettingsForm');
   assert.equal(tree.props.state.available, true);
   assert.equal(tree.props.state.writable, true);
@@ -168,19 +285,22 @@ test('page view renders eight value fields plus the secret field', () => {
   assert.equal(fields.at(-1).type, 'SettingsSecretField');
   assert.equal(fields.at(-1).props.text, '');
   assert.ok(fields.some((field) => field.props.id.endsWith('snippetMax')));
+  assert.equal(tree.props.children[1].props.className, 'dsh-ollama-web-support');
+  assert.equal(typeof tree.props.children[2].type, 'function');
+  assert.equal(tree.props.children[2].props.view, 'card');
 });
 
 test('all locale dictionaries expose the same keys and support copy', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext();
+  const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
   const dictionaries = calls.locale.dictionaries;
   const keys = Object.keys(dictionaries.en).sort();
   assert.deepEqual(Object.keys(dictionaries.ja).sort(), keys);
   assert.deepEqual(Object.keys(dictionaries.zh).sort(), keys);
   for (const locale of ['en', 'ja', 'zh']) {
-    for (const key of ['supportTitle', 'supportBody', 'supportLink']) {
+    for (const key of ['supportTitle', 'supportBody', 'supportLink', 'updateTitle', 'updateAutoWarning']) {
       assert.equal(typeof dictionaries[locale][key], 'string');
       assert.ok(dictionaries[locale][key].length > 0);
     }
@@ -191,7 +311,7 @@ test('all locale dictionaries expose the same keys and support copy', () => {
 test('page view renders the support block with the donation link', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext();
+  const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
   const form = {
     state: {
@@ -202,7 +322,7 @@ test('page view renders the support block with the donation link', () => {
     },
     mutate: async () => true,
   };
-  const tree = react.render(calls.registered.component, { view: 'page', form });
+  const tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   const support = tree.props.children[1];
   assert.equal(support.type, 'div');
   assert.equal(support.props.className, 'dsh-ollama-web-support');
@@ -222,41 +342,42 @@ test('page view renders the support block with the donation link', () => {
 
 function makeDocument() {
   const appended = [];
-  let existing = null;
+  const styles = new Map();
   const document = {
     head: {
       appendChild(node) {
         appended.push(node);
-        existing = node;
+        styles.set(node.dataset.pluginCss, node);
       },
     },
     querySelector(selector) {
-      assert.equal(selector, 'style[data-plugin-css="dsh-ollama-web-client/SupportSection.css"]');
-      return existing;
+      const match = /^style\[data-plugin-css="(.+)"\]$/.exec(selector);
+      assert.ok(match, `unexpected selector ${selector}`);
+      return styles.get(match[1]) ?? null;
     },
     createElement(tag) {
       return { tag, dataset: {}, textContent: '' };
     },
   };
-  return { document, appended };
+  return { document, appended, styles };
 }
 
-test('the support stylesheet is injected once', () => {
+test('both stylesheets are injected once', () => {
   const first = makeDocument();
   loadClient(makeReact(), first.document);
-  assert.equal(first.appended.length, 1);
-  assert.equal(first.appended[0].tag, 'style');
-  assert.equal(first.appended[0].dataset.plugin, 'dsh-ollama-web-client');
-  assert.equal(first.appended[0].dataset.pluginCss, 'dsh-ollama-web-client/SupportSection.css');
-  assert.match(first.appended[0].textContent, /\.dsh-ollama-web-support/);
+  assert.equal(first.appended.length, 2);
+  assert.equal(first.styles.get('dsh-ollama-web-client/SupportSection.css').tag, 'style');
+  assert.equal(first.styles.get('dsh-ollama-web-client/UpdateSection.css').tag, 'style');
+  assert.match(first.styles.get('dsh-ollama-web-client/SupportSection.css').textContent, /\.dsh-ollama-web-support/);
+  assert.match(first.styles.get('dsh-ollama-web-client/UpdateSection.css').textContent, /\.dsh-ollama-web-updates/);
   loadClient(makeReact(), first.document);
-  assert.equal(first.appended.length, 1);
+  assert.equal(first.appended.length, 2);
 });
 
 test('editing a numeric field and saving sends a revision-fenced operation', async () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext();
+  const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
   const mutations = [];
   const form = {
@@ -272,12 +393,12 @@ test('editing a numeric field and saving sends a revision-fenced operation', asy
     },
   };
 
-  let tree = react.render(calls.registered.component, { view: 'page', form });
+  let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   let fields = tree.props.children[0];
   const snippet = fields.find((field) => field.props.id.endsWith('snippetMax'));
   snippet.props.onEdit('1500');
 
-  tree = react.render(calls.registered.component, { view: 'page', form });
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   assert.equal(tree.props.state.dirty, true);
   await tree.props.onSave();
 
@@ -288,14 +409,14 @@ test('editing a numeric field and saving sends a revision-fenced operation', asy
     [{ op: 'set', path: ['snippetMax'], value: 1500 }],
   );
 
-  tree = react.render(calls.registered.component, { view: 'page', form });
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   assert.equal(tree.props.state.dirty, false);
 });
 
 test('an invalid number blocks saving', async () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext();
+  const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
   let mutated = false;
   const form = {
@@ -311,11 +432,11 @@ test('an invalid number blocks saving', async () => {
     },
   };
 
-  let tree = react.render(calls.registered.component, { view: 'page', form });
+  let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   const snippet = tree.props.children[0].find((field) => field.props.id.endsWith('snippetMax'));
   snippet.props.onEdit('not-a-number');
 
-  tree = react.render(calls.registered.component, { view: 'page', form });
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   assert.equal(tree.props.state.invalid, true);
   await tree.props.onSave();
   assert.equal(mutated, false);
@@ -339,5 +460,129 @@ test('an empty draft unsets the field back to its schema default', () => {
   assert.deepEqual(
     JSON.parse(JSON.stringify(exports.buildOps({ snippetMax: '' }, { snippetMax: 2000 }))),
     [{ op: 'unset', path: ['snippetMax'] }],
+  );
+});
+
+test('update section shows an available update and triggers check/install/auto RPCs', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection();
+  const Section = makeSection(exports, react, fake.connection);
+  let tree = react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  tree = react.render(Section, { t: (key) => key, view: 'card' });
+  assert.match(flatText(statusLine(tree)), /updateAvailable/);
+  assert.match(flatText(tree), /updateAutoWarning/);
+  const check = findButton(tree, 'updateCheck');
+  assert.ok(check);
+  await check.props.onClick();
+  await flush();
+  assert.ok(fake.calls.some((call) => call.method === 'check' && call.payload.fresh === true));
+  const install = findButton(tree, 'updateInstall');
+  assert.ok(install);
+  await install.props.onClick();
+  await flush();
+  assert.ok(fake.calls.some((call) => call.method === 'install' && call.payload.allowMajor === false));
+  const toggle = findSwitch(tree);
+  assert.ok(toggle);
+  await toggle.props.onChange(true);
+  await flush();
+  assert.ok(fake.calls.some((call) => call.method === 'setAutoUpdate' && call.payload.enabled === true));
+});
+
+test('update section renders a restart notice for an installed update', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection({
+    ...BASE_STATUS,
+    state: 'installed',
+    installed: { version: '1.1.0', at: '2026-10-02T00:00:00.000Z', needsRestart: true },
+    staleProcess: true,
+  });
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'detail' });
+  await flush();
+  const tree = react.render(Section, { t: (key) => key, view: 'detail' });
+  assert.match(flatText(statusLine(tree)), /updateRestartApp/);
+  assert.equal(findButton(tree, 'updateInstall'), undefined);
+  assert.equal(tree.props['data-view'], 'detail');
+});
+
+test('update section renders age-limited and linked states', async () => {
+  const ageReact = makeReact();
+  const ageLoaded = loadClient(ageReact);
+  const ageFake = fakeConnection({
+    ...BASE_STATUS,
+    state: 'age-limited',
+    ageLimited: true,
+  });
+  const AgeSection = makeSection(ageLoaded.exports, ageReact, ageFake.connection);
+  ageReact.render(AgeSection, { t: (key) => key, view: 'card' });
+  await flush();
+  const ageTree = ageReact.render(AgeSection, { t: (key) => key, view: 'card' });
+  assert.match(flatText(statusLine(ageTree)), /updateAgeLimitedHint/);
+  assert.equal(findButton(ageTree, 'updateInstall').props.disabled, true);
+
+  const linkedReact = makeReact();
+  const linkedLoaded = loadClient(linkedReact);
+  const linkedFake = fakeConnection({
+    ...BASE_STATUS,
+    state: 'linked',
+  });
+  const LinkedSection = makeSection(linkedLoaded.exports, linkedReact, linkedFake.connection);
+  linkedReact.render(LinkedSection, { t: (key) => key, view: 'card' });
+  await flush();
+  const linkedTree = linkedReact.render(LinkedSection, { t: (key) => key, view: 'card' });
+  assert.match(flatText(statusLine(linkedTree)), /updateLinkedHint/);
+  assert.equal(findButton(linkedTree, 'updateCheck').props.disabled, true);
+  assert.equal(findSwitch(linkedTree).props.disabled, true);
+});
+
+test('update section reports an unavailable RPC without throwing', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const Section = exports.makeUpdateSection((key) => key, () => undefined);
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const next = react.render(Section, { t: (key) => key, view: 'card' });
+  assert.match(flatText(statusLine(next)), /updateUnavailable/);
+  assert.ok(findButton(next, 'updateRetry'));
+  assert.equal(tree.props.className, 'dsh-ollama-web-updates');
+});
+
+test('detail section renders only for the two bundles', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const detail = exports.makeDetailSection((key) => key, () => fakeConnection().connection);
+  assert.equal(detail({ subject: { kind: 'bundle', pkg: { name: 'other' } }, t: (key) => key }), null);
+  assert.equal(detail({ subject: { kind: 'row', pkg: { name: 'dsh-ollama-web' } }, t: (key) => key }), null);
+  const node = detail({ subject: { kind: 'bundle', pkg: { name: 'dsh-ollama-web' } }, t: (key) => key });
+  assert.equal(typeof node.type, 'function');
+  assert.equal(node.props.view, 'detail');
+});
+
+test('callUpdateRpc returns values and maps failures', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const calls = [];
+  assert.deepEqual(await exports.callUpdateRpc({
+    call: async (channel, method, payload) => {
+      calls.push({ channel, method, payload });
+      return { ok: true, value: { state: 'current' } };
+    },
+  }, 'status'), { state: 'current' });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].channel, '/ollama-web-update');
+  assert.equal(calls[0].method, 'status');
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0].payload)), {});
+  await assert.rejects(
+    exports.callUpdateRpc({
+      call: async () => ({ ok: false, error: { code: 'network', message: 'bad' } }),
+    }, 'status'),
+    (error) => error.code === 'network',
+  );
+  await assert.rejects(
+    exports.callUpdateRpc(undefined, 'status'),
+    (error) => error.code === 'unavailable',
   );
 });

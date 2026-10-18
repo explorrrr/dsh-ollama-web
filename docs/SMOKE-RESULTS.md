@@ -41,6 +41,50 @@ temporary directory, macOS. The user's desktop profile was not modified.
       packages into an isolated profile; `--dump-config` composed the expected
       host/client rows and `web.searchProvider: ollama`.
 
+## 1.1.0 update feature (automated)
+
+- [x] Host tests cover semver comparison, packument parsing and registry
+      fallback, `minimumReleaseAge`, SHA-512 integrity, tar traversal/symlink/
+      oversize rejection, staging and rollback, state persistence, the update
+      service (check/install/auto-update/major guard), and the RPC routes.
+- [x] Client tests cover the update states, Check/Install/Auto-update RPC calls,
+      detail-section subject filtering, localized dictionaries, and the
+      no-external-network policy.
+- [x] `pnpm check` enforces version lockstep, changelog presence, the update-only
+      filesystem allowlist, and the client update/detail registrations.
+- [x] The update tests use temporary profiles and an injected local registry;
+      no live npm request or user profile is touched.
+
+## 1.1.0 update feature (isolated DSH smoke)
+
+Date: 2026-10-18. DSH 0.2.1-rc.2, isolated `DSH_HOME`, headless Chrome, macOS.
+The user's desktop profile was not modified.
+
+- [x] Installed the 1.1.0 tarballs into an isolated profile. The
+      `/ollama-web-update/status` route returned host/client 1.1.0 without a
+      network request.
+- [x] `/ollama-web-update/check` fetched the real npm registry, returned
+      `phase: "idle"`, `busy: false`, and reported npm `1.0.1` as `ahead`.
+- [x] `/ollama-web-update/setAutoUpdate` wrote
+      `<profile>/data/dsh-ollama-web/update-prefs.json` and toggled back off.
+- [x] A temporary local registry served test-only 1.1.1 tarballs. The `check`
+      RPC reported an update; the `install` RPC replaced both installed
+      directories, preserved the host `node_modules`, wrote state/backups and
+      returned `state: "installed"`, `needsRestart: true`, `busy: false`.
+- [x] After restarting the host, `status` reported running/current 1.1.1,
+      cleared `needsRestart`, and removed the backup directories.
+- [x] Headless Chrome opened Plugins -> `dsh-ollama-web` and rendered the
+      Updates section. Check fetched npm, the auto-update switch toggled
+      on/off, the version rows and release/provenance links rendered, and no
+      client-request error was logged.
+- [ ] Updating from the published 1.1.0 to a later 1.1.x release over the real
+      npm registry. 1.1.0 is the first updater release, so this is the next
+      release's verification.
+
+The 1.1.1 artifacts and the local registry were temporary test fixtures. The
+isolated profile was deleted after the smoke; the user's desktop profile was
+untouched.
+
 ## Not yet verified
 
 - [ ] A live Ollama `/api/web_search` call with a real `OLLAMA_API_KEY`

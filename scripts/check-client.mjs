@@ -46,6 +46,16 @@ if (!requires.includes('react') || !requires.includes('@deepseek-ai/dsh-client-u
 if (!source.includes("plugins.row.config") || !source.includes('dsh-ollama-web#ollama-web')) {
   throw new Error('client.js does not register the expected row config slot');
 }
+if (!source.includes('ollama-web-update')) {
+  throw new Error('client.js does not use the update RPC channel');
+}
+if (!source.includes('plugins.detail.section')) {
+  throw new Error('client.js does not register the update detail section');
+}
+const inject = /const inject\s*=\s*\[([^\]]*)\]/.exec(source);
+if (inject !== null && inject[1].includes("'connection'")) {
+  throw new Error('client.js must not add connection to inject; resolve it at render time');
+}
 
 const syntax = spawnSync(process.execPath, ['--check', new URL('client.js', packageDir).pathname], {
   encoding: 'utf8',

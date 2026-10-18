@@ -39,12 +39,26 @@ export interface LaunchEnvironmentLike {
   get(name: string): { value?: string } | undefined;
 }
 
+export interface LoggerLike {
+  warn?(message: string, error?: unknown): void;
+}
+
+/** The subset of an optional Cordis injection scope this plugin reads. */
+export interface InjectScope {
+  readonly connection?: unknown;
+  readonly webServer?: unknown;
+}
+
 /** The subset of the Cordis context this plugin uses. */
 export interface PluginContext {
   web: {
     registerSearchProvider(provider: WebSearchProvider): unknown;
   };
   get(name: string): unknown;
+  readonly baseUrl?: string;
+  inject?(deps: readonly string[], callback: (scope: InjectScope) => void): unknown;
+  effect?(callback: () => (() => void) | void, label?: string): unknown;
+  readonly logger?: LoggerLike;
 }
 
 export interface OllamaSearchResult {

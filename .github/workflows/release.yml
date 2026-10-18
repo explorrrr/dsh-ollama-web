@@ -39,6 +39,13 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - run: pnpm check
+      - name: Verify tag matches package versions
+        run: |
+          set -euo pipefail
+          HOST=$(node -p "require('./packages/host/package.json').version")
+          CLIENT=$(node -p "require('./packages/client/package.json').version")
+          test "$HOST" = "$CLIENT"
+          test "$GITHUB_REF_NAME" = "v$HOST"
       - name: Publish host package
         working-directory: packages/host
         run: |
@@ -47,7 +54,8 @@ jobs:
           if npm view "dsh-ollama-web@$VERSION" version >/dev/null 2>&1; then
             echo "dsh-ollama-web@$VERSION already exists; skipping."
           else
-            npm publish --provenance --access public
+            if [[ "$VERSION" == *-* ]]; then DIST_TAG=next; else DIST_TAG=latest; fi
+            npm publish --provenance --access public --tag "$DIST_TAG"
           fi
       - name: Publish client package
         working-directory: packages/client
@@ -57,7 +65,8 @@ jobs:
           if npm view "dsh-ollama-web-client@$VERSION" version >/dev/null 2>&1; then
             echo "dsh-ollama-web-client@$VERSION already exists; skipping."
           else
-            npm publish --provenance --access public
+            if [[ "$VERSION" == *-* ]]; then DIST_TAG=next; else DIST_TAG=latest; fi
+            npm publish --provenance --access public --tag "$DIST_TAG"
           fi
       - name: Download published npm tarballs
         run: |
@@ -86,12 +95,24 @@ jobs:
           fetch_tarball dsh-ollama-web-client "dist/dsh-ollama-web-client-$VERSION.tgz"
           (cd dist && shasum -a 512 ./*.tgz > SHA512SUMS)
           cat dist/SHA512SUMS
+      - name: Verify release assets contain the updater
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./packages/host/package.json').version")
+          tar -tzf "dist/dsh-ollama-web-$VERSION.tgz" | grep -qx 'package/dist/update/service.js'
+          tar -tzf "dist/dsh-ollama-web-$VERSION.tgz" | grep -qx 'package/dist/update/install.js'
+          tar -xOzf "dist/dsh-ollama-web-client-$VERSION.tgz" package/client.js | grep -q 'ollama-web-update'
+          tar -xOzf "dist/dsh-ollama-web-client-$VERSION.tgz" package/client.js | grep -q 'plugins.detail.section'
       - name: Ensure GitHub Release exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./packages/host/package.json').version")
+          PRERELEASE=""
+          if [[ "$VERSION" == *-* ]]; then PRERELEASE="--prerelease"; fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file CHANGELOG.md
+            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" $PRERELEASE --notes-file CHANGELOG.md
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -4,6 +4,28 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.1.0] - 2026-10-18
+
+### Added
+
+- Update service and `/ollama-web-update` RPC: npm/npmmirror packument checks,
+  host/client version agreement, `minimumReleaseAge`, SHA-512 SRI verification,
+  safe tar extraction, atomic install with rollback, backup cleanup, and opt-in
+  six-hourly same-major auto-update.
+- Linked-install refusal and dependency-resolution validation before replacing
+  an installed package.
+- Tests for semver, registry fallback/age, tar safety, install/rollback, state
+  persistence, the update service and the RPC routes.
+
+### Security
+
+- Update I/O is confined to `src/update/**`; `check-dist` and the security test
+  reject filesystem access elsewhere.
+- No npm lifecycle script runs; no API key, query, session or file data is sent
+  to the registry.
+
 ## [1.0.0] - 2026-10-18
 
 ### Added
