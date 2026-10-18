@@ -1,0 +1,18 @@
+# Changelog
+
+All notable changes to this project are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2026-10-18
+
+### Added
+
+- Host package `dsh-ollama-web`: Ollama Cloud `/api/web_search` provider for the
+  DSH `ctx.web` seam, with HTTPS-only endpoints, redirect refusal, response-byte
+  caps, query/snippet caps, credential resolution and sanitized errors.
+- Client package `dsh-ollama-web-client`: Web UI settings card for the host row
+  `ollama-web`, using the `plugins.row.config` slot and the official settings
+  primitives.
+- Unit, security, integration and contract tests; package/CI checks.
+- English and Japanese documentation, security policy and contribution guide.

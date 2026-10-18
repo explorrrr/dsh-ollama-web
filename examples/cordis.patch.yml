@@ -1,0 +1,24 @@
+# Example: install both packages, then pin the Ollama search provider.
+- insert:
+    - id: ollama-web
+      name: dsh-ollama-web
+      config:
+        baseURL: https://ollama.com
+        apiKeyEnv: OLLAMA_API_KEY
+        maxResults: 5
+        snippetMax: 2000
+        searchTimeoutMs: 30000
+        maxResponseBytes: 2097152
+
+- insert:
+    - id: ollama-web-client
+      name: dsh-ollama-web-client
+
+- id: web
+  config:
+    searchProvider: ollama
+    fetchProvider: http
+
+# Only if the built-in DeepSeek search provider is mounted.
+- id: web-search-deepseek
+  disabled: true

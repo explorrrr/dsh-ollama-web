@@ -1,0 +1,12 @@
+{
+  "name": "dsh-ollama-web-monorepo",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
+  "scripts": {
+    "build": "pnpm --filter dsh-ollama-web build",
+    "typecheck": "pnpm --filter dsh-ollama-web typecheck",
+    "test": "pnpm --filter dsh-ollama-web test && pnpm --filter dsh-ollama-web-client test",
+    "check": "node scripts/check-versions.mjs && node scripts/check-dist.mjs && node scripts/check-client.mjs",
+    "verify": "pnpm typecheck && pnpm build && pnpm test && pnpm check"
+  }
+}

@@ -1,0 +1,5 @@
+# The client package only needs an enabled Loader row so the client module
+# scanner can serve its `./client` bundle.
+- insert:
+    - id: ollama-web-client
+      name: dsh-ollama-web-client
