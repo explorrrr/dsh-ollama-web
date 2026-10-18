@@ -14,6 +14,12 @@ All notable changes to this project are documented here. The format follows
   status section and the maintainer-only publishing checklist.
 - Moved the one-time npm trusted-publishing setup into `docs/VERSIONING.md`.
 
+### Security
+
+- Restrict `apiKeyEnv` to `OLLAMA_*` environment variable names. The settings
+  card can no longer select unrelated environment variables or credential
+  references as the Ollama search key.
+
 ## [1.1.0] - 2026-10-18
 
 ### Added

@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- Restrict `apiKeyEnv` to `OLLAMA_*` environment variable names so the settings
+  card cannot resolve unrelated environment or credential references.
+
 ## [1.1.0] - 2026-10-18
 
 ### Added
