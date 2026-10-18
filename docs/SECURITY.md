@@ -9,8 +9,11 @@ only reads the configured Ollama API key and the search query, but users should
 still treat installing/updating this plugin as a trust decision.
 
 The client package runs in the Web GUI origin. Its bundle is intentionally
-small: no `fetch`, no storage, no HTML sinks, no `postMessage`; it only
-registers a `plugins.row.config` slot and calls `form.mutate`.
+small: no `fetch`, no storage, no HTML sinks (`innerHTML` /
+`dangerouslySetInnerHTML`), no `postMessage`, no `window.open`; it registers a
+`plugins.row.config` slot, calls `form.mutate`, and injects one static `<style>`
+element for the optional support callout. The donation link is a plain HTTPS
+anchor; the card sends nothing until the user clicks it.
 
 ## Data flow
 

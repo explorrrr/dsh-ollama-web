@@ -27,7 +27,7 @@ pnpm check
   `dangerouslySetInnerHTML`, `postMessage`, `window.open`, `eval` or
   `new Function` to the client bundle.
 - Do not log queries, API keys or response bodies.
-- Update README/README.ja and CHANGELOG for user-visible changes.
+- Update README/README.ja/README.zh and CHANGELOG for user-visible changes.
 - Keep error messages free of secrets and upstream response bodies.
 
 ## Security review checklist

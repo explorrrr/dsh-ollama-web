@@ -27,7 +27,8 @@ plugins you trust, pin versions and review updates.
 
 The client package runs in the DSH Web GUI origin. It can access the page's
 services, but this plugin's client bundle contains no network calls, storage
-access or HTML sinks.
+access or HTML sinks. Its optional donation link is a plain HTTPS anchor and
+makes no request until the user clicks it.
 
 ## Data egress
 

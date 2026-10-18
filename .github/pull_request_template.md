@@ -11,7 +11,7 @@
 - [ ] Response/query/snippet/result caps remain enforced.
 - [ ] Client bundle still has no network, storage or HTML sink calls.
 - [ ] Tests cover the changed behavior, including failure paths.
-- [ ] README/README.ja and CHANGELOG updated when user-visible.
+- [ ] README/README.ja/README.zh and CHANGELOG updated when user-visible.
 
 ## Testing
 

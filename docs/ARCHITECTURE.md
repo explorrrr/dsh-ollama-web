@@ -12,7 +12,9 @@
 ```
 
 The client package never talks to Ollama. It renders a configuration card and
-writes settings through the DSH Plugin Manager's `configForms` transport.
+writes settings through the DSH Plugin Manager's `configForms` transport. The
+card also shows an optional static donation link; the link is inert until
+clicked and adds no network call to the plugin.
 
 ## Host modules
 

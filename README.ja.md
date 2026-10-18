@@ -1,5 +1,7 @@
 # dsh-ollama-web
 
+[English](README.md) | 日本語 | [中文](README.zh.md)
+
 DeepSeek Harness（DSH）用の **Ollama Cloud Web検索provider** です。Web UIの設定カード付き。`web_search` のバックエンドだけを置き換え、DeepSeekのAPIキー・provider・フォールバックは一切使いません。
 
 `web_fetch` はDSH内蔵のHTTP providerのままです（無料・SSRF対策済み）。Ollama fetchは1.0には含めていません。
@@ -79,7 +81,7 @@ APIキーはwrite-onlyです。空欄なら現在のキーを維持し、保存�
 - Hostプラグインはsandbox外のin-processで動きます。導入前にコードを確認し、バージョンを固定してください。
 - HTTPS限定、`redirect: "error"`、レスポンスバイト上限、クエリ/snippet上限、結果URLは `http(s)` のみ。
 - クエリ/キーのログなし、テレメトリなし、独自セッションイベントなし。
-- Clientカードはネットワーク呼び出しもHTML sinkもありません。
+- Clientカードはネットワーク呼び出しもHTML sinkもありません。任意の寄付リンクはクリックするまで通信しないHTTPSアンカーです。
 - 既定の送信先は `ollama.com` のみ。`baseURL` を変えると、キーとクエリの送信先を自分で選ぶことになります。
 - 詳細: [SECURITY.md](SECURITY.md) / [docs/SECURITY.md](docs/SECURITY.md)
 
@@ -89,6 +91,16 @@ APIキーはwrite-onlyです。空欄なら現在のキーを維持し、保存�
 |---|---|
 | 0.2.1-rc.2 | 1.0.x |
 | 0.3.x | 未対応（2.0で計画） |
+
+## 支援
+
+`dsh-ollama-web` が役に立ったら、<https://buymeacoffee.com/explorrrr> で
+コーヒーをおごって開発を支援できます。寄付は任意で、機能が解放されることは
+ありません。寄付なしでもMITライセンスのまま全機能を使えます。
+
+設定カードにも同じリンクがあります。クリックするまでBuy Me a Coffeeへの
+通信は発生せず、プラグインが寄付情報を読み取ったり保存したりすることも
+ありません。
 
 ## 開発
 

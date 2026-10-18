@@ -1,5 +1,7 @@
 # dsh-ollama-web
 
+English | [日本語](README.ja.md) | [中文](README.zh.md)
+
 Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH), with a Web UI settings card. It replaces only the `web_search` backend: no DeepSeek API key, no DeepSeek provider, no fallback.
 
 `web_fetch` stays on DSH's built-in HTTP provider, which is free and already has SSRF guards. Ollama fetch is deliberately not part of 1.0.
@@ -80,7 +82,7 @@ If the settings card does not appear:
 - Host plugins run in-process, outside the workspace sandbox. Review plugins before installing and pin versions.
 - HTTPS only, `redirect: "error"`, response-byte cap, query/snippet caps, `http(s)`-only result URLs.
 - No query/key logging, no telemetry, no custom session events.
-- The client card performs no network requests and contains no HTML sinks.
+- The client card performs no network requests and contains no HTML sinks. The optional donation link is an inert HTTPS anchor until clicked.
 - Only `ollama.com` is contacted by default. If you change `baseURL`, you are choosing where the key and queries go.
 - See [SECURITY.md](SECURITY.md) and [docs/SECURITY.md](docs/SECURITY.md).
 
@@ -90,6 +92,17 @@ If the settings card does not appear:
 |---|---|
 | 0.2.1-rc.2 | 1.0.x |
 | 0.3.x | not yet supported (planned 2.0) |
+
+## Support
+
+If `dsh-ollama-web` saves you time, you can support its development with a
+coffee at <https://buymeacoffee.com/explorrrr>. Donations are optional and do
+not unlock features; the plugin stays MIT-licensed and fully functional
+without them.
+
+The Configure card shows the same link. It is a plain HTTPS anchor: the client
+makes no request to Buy Me a Coffee until you click it, and the plugin does not
+read or store donation information.
 
 ## Development
 

@@ -32,7 +32,7 @@ function makeReact() {
   };
 }
 
-function loadClient(react) {
+function loadClient(react, document) {
   let definition;
   const required = [];
   const sandbox = {
@@ -45,6 +45,7 @@ function loadClient(react) {
     },
     console,
   };
+  if (document !== undefined) sandbox.document = document;
   runInContext(source, createContext(sandbox));
   assert.ok(definition, 'client bundle did not register a loader definition');
   const primitives = {
@@ -133,7 +134,7 @@ test('apply registers the row config slot with the host bundle key', () => {
   assert.equal(calls.registered.options.name, 'plugins.row.config');
   assert.equal(calls.registered.options.key, 'dsh-ollama-web#ollama-web');
   assert.equal(typeof calls.registered.component, 'function');
-  assert.deepEqual(Object.keys(calls.locale.dictionaries).sort(), ['en', 'ja']);
+  assert.deepEqual(Object.keys(calls.locale.dictionaries).sort(), ['en', 'ja', 'zh']);
 });
 
 test('summary view is the localized description', () => {
@@ -167,6 +168,89 @@ test('page view renders eight value fields plus the secret field', () => {
   assert.equal(fields.at(-1).type, 'SettingsSecretField');
   assert.equal(fields.at(-1).props.text, '');
   assert.ok(fields.some((field) => field.props.id.endsWith('snippetMax')));
+});
+
+test('all locale dictionaries expose the same keys and support copy', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const { ctx, calls } = mockContext();
+  exports.apply(ctx);
+  const dictionaries = calls.locale.dictionaries;
+  const keys = Object.keys(dictionaries.en).sort();
+  assert.deepEqual(Object.keys(dictionaries.ja).sort(), keys);
+  assert.deepEqual(Object.keys(dictionaries.zh).sort(), keys);
+  for (const locale of ['en', 'ja', 'zh']) {
+    for (const key of ['supportTitle', 'supportBody', 'supportLink']) {
+      assert.equal(typeof dictionaries[locale][key], 'string');
+      assert.ok(dictionaries[locale][key].length > 0);
+    }
+  }
+  assert.notEqual(dictionaries.zh.supportTitle, dictionaries.en.supportTitle);
+});
+
+test('page view renders the support block with the donation link', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const { ctx, calls } = mockContext();
+  exports.apply(ctx);
+  const form = {
+    state: {
+      status: 'ready',
+      writable: true,
+      value: { baseURL: 'https://ollama.com' },
+      revision: 1,
+    },
+    mutate: async () => true,
+  };
+  const tree = react.render(calls.registered.component, { view: 'page', form });
+  const support = tree.props.children[1];
+  assert.equal(support.type, 'div');
+  assert.equal(support.props.className, 'dsh-ollama-web-support');
+  assert.equal(support.props.role, 'note');
+  const [title, body, link] = support.props.children;
+  assert.equal(title.type, 'p');
+  assert.equal(title.props.children[0], 'supportTitle');
+  assert.equal(body.type, 'p');
+  assert.equal(body.props.children[0], 'supportBody');
+  assert.equal(link.type, 'a');
+  assert.equal(link.props.href, exports.SUPPORT_URL);
+  assert.equal(link.props.href, 'https://buymeacoffee.com/explorrrr');
+  assert.equal(link.props.target, '_blank');
+  assert.equal(link.props.rel, 'noopener noreferrer');
+  assert.equal(link.props.children[0], 'supportLink');
+});
+
+function makeDocument() {
+  const appended = [];
+  let existing = null;
+  const document = {
+    head: {
+      appendChild(node) {
+        appended.push(node);
+        existing = node;
+      },
+    },
+    querySelector(selector) {
+      assert.equal(selector, 'style[data-plugin-css="dsh-ollama-web-client/SupportSection.css"]');
+      return existing;
+    },
+    createElement(tag) {
+      return { tag, dataset: {}, textContent: '' };
+    },
+  };
+  return { document, appended };
+}
+
+test('the support stylesheet is injected once', () => {
+  const first = makeDocument();
+  loadClient(makeReact(), first.document);
+  assert.equal(first.appended.length, 1);
+  assert.equal(first.appended[0].tag, 'style');
+  assert.equal(first.appended[0].dataset.plugin, 'dsh-ollama-web-client');
+  assert.equal(first.appended[0].dataset.pluginCss, 'dsh-ollama-web-client/SupportSection.css');
+  assert.match(first.appended[0].textContent, /\.dsh-ollama-web-support/);
+  loadClient(makeReact(), first.document);
+  assert.equal(first.appended.length, 1);
 });
 
 test('editing a numeric field and saving sends a revision-fenced operation', async () => {

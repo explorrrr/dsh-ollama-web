@@ -18,6 +18,16 @@ window.__ModuleLoader__.load({
     const NS = 'settings.webSearchOllama';
     const TARGET_NS = 'ollama-web';
     const ROW_KEY = 'dsh-ollama-web#ollama-web';
+    const SUPPORT_URL = 'https://buymeacoffee.com/explorrrr';
+    const SUPPORT_STYLE_ID = 'dsh-ollama-web-client/SupportSection.css';
+    const SUPPORT_CSS = [
+      '.dsh-ollama-web-support{display:flex;flex-direction:column;gap:6px;margin:12px 0 0;padding:12px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2)}',
+      '.dsh-ollama-web-support-title{margin:0;font-size:13px;font-weight:500;line-height:1.5;color:var(--dsw-alias-label-primary)}',
+      '.dsh-ollama-web-support-body{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
+      '.dsh-ollama-web-support-link{align-self:flex-start;color:var(--dsw-alias-link);font-size:12px;font-weight:500;line-height:1.5;text-decoration:none}',
+      '.dsh-ollama-web-support-link:hover,.dsh-ollama-web-support-link:focus-visible{text-decoration:underline}',
+      '.dsh-ollama-web-support-link:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px;border-radius:2px}',
+    ].join('');
 
     const FIELDS = [
       { name: 'baseURL', kind: 'text' },
@@ -41,6 +51,9 @@ window.__ModuleLoader__.load({
     const en = {
       title: 'Ollama web search',
       description: 'Ollama Cloud search provider. Fetch stays on the built-in HTTP provider.',
+      supportTitle: 'Support this plugin',
+      supportBody: 'If dsh-ollama-web saves you time, you can buy me a coffee. Donations are optional.',
+      supportLink: 'Buy me a coffee',
       baseURL: 'Endpoint',
       baseURLHint: 'HTTPS Ollama API origin. Default https://ollama.com.',
       apiKeyEnv: 'Key variable',
@@ -73,6 +86,9 @@ window.__ModuleLoader__.load({
     const ja = {
       title: 'Ollama Web検索',
       description: 'Ollama Cloudの検索providerです。取得はDSH内蔵のHTTP providerを使います。',
+      supportTitle: 'このプラグインを支援',
+      supportBody: 'dsh-ollama-web が役に立ったら、コーヒーをおごって開発を応援できます。寄付は任意です。',
+      supportLink: 'コーヒーをおごる',
       baseURL: 'エンドポイント',
       baseURLHint: 'HTTPSのOllama API origin。既定は https://ollama.com。',
       apiKeyEnv: 'キー変数',
@@ -101,6 +117,55 @@ window.__ModuleLoader__.load({
       save: '保存',
       saving: '保存中...',
     };
+
+    const zh = {
+      title: 'Ollama 网页搜索',
+      description: 'Ollama Cloud 搜索提供方。抓取仍使用内置 HTTP 提供方。',
+      supportTitle: '支持这个插件',
+      supportBody: '如果 dsh-ollama-web 为你节省了时间，可以请我喝杯咖啡。捐赠完全自愿，不会解锁额外功能。',
+      supportLink: '请我喝杯咖啡',
+      baseURL: '基础地址',
+      baseURLHint: 'HTTPS 的 Ollama API 源。默认 https://ollama.com。',
+      apiKeyEnv: '密钥变量',
+      apiKeyEnvHint: '由 Host 解析的凭据引用名。默认 OLLAMA_API_KEY。',
+      searchPath: '搜索路径',
+      searchPathHint: '追加到端点的绝对路径。默认 /api/web_search。',
+      maxQueryChars: '查询上限',
+      maxQueryCharsHint: '查询的最大字符数。1〜8192 的整数。',
+      apiKey: 'API 密钥',
+      apiKeyHint: '只写。留空则保留当前密钥；已保存的密钥不会再次显示。',
+      apiKeySet: '已配置密钥。留空则保留。',
+      maxResults: '每次搜索结果数',
+      maxResultsHint: '工具未发送上限时的默认值。1〜10 的整数。',
+      snippetMax: '片段上限',
+      snippetMaxHint: '每条结果内容保留的字符数。1〜10000 的整数。',
+      searchTimeoutMs: '搜索超时（毫秒）',
+      searchTimeoutMsHint: '单次搜索请求的截止时间。1000〜120000 的整数。',
+      maxResponseBytes: '响应上限（字节）',
+      maxResponseBytesHint: '响应正文的最大大小。65536〜10485760 的整数。',
+      overridden: '已覆盖',
+      reset: '恢复默认',
+      invalidNumber: '请填数字；留空表示使用默认值。',
+      unavailable: '该插件当前未加载，暂时无法配置。',
+      readOnly: '本部署的设置为只读。',
+      saveFailed: '本部署没有接受这些值，已保留供你修改。',
+      save: '保存',
+      saving: '保存中…',
+    };
+
+    function ensureSupportStyle() {
+      if (typeof document === 'undefined') return;
+      if (!document.head) return;
+      const selector = 'style[data-plugin-css=' + JSON.stringify(SUPPORT_STYLE_ID) + ']';
+      if (document.querySelector(selector) !== null) return;
+      const tag = document.createElement('style');
+      tag.dataset.plugin = 'dsh-ollama-web-client';
+      tag.dataset.pluginCss = SUPPORT_STYLE_ID;
+      tag.textContent = SUPPORT_CSS;
+      document.head.appendChild(tag);
+    }
+
+    ensureSupportStyle();
 
     function formatValue(value, kind) {
       if (kind === 'number') return typeof value === 'number' ? String(value) : '';
@@ -271,6 +336,28 @@ window.__ModuleLoader__.load({
           },
         }));
 
+        const support = react.createElement('div', {
+          key: 'support',
+          className: 'dsh-ollama-web-support',
+          role: 'note',
+        },
+          react.createElement('p', {
+            key: 'support-title',
+            className: 'dsh-ollama-web-support-title',
+          }, t('supportTitle')),
+          react.createElement('p', {
+            key: 'support-body',
+            className: 'dsh-ollama-web-support-body',
+          }, t('supportBody')),
+          react.createElement('a', {
+            key: 'support-link',
+            className: 'dsh-ollama-web-support-link',
+            href: SUPPORT_URL,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+          }, t('supportLink')),
+        );
+
         return react.createElement(primitives.SettingsForm, {
           labels: {
             unavailable: t('unavailable'),
@@ -289,7 +376,7 @@ window.__ModuleLoader__.load({
           },
           onSave,
           onDiscard,
-        }, fields);
+        }, fields, support);
       };
     }
 
@@ -297,7 +384,7 @@ window.__ModuleLoader__.load({
 
     function apply(ctx) {
       const t = ctx.locale.bind(NS);
-      ctx.effect(() => ctx.locale.register(NS, { en, ja }), 'ollama-web-client: dictionaries');
+      ctx.effect(() => ctx.locale.register(NS, { en, ja, zh }), 'ollama-web-client: dictionaries');
       ctx.effect(() => ctx.configForms.whileServed([TARGET_NS], () => (
         ctx.slots.inject('plugins.row.config', () => (
           ctx.slots.register({ name: 'plugins.row.config', key: ROW_KEY }, makeCard(t))
@@ -308,6 +395,7 @@ window.__ModuleLoader__.load({
     exports.NS = NS;
     exports.TARGET_NS = TARGET_NS;
     exports.ROW_KEY = ROW_KEY;
+    exports.SUPPORT_URL = SUPPORT_URL;
     exports.FIELDS = FIELDS;
     exports.parseDraft = parseDraft;
     exports.buildOps = buildOps;

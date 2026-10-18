@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Optional Buy Me a Coffee link (<https://buymeacoffee.com/explorrrr>) in the
+  READMEs and the Plugins Configure card. The card link is inert until clicked
+  and adds no network request, storage or telemetry.
+- Simplified Chinese README (`README.zh.md`), Chinese settings-card copy, and
+  language links across the English, Japanese and Chinese READMEs.
+
 ## [1.0.1] - 2026-10-18
 
 ### Changed
