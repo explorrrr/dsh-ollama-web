@@ -145,6 +145,13 @@ dsh plugin --profile desktop add dsh-ollama-web-client@1.1.0
 After that, later 1.1.x releases can be installed from the card or by
 auto-update.
 
+If the profile sets a pnpm `minimumReleaseAge` (the desktop profile uses 60
+minutes), a just-published bootstrap version can be held back by pnpm. Wait for
+the age to pass, add exact-version `minimumReleaseAgeExclude` entries
+temporarily, or pass `--config.minimum-release-age=0` to the explicit bootstrap
+install. That override applies only to the command; the profile setting stays
+unchanged, and later updater checks still respect it.
+
 ## Egress and security
 
 - Only the package names are sent to the update registry. The API key, queries,
