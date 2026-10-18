@@ -13,6 +13,7 @@ DeepSeek Harness（DSH）用の **Ollama Cloud Web検索provider** です。Web 
   （[docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)）。
 - 1.0.0も利用可能。初期の`0.0.x`はbootstrap版なので1.0.xを使用。
 - provenanceは `npm view dsh-ollama-web@1.0.1 dist.attestations` で確認。
+  詳細は [docs/PROVENANCE.md](docs/PROVENANCE.md)。
 
 ## 必要環境
 
