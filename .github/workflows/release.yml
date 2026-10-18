@@ -41,8 +41,6 @@ jobs:
       - run: pnpm check
       - name: Publish host package
         working-directory: packages/host
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
@@ -53,8 +51,6 @@ jobs:
           fi
       - name: Publish client package
         working-directory: packages/client
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
