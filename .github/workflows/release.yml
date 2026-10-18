@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          registry-url: https://registry.npmjs.org
       - name: Ensure npm supports trusted publishing
         run: |
           npm install --global npm@11 --silent
@@ -40,6 +41,8 @@ jobs:
       - run: pnpm check
       - name: Publish host package
         working-directory: packages/host
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
@@ -50,6 +53,8 @@ jobs:
           fi
       - name: Publish client package
         working-directory: packages/client
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
