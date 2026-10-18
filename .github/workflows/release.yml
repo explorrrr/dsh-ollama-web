@@ -99,10 +99,15 @@ jobs:
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./packages/host/package.json').version")
-          tar -tzf "dist/dsh-ollama-web-$VERSION.tgz" | grep -qx 'package/dist/update/service.js'
-          tar -tzf "dist/dsh-ollama-web-$VERSION.tgz" | grep -qx 'package/dist/update/install.js'
-          tar -xOzf "dist/dsh-ollama-web-client-$VERSION.tgz" package/client.js | grep -q 'ollama-web-update'
-          tar -xOzf "dist/dsh-ollama-web-client-$VERSION.tgz" package/client.js | grep -q 'plugins.detail.section'
+          HOST_LIST=$(mktemp)
+          CLIENT_JS=$(mktemp)
+          trap 'rm -f "$HOST_LIST" "$CLIENT_JS"' EXIT
+          tar -tzf "dist/dsh-ollama-web-$VERSION.tgz" > "$HOST_LIST"
+          grep -qx 'package/dist/update/service.js' "$HOST_LIST"
+          grep -qx 'package/dist/update/install.js' "$HOST_LIST"
+          tar -xOzf "dist/dsh-ollama-web-client-$VERSION.tgz" package/client.js > "$CLIENT_JS"
+          grep -q 'ollama-web-update' "$CLIENT_JS"
+          grep -q 'plugins.detail.section' "$CLIENT_JS"
       - name: Ensure GitHub Release exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
