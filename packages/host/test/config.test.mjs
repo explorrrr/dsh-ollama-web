@@ -48,9 +48,29 @@ test('baseURL credentials, query and fragment are rejected', () => {
 });
 
 test('searchPath must stay on the base origin', () => {
-  assert.throws(() => buildEndpoint('https://ollama.com', '//evil.example/x'), /origin/);
+  assert.throws(() => buildEndpoint('https://ollama.com', '//evil.example/x'), /plain path|origin/);
   assert.throws(() => buildEndpoint('https://ollama.com', '/../x'), /plain path/);
   assert.throws(() => buildEndpoint('https://ollama.com', 'api/web_search'), /start with/);
+});
+
+test('searchPath cannot escape the baseURL path prefix', () => {
+  const base = 'https://proxy.example/ollama';
+  for (const path of [
+    '/%2e%2e/admin',
+    '/%2E%2E/admin',
+    '/%252e%252e/admin',
+    '/api/%2e%2e/web_search',
+    '/%2f%2fevil.example/x',
+    '/%5cevil.example/x',
+    '/%3fadmin',
+    '/%23admin',
+  ]) {
+    assert.throws(() => buildEndpoint(base, path), /plain path|under the baseURL path/, path);
+  }
+  assert.equal(
+    buildEndpoint(base, '/api/web_search'),
+    'https://proxy.example/ollama/api/web_search',
+  );
 });
 
 test('numeric settings are clamped to safe bounds', () => {

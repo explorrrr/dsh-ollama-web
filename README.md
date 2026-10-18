@@ -60,7 +60,7 @@ Enter it in the settings card (**Plugins -> `dsh-ollama-web` -> `ollama-web` -> 
 |---|---|---|
 | `baseURL` | `https://ollama.com` | HTTPS only; no userinfo/query/fragment |
 | `apiKeyEnv` | `OLLAMA_API_KEY` | `^OLLAMA_[A-Za-z0-9_]+$` |
-| `searchPath` | `/api/web_search` | Absolute path on the same origin |
+| `searchPath` | `/api/web_search` | Absolute path under the baseURL path, same origin |
 | `maxResults` | `5` | 1-10 |
 | `snippetMax` | `2000` | 1-10000 characters |
 | `maxQueryChars` | `2048` | 1-8192 characters |

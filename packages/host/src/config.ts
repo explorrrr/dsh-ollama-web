@@ -56,6 +56,35 @@ function readLiteralKey(value: unknown): string | undefined {
   return value;
 }
 
+/** Reject literal and percent-encoded traversal before URL normalization. */
+function assertPlainSearchPath(rawPath: string): void {
+  let current = rawPath;
+  for (let depth = 0; depth < 5; depth += 1) {
+    assertNoTraversal(current);
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(current);
+    } catch {
+      throw new Error('searchPath must be a plain path');
+    }
+    if (decoded === current) return;
+    current = decoded;
+  }
+  assertNoTraversal(current);
+}
+
+function assertNoTraversal(path: string): void {
+  if (
+    path.includes('..')
+    || path.includes('?')
+    || path.includes('#')
+    || path.includes('\\')
+    || path.startsWith('//')
+  ) {
+    throw new Error('searchPath must be a plain path');
+  }
+}
+
 /**
  * Build and validate the request endpoint. `baseURL` may carry a path prefix
  * (for a reverse proxy), but it must stay on its own HTTPS origin.
@@ -81,14 +110,15 @@ export function buildEndpoint(rawBaseURL: string, rawPath: string): string {
   if (!path.startsWith('/')) {
     throw new Error('searchPath must start with /');
   }
-  if (path.includes('..') || path.includes('?') || path.includes('#')) {
-    throw new Error('searchPath must be a plain path');
-  }
+  assertPlainSearchPath(path);
 
   const basePath = base.pathname.replace(/\/+$/, '');
   const endpoint = new URL(`${basePath}${path}`, base.origin);
   if (endpoint.origin !== base.origin) {
     throw new Error('searchPath must stay on the baseURL origin');
+  }
+  if (basePath !== '' && endpoint.pathname !== basePath && !endpoint.pathname.startsWith(`${basePath}/`)) {
+    throw new Error('searchPath must stay under the baseURL path');
   }
   return endpoint.toString();
 }

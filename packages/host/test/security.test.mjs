@@ -68,7 +68,7 @@ test('update modules import only allowlisted Node builtins', () => {
 
 test('HTTPS and same-origin path rules are enforced', () => {
   assert.throws(() => buildEndpoint('http://ollama.com', '/api/web_search'), /https/);
-  assert.throws(() => buildEndpoint('https://ollama.com', '//evil.example/x'), /origin/);
+  assert.throws(() => buildEndpoint('https://ollama.com', '//evil.example/x'), /plain path|origin/);
   assert.throws(() => buildEndpoint('https://ollama.com', '/a/../b'), /plain path/);
 });
 

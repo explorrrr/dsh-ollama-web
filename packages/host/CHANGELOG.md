@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Keep `searchPath` under the configured `baseURL` path prefix and reject
+  percent-encoded traversal.
 - Restrict `apiKeyEnv` to `OLLAMA_*` environment variable names so the settings
   card cannot resolve unrelated environment or credential references.
 

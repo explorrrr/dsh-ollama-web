@@ -60,7 +60,7 @@ Host が `web_search` の検索先を提供し、Client が設定カードを提
 |---|---|---|
 | `baseURL` | `https://ollama.com` | HTTPSのみ。userinfo/query/fragment禁止 |
 | `apiKeyEnv` | `OLLAMA_API_KEY` | `^OLLAMA_[A-Za-z0-9_]+$` |
-| `searchPath` | `/api/web_search` | 同一originの絶対パス |
+| `searchPath` | `/api/web_search` | baseURLのパス配下・同一originの絶対パス |
 | `maxResults` | `5` | 1〜10 |
 | `snippetMax` | `2000` | 1〜10000文字 |
 | `maxQueryChars` | `2048` | 1〜8192文字 |
