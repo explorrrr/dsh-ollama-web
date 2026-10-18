@@ -2,57 +2,59 @@
 
 English | [日本語](README.ja.md) | [中文](README.zh.md)
 
-Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH), with a Web UI settings card. It replaces only the `web_search` backend: no DeepSeek API key, no DeepSeek provider, no fallback.
+Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH), with a Web UI settings card. It replaces only the `web_search` backend: no DeepSeek API key, no DeepSeek provider, no fallback. `web_fetch` stays on DSH's built-in HTTP provider, which already has SSRF guards.
 
-`web_fetch` stays on DSH's built-in HTTP provider, which is free and already has SSRF guards. Ollama fetch is deliberately not part of 1.x.
+[![Support via Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/explorrrr)
 
-## Status
-
-- `dsh-ollama-web@1.1.0` and `dsh-ollama-web-client@1.1.0` are published on npm
-  with **npm provenance** from GitHub Actions.
-- GitHub Release: <https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.1.0>
-- 1.1.0 adds update checks, an explicit **Install update** button, and opt-in
-  auto-update. The Plugins Configure card was verified on DSH 0.2.1-rc.2 (see
-  [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)).
-- 1.0.x remains available but has no updater. Install 1.1.0 once manually;
-  later 1.1.x releases can be updated from the card.
-- Verify provenance with `npm view dsh-ollama-web@1.1.0 dist.attestations`;
-  see [docs/PROVENANCE.md](docs/PROVENANCE.md).
-- Versioning rules are documented in [docs/VERSIONING.md](docs/VERSIONING.md).
+- Search endpoint defaults to `https://ollama.com/api/web_search`
+- Configure the API key in the card (write-only) or via `OLLAMA_API_KEY`
+- Update checks, install, and opt-in auto-update are included
+- Ollama `web_fetch` is not part of 1.x
 
 ## Requirements
 
-- DSH 0.2.1-rc.2 (peer range `>=0.2.1-rc.1 <0.3.0`)
+- DSH 0.2.1-rc.2 (peer `>=0.2.1-rc.1 <0.3.0`), tested on this version
+- DSH 0.3.x is not supported yet (planned for 2.0); see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)
 - Node.js >= 20.3
 - An Ollama Cloud API key from <https://ollama.com/settings/keys>
 
 ## Install
 
-Install both packages. The host package provides search; the client package provides the Configure card.
+The host package provides the `web_search` backend; the client package provides the settings card. Install both at the same version.
 
-```bash
-dsh plugin --profile desktop add dsh-ollama-web@1.1.0
-dsh plugin --profile desktop add dsh-ollama-web-client@1.1.0
-```
+1. Add the packages.
 
-Or use **Plugins -> Add plugin** in the Web UI twice.
+   ```bash
+   dsh plugin --profile desktop add dsh-ollama-web@1.1.0
+   dsh plugin --profile desktop add dsh-ollama-web-client@1.1.0
+   ```
 
-Then pin the search provider in `~/.dsh/profiles/<profile>/cordis.patch.yml`:
+   Replace `desktop` with your profile name if needed. You can also use **Plugins -> Add plugin** twice in the Web UI. npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web) / [dsh-ollama-web-client](https://www.npmjs.com/package/dsh-ollama-web-client)
 
-```yaml
-- id: web
-  config:
-    searchProvider: ollama
-    fetchProvider: http
+2. Pin the search provider in `~/.dsh/profiles/<profile>/cordis.patch.yml`.
 
-# Only if the built-in DeepSeek search provider is mounted.
-- id: web-search-deepseek
-  disabled: true
-```
+   ```yaml
+   - id: web
+     config:
+       searchProvider: ollama
+       fetchProvider: http
 
-Set the key in the settings card (Plugins -> `dsh-ollama-web` -> `ollama-web` -> Configure), or export `OLLAMA_API_KEY` in the launching environment.
+   # Only if the built-in DeepSeek search provider is mounted.
+   - id: web-search-deepseek
+     disabled: true
+   ```
+
+   `fetchProvider: http` keeps `web_fetch` on DSH's built-in HTTP provider.
+
+1.0.x has no updater. Install the current version once manually as shown above; later 1.1.x releases can update from the card (see the Updates section below).
 
 ## Configure
+
+### API key
+
+Enter it in the settings card (**Plugins -> `dsh-ollama-web` -> `ollama-web` -> Configure**), or set `OLLAMA_API_KEY` in the environment that launches DSH. The card is write-only: leaving the key blank keeps the current key, and a saved key is never shown again.
+
+### Settings
 
 | Field | Default | Constraint |
 |---|---|---|
@@ -66,87 +68,61 @@ Set the key in the settings card (Plugins -> `dsh-ollama-web` -> `ollama-web` ->
 | `maxResponseBytes` | `2097152` | 65536-10485760 bytes |
 | `apiKey` | unset | Secret; prefer the card or `OLLAMA_API_KEY` |
 
-The card is write-only for the API key: leaving the key blank keeps the current key, and a saved key is never shown again.
+## Usage
 
-## Updates
+Ask the model to search, then check that results come from Ollama. The search request body contains only the query and `max_results`; the API key is sent in the `Authorization: Bearer` header. The default endpoint is `https://ollama.com/api/web_search`.
 
-Open **Plugins -> `dsh-ollama-web` -> Configure** (or the bundle detail page) and use **Check for updates** / **Install update**. Restart DSH (or quit and reopen the desktop app) to load an installed update.
-
-- **Latest check:** the host reads the npm registry (fallback: npmmirror) and honours the profile's pnpm `minimumReleaseAge` (default 60 minutes when unset). A release that is too new is shown as waiting instead of being installed.
-- **Explicit update:** downloads both published tarballs, verifies the npm SHA-512 integrity, validates the archive, and replaces the installed host/client copies atomically. A failed swap rolls both copies back.
-- **Auto-update (opt-in):** off by default. When enabled, the host checks every 6 hours and installs a newer **same-major** release. Major updates require the explicit button.
-- **Linked installs:** a `link:` or external-directory development install is never modified; update it from its Git repository.
-- **Restart:** the running host keeps using the old code until DSH restarts.
-- **Profile records:** DSH 0.2.1 has no third-party update API, so the updater replaces installed files directly. The profile's `package.json` and `pnpm-lock.yaml` still record the previous version; reinstall through **Plugins** (or the CLI) if you want those records updated. See [docs/UPDATES.md](docs/UPDATES.md).
-- **Bootstrap:** 1.0.x has no updater. Install 1.1.0 once manually; later 1.1.x releases can update from the card.
-- **Egress:** only package names are sent to the registry, and only when you check/update or enable auto-update. No query, API key, session or file data is sent.
-
-## Verify
-
-Ask the model to search, then check that sources come from Ollama. The plugin sends only the query and `max_results` to `https://ollama.com/api/web_search`.
-
-If the settings card does not appear:
+### If the settings card does not appear
 
 1. Confirm `dsh-ollama-web-client` is installed and its bundle is enabled.
 2. Refresh the Web page.
 3. Check that the host package name is `dsh-ollama-web` and the row is `ollama-web` (the card key is `dsh-ollama-web#ollama-web`).
 4. Fall back to the patch configuration above; the host works without the card.
 
+## Updates
+
+As of 1.1.0, **Plugins -> `dsh-ollama-web` -> Configure** (or the bundle detail page) shows an Updates section. Use **Check for updates** / **Install update**, then restart DSH (quit and reopen the desktop app) to load the new version.
+
+- **Check:** the host reads the npm registry (fallback: npmmirror) and honours the profile's pnpm `minimumReleaseAge` (default 60 minutes when unset). A release that is too new is shown as waiting instead of being installed.
+- **Install:** downloads both tarballs, verifies the npm SHA-512 integrity and the archive, then atomically replaces the installed host/client copies. A failed swap rolls both copies back.
+- **Auto-update (opt-in):** off by default. When enabled, the host checks every 6 hours and installs a newer **same-major** release. Major updates require the explicit button.
+- **Caveats:** a `link:` or external-directory development install is never modified. DSH 0.2.1 has no third-party update API, so the updater replaces installed files directly. The profile's `package.json` and `pnpm-lock.yaml` still record the previous version; reinstall through **Plugins** (or the CLI) if you want those records updated.
+
+See [docs/UPDATES.md](docs/UPDATES.md) for details.
+
 ## Security
 
 - Host plugins run in-process, outside the workspace sandbox. Review plugins before installing and pin versions.
-- HTTPS only, `redirect: "error"`, response-byte cap, query/snippet caps, `http(s)`-only result URLs.
-- No query/key logging, no telemetry, no custom session events.
-- The client card performs no external network request and contains no HTML sinks. It asks the host's update service through DSH's same-origin Connection RPC only when you press Check/Update or change auto-update. The optional donation link is an inert HTTPS anchor until clicked.
-- For search, only `ollama.com` is contacted by default. For updates, the host contacts the npm registry (fallback: npmmirror) only on explicit action or while auto-update is enabled. If you change `baseURL`, you are choosing where the key and queries go.
-- Update archives are checked against the npm SHA-512 integrity before extraction; symlinks, traversal and oversized entries are rejected, and no npm lifecycle script is run.
-- Auto-update installs new code without a prompt. It is opt-in, limited to the current major version, and documented in [docs/UPDATES.md](docs/UPDATES.md).
-- See [SECURITY.md](SECURITY.md) and [docs/SECURITY.md](docs/SECURITY.md).
-
-## Compatibility
-
-| DSH | Plugin |
-|---|---|
-| 0.2.1-rc.2 | 1.1.x |
-| 0.3.x | not yet supported (planned 2.0) |
-
-## Versioning
-
-The project follows Semantic Versioning. The host and client packages are always released at the same version. Breaking compatibility changes (including DSH 0.3 support) are major releases; backward-compatible features such as the update UI are minor releases; fixes, documentation and packaging-only changes are patches. See [docs/VERSIONING.md](docs/VERSIONING.md).
+- Search is HTTPS-only, refuses redirects, caps response/query/snippet sizes, and allows only `http(s)` result URLs.
+- No query or API key logging, no telemetry, no custom session events.
+- Search contacts only `ollama.com` by default. Updates contact the npm registry (fallback: npmmirror) only on explicit action or while auto-update is enabled, and send only package names. Changing `baseURL` changes where the key and queries go.
+- Update tarballs are checked against the npm SHA-512 integrity; symlinks, traversal and oversized entries are rejected. No npm lifecycle script runs.
+- Auto-update installs new code without a prompt. It is opt-in and limited to the current major version.
+- The client card makes no third-party external request. It reads update state and performs update actions only through DSH's same-origin Connection RPC to the host. It does not use `innerHTML` / `dangerouslySetInnerHTML`.
+- Published packages carry npm provenance. See [docs/PROVENANCE.md](docs/PROVENANCE.md) and [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md) for verification records, and [SECURITY.md](SECURITY.md) / [docs/SECURITY.md](docs/SECURITY.md) for the full policy.
 
 ## Support
 
-If `dsh-ollama-web` saves you time, you can support its development with a
-coffee at <https://buymeacoffee.com/explorrrr>. Donations are optional and do
-not unlock features; the plugin stays MIT-licensed and fully functional
-without them.
+If `dsh-ollama-web` saves you time, you can support its development with a coffee at [Buy Me a Coffee](https://buymeacoffee.com/explorrrr). You can also use the GitHub **Sponsor** button. Donations are optional and do not unlock features or change the license.
 
-The Configure card shows the same link. It is a plain HTTPS anchor: the client
-makes no request to Buy Me a Coffee until you click it, and the plugin does not
-read or store donation information.
+The link in the settings card makes no request to Buy Me a Coffee until you click it. The plugin does not read or store donation information.
 
 ## Development
 
 ```bash
 pnpm install
-pnpm typecheck
-pnpm build
-pnpm test
-pnpm check
+pnpm verify
 ```
+
+`pnpm verify` runs typecheck, build, test and check. To run them individually, use `pnpm typecheck`, `pnpm build`, `pnpm test` and `pnpm check`.
 
 The host tests use mocked `fetch`; e2e tests are opt-in with `OLLAMA_API_KEY`. The client tests load the browser bundle in a VM with fake React/primitives.
 
-## Before publishing
-
-- Repository metadata already points to `explorrrr/dsh-ollama-web`; confirm it before publishing.
-- Configure npm trusted publishing for `dsh-ollama-web` and
-  `dsh-ollama-web-client` (repository, workflow `release.yml`, environment
-  `npm`).
-- Confirm both npm names are still available.
-- Run `pnpm verify`, the browser smoke in [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md),
-  then tag `v1.1.0`.
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Versioning and release: [docs/VERSIONING.md](docs/VERSIONING.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md) / [GitHub Releases](https://github.com/explorrrr/dsh-ollama-web/releases)
 
 ## License
 
-MIT. Not affiliated with Ollama or DeepSeek. Ollama is a trademark of its owner.
+MIT. See [LICENSE](LICENSE). Not affiliated with Ollama or DeepSeek. Ollama is a trademark of its owner.

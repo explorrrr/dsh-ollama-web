@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Restructured the English, Japanese and Simplified Chinese READMEs around
+  install, configuration, usage, updates and security. Added a Buy Me a Coffee
+  badge and the GitHub Sponsor button, and removed the top-of-README release
+  status section and the maintainer-only publishing checklist.
+- Moved the one-time npm trusted-publishing setup into `docs/VERSIONING.md`.
+
 ## [1.1.0] - 2026-10-18
 
 ### Added

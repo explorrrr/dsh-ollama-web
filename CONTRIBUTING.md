@@ -58,7 +58,8 @@ pnpm check
 1. Read [docs/VERSIONING.md](docs/VERSIONING.md), bump both package versions and
    add a CHANGELOG section.
 2. Run `pnpm verify` and the browser/update smoke tests.
-3. Tag `v<version>` and publish from the release workflow with provenance.
+3. Tag `v<version>` and publish from the release workflow with npm trusted
+   publishing (OIDC, no `NPM_TOKEN`).
 4. Attach both tarballs and `SHA512SUMS` to the GitHub Release.
 5. Record the published attestations/hashes and smoke results in
    `docs/PROVENANCE.md` and `docs/SMOKE-RESULTS.md`.

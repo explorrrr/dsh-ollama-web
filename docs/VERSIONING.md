@@ -44,13 +44,28 @@ above applies.
 
 1. Update both `package.json` versions and add the matching changelog section
    to `CHANGELOG.md` and the package changelogs.
-2. Update the README version examples, update notes and compatibility table.
+2. Update the install/version examples and update notes in all three READMEs
+   (`README.md`, `README.ja.md`, `README.zh.md`), keep their structure in sync,
+   and confirm the DSH compatibility statement still matches
+   `docs/COMPATIBILITY.md`.
 3. Run `pnpm verify` and the update smoke test in an isolated profile.
 4. Commit the release, tag `v<version>`, and push the tag.
 5. The release workflow publishes both packages with provenance and attaches the
    npm tarballs plus `SHA512SUMS` to the GitHub Release.
 6. Verify the npm versions, integrity and attestations, then record the evidence
    in `docs/PROVENANCE.md` and `docs/SMOKE-RESULTS.md`.
+
+## Publishing setup
+
+npm trusted publishing (OIDC) is configured for both packages:
+
+- repository: `explorrrr/dsh-ollama-web`
+- workflow: `.github/workflows/release.yml`
+- environment: `npm`
+
+No `NPM_TOKEN` is stored. The release workflow verifies that the package
+metadata points at the repository and that the tag matches both package
+versions.
 
 ## DSH compatibility
 
