@@ -28,13 +28,16 @@ temporary directory, macOS. The user's desktop profile was not modified.
       path:["snippetMax"], value:1500}], expectedRevision:0}` succeeds; a
       subsequent `settings/describe` returns `snippetMax: 1500`,
       `user.snippetMax: 1500`, `revision: 1`.
+- [x] **Browser Configure card:** headless Chrome opened the isolated DSH Web
+      UI, dismissed the preview notice, opened Plugins -> `dsh-ollama-web` ->
+      row `ollama-web` -> Configure. The card rendered all eight value fields
+      plus the write-only API key field. Editing **Snippet cap** from 2000 to
+      1600 and clicking **Save** persisted `snippetMax: 1600` (confirmed by
+      `settings/describe`, `revision: 1`). Screenshot:
+      [configure-card.png](configure-card.png).
 
 ## Not yet verified
 
-- [ ] The browser-rendered **Plugins -> dsh-ollama-web -> ollama-web ->
-      Configure** card: clicking, editing and saving through the actual React
-      UI. The host namespace, slot key and mutation API were verified, but the
-      rendered card still needs a manual browser check on the target DSH build.
 - [ ] A live Ollama `/api/web_search` call with a real `OLLAMA_API_KEY`
       (`pnpm --filter dsh-ollama-web test:e2e`).
 - [ ] macOS/Windows desktop browser matrix; only the host/API and bundle
