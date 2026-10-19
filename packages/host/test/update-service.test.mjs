@@ -34,10 +34,12 @@ function makeService({
   now = Date.parse('2026-10-02T00:00:00.000Z'),
   runningDir,
   prefs,
+  dshVersion = '0.2.1-rc.2',
+  dshRange = '>=0.2.1-rc.1 <0.3.0',
 } = {}) {
   const profile = makeProfile({ root, minimumReleaseAge: profileMinimumReleaseAge });
   const bytes = packageTarball(version);
-  const { pkg, target } = makeRelease({ version, tarball: bytes, publishedAt });
+  const { pkg, target } = makeRelease({ version, tarball: bytes, publishedAt, dshRange });
   const tarballs = { [target.pkg.tarball]: bytes };
   const calls = [];
   const fetchImpl = makeRegistryResponder({ pkg, tarballs, calls });
@@ -48,6 +50,7 @@ function makeService({
     packageName: PACKAGE_NAME,
     packageDir: runningDir ?? profile.packageDir,
     runningVersion: '1.0.0',
+    dshVersion,
     dataDir,
     fetchImpl,
     registries: [REGISTRY],
@@ -84,6 +87,9 @@ test('checks the registry, caches a result, and reports an update', async () => 
     assert.equal(ctx.calls.length, 1);
     assert.equal(status.latest?.version, '1.1.0');
     assert.equal(status.state, 'update');
+    assert.equal(status.compatibility.dsh, '0.2.1-rc.2');
+    assert.equal(status.compatibility.range, '>=0.2.1-rc.1 <0.3.0');
+    assert.equal(status.compatibility.state, 'compatible');
     assert.equal(status.phase, 'idle');
     assert.equal(status.busy, false);
     assert.equal(status.ageLimited, false);
@@ -119,6 +125,7 @@ test('installs the package and reports a restart', async () => {
     const state = readJson(join(ctx.dataDir, 'update-state.json'));
     assert.equal(state.schemaVersion, 2);
     assert.equal(state.installed.version, '1.1.0');
+    assert.equal(state.latest.dshRange, '>=0.2.1-rc.1 <0.3.0');
     assert.equal(state.needsRestart, true);
     assert.equal(Array.isArray(state.backups), true);
     assert.equal(state.backups.length, 1);
@@ -362,6 +369,71 @@ test('refuses to install while another process holds the profile lock', async ()
     });
     await assert.rejects(ctx.service.install(), /another update/);
     assert.equal(readJson(join(ctx.profile.packageDir, 'package.json')).version, '1.0.0');
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('reports a release that excludes the running DSH and blocks installs', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({
+      root,
+      dshVersion: '0.3.0-rc.1',
+      prefs: { autoUpdate: true },
+    });
+    const status = await ctx.service.check({ fresh: true });
+    assert.equal(status.state, 'incompatible');
+    assert.equal(status.compatibility.dsh, '0.3.0-rc.1');
+    assert.equal(status.compatibility.range, '>=0.2.1-rc.1 <0.3.0');
+    assert.equal(status.compatibility.state, 'incompatible');
+    await assert.rejects(ctx.service.install(), /running DSH/);
+    await ctx.service.runAutoUpdate();
+    assert.equal((await ctx.service.status()).current, '1.0.0');
+    assert.equal(readJson(join(ctx.profile.packageDir, 'package.json')).version, '1.0.0');
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('pauses auto-update when the running DSH version is unknown', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({
+      root,
+      dshVersion: null,
+      prefs: { autoUpdate: true },
+    });
+    const status = await ctx.service.check({ fresh: true });
+    assert.equal(status.state, 'update');
+    assert.equal(status.compatibility.dsh, null);
+    assert.equal(status.compatibility.state, 'unknown');
+    await ctx.service.runAutoUpdate();
+    assert.equal((await ctx.service.status()).current, '1.0.0');
+    const installed = await ctx.service.install();
+    assert.equal(installed.current, '1.1.0');
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('pauses auto-update when the release declares no DSH range', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({
+      root,
+      dshRange: null,
+      prefs: { autoUpdate: true },
+    });
+    const status = await ctx.service.check({ fresh: true });
+    assert.equal(status.state, 'update');
+    assert.equal(status.compatibility.range, null);
+    assert.equal(status.compatibility.state, 'unknown');
+    await ctx.service.runAutoUpdate();
+    assert.equal((await ctx.service.status()).current, '1.0.0');
     ctx.service.dispose();
   } finally {
     cleanup(root);

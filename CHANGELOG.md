@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-19
+
+### Added
+
+- The updater now compares the running DSH version (`DSH_CLIENT_VERSION` or
+  `DSH_APP_VERSION`) with the release's `engines.dsh`. A known-incompatible
+  release is reported as incompatible and blocked; automatic updates only
+  install releases that accept the running DSH, while unverifiable compatibility
+  pauses auto-update but leaves manual installation available.
+- The settings card's support link is now a yellow Buy Me a Coffee button with
+  the cup logo inlined as SVG, so the support action is easier to find. The
+  logo does not make an external request.
+
 ## [2.0.0] - 2026-10-19
 
 ### Added

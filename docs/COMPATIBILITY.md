@@ -4,13 +4,30 @@
 
 | DSH | Node | Plugin |
 |---|---|---|
-| 0.2.1-rc.2 | 22.x, 24.x | 2.0.x |
+| 0.2.1-rc.2 | 22.x, 24.x | 2.1.x |
 
 The host peer range is `@deepseek-ai/dsh-web >=0.2.1-rc.1 <0.3.0`. The package's
 client bundle depends on the `plugins.row.config` / `configForms` contract, the
 `plugins.detail.section` slot, the official
 `@deepseek-ai/dsh-client-ui-primitives` module, and the shell's `connection`
 service. The bundle is served from the same package as the host provider.
+
+## Automatic compatibility guard
+
+The updater reads the running DSH release from `DSH_CLIENT_VERSION` (desktop)
+or `DSH_APP_VERSION` (other deployments), and the target release's
+`engines.dsh` from the npm packument.
+
+- A release whose range rejects the running DSH is reported as `incompatible`.
+  The card does not offer **Install update**, and auto-update never installs it.
+- A release with no `engines.dsh`, an unparseable range, or a host without a
+  DSH version is `unknown`. Auto-update pauses, but the explicit **Install
+  update** button remains available for a deliberate manual update.
+- The updater does not search older releases for a compatible version. If the
+  latest release is incompatible, update DSH first or install a compatible
+  release with the CLI.
+- The guard is metadata-based. It cannot prove that an untested DSH build inside
+  a broad range works; the tested matrix above remains the support statement.
 
 ## Update feature requirements
 
@@ -31,7 +48,7 @@ service. The bundle is served from the same package as the host provider.
 
 1.x shipped `dsh-ollama-web-client` as a separate package. 2.0.0 merges it into
 `dsh-ollama-web` and changes the update RPC status shape. Remove the old client
-package before installing 2.0.0; leaving it installed can register the settings
+package before installing 2.1.0; leaving it installed can register the settings
 card twice and is not supported. The 1.x updater only installs releases in the
 current major, so 2.0.0 is a manual upgrade. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

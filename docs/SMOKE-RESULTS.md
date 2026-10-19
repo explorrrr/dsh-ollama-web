@@ -1,10 +1,23 @@
 # Smoke results
 
-Date: 2026-10-19 (2.0.0); 1.2.0 and 1.1.0 checks were recorded earlier.
+Date: 2026-10-19 (2.1.0); 2.0.0, 1.2.0 and 1.1.0 checks were recorded earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The full isolated DSH/browser smoke was not
-re-run for 2.0.0 in this release; the package-level and registry checks below
-were run instead. The 1.2.0 browser result remains recorded further down.
+Environment: DSH 0.2.1-rc.2, macOS. The 2.1.0 checks are package-level unless
+noted; the full isolated DSH/browser result remains the 1.2.0 run below.
+
+## 2.1.0 compatibility checks (local)
+
+- [x] `pnpm install --frozen-lockfile --ignore-scripts` passed.
+- [x] `pnpm verify` passed: typecheck, build, 134 tests, `check-versions`,
+      `check-dist` and `check-client`.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/index.js`,
+      `dist/update/dsh.js`, `cordis.patch.yml` and `package.json` at 2.1.0.
+- [x] Tests cover `engines.dsh` range matching (including prereleases), reading
+      `DSH_CLIENT_VERSION` / `DSH_APP_VERSION`, incompatible/unknown status,
+      blocking a known-incompatible install, and pausing auto-update.
+- [ ] Published tarball digest, npm provenance and GitHub Release asset are
+      recorded after publication.
 
 ## 2.0.0 single-package checks
 

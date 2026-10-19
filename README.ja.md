@@ -25,7 +25,7 @@ Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai
 1. パッケージを追加します。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.0.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.1.0
    ```
 
    `desktop` 以外のプロファイルでは `desktop` を置き換えてください。Web UI の **Plugins → Add plugin** から追加しても構いません。npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -47,14 +47,14 @@ Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai
 
 ### 1.x からの移行
 
-2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.0.0 を入れる前に旧パッケージを削除してください。
+2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.1.0 を入れる前に旧パッケージを削除してください。
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 ```
 
-1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.0.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
+1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.1.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
 
 ## 設定
 
@@ -91,11 +91,12 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
 
 ## 更新
 
-2.0.0 以降、**Plugins → `dsh-ollama-web` → Configure**（またはバンドル詳細ページ）に更新セクションが表示されます。**更新を確認** / **更新をインストール** を使い、適用後に DSH（desktop はアプリ）を再起動してください。
+2.1.0 以降、**Plugins → `dsh-ollama-web` → Configure**（またはバンドル詳細ページ）に更新セクションが表示されます。**更新を確認** / **更新をインストール** を使い、適用後に DSH（desktop はアプリ）を再起動してください。
 
 - **確認:** Host が npm registry（失敗時は npmmirror）を参照し、プロファイルの pnpm `minimumReleaseAge` を**明示設定時のみ**尊重します。未設定・読めない・不正値・`0` は待機なしです。設定された年齢より新しいリリースは待機中として表示され、自動ではインストールされません。
+- **対応バージョン:** 更新対象の `engines.dsh` と実行中の DSH バージョン（`DSH_CLIENT_VERSION` または `DSH_APP_VERSION`）を照合します。非対応と判定したリリースはブロックし、判定できない場合は自動更新を保留します（手動のインストールボタンは利用できます）。
 - **インストール:** tarball を1つ取得し、npm の SHA-512 integrity とアーカイブを検証してから、インストール済みパッケージをアトミックに置換します。途中で失敗した場合は元のコピーにロールバックします。
-- **自動更新（opt-in）:** 既定は OFF です。有効にすると6時間ごとに確認し、**同一メジャー**の新しいリリースだけを自動導入します。メジャー更新は明示ボタンが必要です。
+- **自動更新（opt-in）:** 既定は OFF です。有効にすると6時間ごとに確認し、実行中のDSHに対応する**同一メジャー**の新しいリリースだけを自動導入します。メジャー更新は明示ボタンが必要です。
 - **注意:** `link:` やプロファイル外ディレクトリの開発インストールは変更しません。DSH 0.2.1 には第三者の更新 API がないため、インストール済みファイルを直接置換します。profile の `package.json` / `pnpm-lock.yaml` は旧バージョンのままなので、記録も更新する場合は **Plugins**（または CLI）で再インストールしてください。
 
 詳細は [docs/UPDATES.md](docs/UPDATES.md) を参照してください。

@@ -51,6 +51,7 @@ test('reads the latest release from one registry', async () => {
   assert.equal(targetResult.version, '2.0.0');
   assert.equal(targetResult.pkg.tarball, target.pkg.tarball);
   assert.equal(targetResult.pkg.integrity, target.pkg.integrity);
+  assert.equal(targetResult.pkg.dshRange, '>=0.2.1-rc.1 <0.3.0');
   assert.equal(targetResult.provenance, true);
   assert.equal(targetResult.eligibleAt, '2026-10-01T01:00:00.000Z');
   assert.equal(calls.length, 1);
@@ -157,4 +158,33 @@ test('keeps an unknown publish time as null', async () => {
   });
   assert.equal(result.publishedAt, null);
   assert.equal(result.eligibleAt, null);
+});
+
+test('keeps a missing or oversized engines.dsh as null', async () => {
+  const { makeRelease } = await import('./update-helpers.mjs');
+  const missing = makeRelease({
+    version: '2.0.0',
+    tarball: Buffer.from('package'),
+    dshRange: null,
+  });
+  const missingResult = await checkRelease(PACKAGE_NAME, {
+    fetchImpl: async () => new Response(JSON.stringify(missing.pkg), { status: 200 }),
+    registries: [REGISTRY],
+    minReleaseAgeMinutes: 0,
+    now: Date.now(),
+  });
+  assert.equal(missingResult.pkg.dshRange, null);
+
+  const oversized = makeRelease({
+    version: '2.0.0',
+    tarball: Buffer.from('package'),
+    dshRange: `>=${'0'.repeat(250)}`,
+  });
+  const oversizedResult = await checkRelease(PACKAGE_NAME, {
+    fetchImpl: async () => new Response(JSON.stringify(oversized.pkg), { status: 200 }),
+    registries: [REGISTRY],
+    minReleaseAgeMinutes: 0,
+    now: Date.now(),
+  });
+  assert.equal(oversizedResult.pkg.dshRange, null);
 });
