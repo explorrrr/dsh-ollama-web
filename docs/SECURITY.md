@@ -49,6 +49,9 @@ operator is responsible for the destination.
 - No logging, telemetry or custom session events.
 - Credentials are resolved per operation; a credentials-service failure is
   surfaced instead of silently falling back.
+- Release builds run in a read-only job; only the `npm` Environment publish
+  job holds `id-token: write` and `contents: write`, and it does not install
+  dependencies.
 - Update metadata/tarballs are HTTPS-only, redirect-refused and size/time capped.
 - Update tarballs are checked against the npm SHA-512 SRI before extraction.
 - The tar extractor admits only regular files/directories under `package/` and

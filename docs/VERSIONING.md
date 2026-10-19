@@ -49,9 +49,13 @@ above applies.
    and confirm the DSH compatibility statement still matches
    `docs/COMPATIBILITY.md`.
 3. Run `pnpm verify` and the update smoke test in an isolated profile.
-4. Commit the release, tag `v<version>`, and push the tag.
-5. The release workflow publishes both packages with provenance and attaches the
-   npm tarballs plus `SHA512SUMS` to the GitHub Release.
+4. Commit the release, tag `v<version>`, and push the tag. The release workflow
+   requires the tag to be an ancestor of `main`.
+5. The release workflow builds and tests in a read-only job, audits production
+   dependencies, stages the package directories, and only the `npm` Environment
+   job receives `id-token: write` and `contents: write`. It publishes both
+   packages with provenance and attaches the npm tarballs plus `SHA512SUMS` to
+   the GitHub Release.
 6. Verify the npm versions, integrity and attestations, then record the evidence
    in `docs/PROVENANCE.md` and `docs/SMOKE-RESULTS.md`.
 
