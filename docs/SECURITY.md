@@ -58,7 +58,8 @@ operator is responsible for the destination.
   rejects traversal, symlinks, hardlinks, devices, duplicates and oversized
   entries.
 - No npm/pnpm command or lifecycle script runs during an update.
-- Auto-update is opt-in, same-major only, and respects `minimumReleaseAge`.
+- Auto-update is opt-in, same-major only, and respects an explicitly configured
+  `minimumReleaseAge`. When the setting is absent or `0`, there is no age wait.
 - Installs are serialized per profile with a mode-0600 lock; stale locks from
   dead processes are reclaimed.
 - A journal written before the host/client swap is used at startup to restore

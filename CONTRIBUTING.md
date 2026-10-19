@@ -70,7 +70,8 @@ for the residual risk and repository settings.
 - [ ] Tar extraction rejects traversal, symlinks, hardlinks, devices and
       oversized entries.
 - [ ] Update release URLs are validated; installs are locked and journaled.
-- [ ] Auto-update stays opt-in, same-major and `minimumReleaseAge`-aware.
+- [ ] Auto-update stays opt-in and same-major, and respects an explicitly
+      configured `minimumReleaseAge`; there is no default age wait.
 - [ ] Linked installs are refused, and no npm lifecycle script is run.
 - [ ] `pnpm check` passes.
 

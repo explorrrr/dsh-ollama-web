@@ -6,8 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-19
+
 ### Changed
 
+- No client runtime change. The update card reflects the host's opt-in
+  `minimumReleaseAge`: when no age is configured, a release is no longer shown
+  as waiting.
 - Clarify that `searchPath` must stay under the `baseURL` path prefix and that
   `apiKeyEnv` accepts only `OLLAMA_*` environment variable names.
 - Only render release-note links for the canonical GitHub Releases URL.

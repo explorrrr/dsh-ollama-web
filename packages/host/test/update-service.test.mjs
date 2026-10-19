@@ -25,8 +25,17 @@ function hostTarball(version) {
   });
 }
 
-function makeService({ root, version = '1.1.0', publishedAt = '2026-10-01T00:00:00.000Z', minAge = 0, now = Date.parse('2026-10-02T00:00:00.000Z'), hostRunningDir, prefs } = {}) {
-  const profile = makeProfile({ root });
+function makeService({
+  root,
+  version = '1.1.0',
+  publishedAt = '2026-10-01T00:00:00.000Z',
+  minAge,
+  profileMinimumReleaseAge = 0,
+  now = Date.parse('2026-10-02T00:00:00.000Z'),
+  hostRunningDir,
+  prefs,
+} = {}) {
+  const profile = makeProfile({ root, minimumReleaseAge: profileMinimumReleaseAge });
   const hostBytes = hostTarball(version);
   const clientBytes = makePackageTarball({ name: 'dsh-ollama-web-client', version });
   const { host, client, target } = makeRelease({ version, hostTarball: hostBytes, clientTarball: clientBytes, publishedAt });
@@ -47,7 +56,7 @@ function makeService({ root, version = '1.1.0', publishedAt = '2026-10-01T00:00:
     dataDir,
     fetchImpl,
     registries: [REGISTRY],
-    minReleaseAgeMinutes: minAge,
+    ...(minAge === undefined ? {} : { minReleaseAgeMinutes: minAge }),
     now: () => now,
     autoUpdateIntervalMs: 3_600_000,
     startupDelayMs: 3_600_000,
@@ -158,22 +167,94 @@ test('clears needsRestart and backups after the new version starts', async () =>
   }
 });
 
-test('respects minimumReleaseAge', async () => {
+test('does not wait when minimumReleaseAge is absent', async () => {
+  const root = makeTempDir();
+  try {
+    const now = Date.parse('2026-10-01T00:00:00.000Z');
+    const ctx = makeService({
+      root,
+      profileMinimumReleaseAge: undefined,
+      publishedAt: '2026-10-01T00:00:00.000Z',
+      now,
+      prefs: { autoUpdate: true },
+    });
+    const status = await ctx.service.check({ fresh: true });
+    assert.equal(status.state, 'update');
+    assert.equal(status.ageLimited, false);
+    assert.equal(status.ageUnknown, false);
+    assert.equal(status.latest?.eligibleAt, '2026-10-01T00:00:00.000Z');
+    await ctx.service.runAutoUpdate();
+    const installed = await ctx.service.status();
+    assert.equal(installed.current.host, '1.1.0');
+    assert.equal(installed.state, 'installed');
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('respects an explicitly configured minimumReleaseAge', async () => {
   const root = makeTempDir();
   try {
     const now = Date.parse('2026-10-01T00:30:00.000Z');
     const ctx = makeService({
       root,
+      profileMinimumReleaseAge: 60,
       publishedAt: '2026-10-01T00:00:00.000Z',
-      minAge: 60,
       now,
+      prefs: { autoUpdate: true },
     });
     const status = await ctx.service.check({ fresh: true });
     assert.equal(status.state, 'age-limited');
     assert.equal(status.ageLimited, true);
+    assert.equal(status.ageUnknown, false);
     assert.equal(status.latest?.eligibleAt, '2026-10-01T01:00:00.000Z');
     await assert.rejects(ctx.service.install(), /minimumReleaseAge/);
+    await ctx.service.runAutoUpdate();
+    assert.equal((await ctx.service.status()).current.host, '1.0.0');
     assert.equal(readJson(join(ctx.profile.hostDir, 'package.json')).version, '1.0.0');
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('pauses auto-update for an unknown release age when an age is configured', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({
+      root,
+      profileMinimumReleaseAge: 60,
+      publishedAt: null,
+      prefs: { autoUpdate: true },
+    });
+    const status = await ctx.service.check({ fresh: true });
+    assert.equal(status.ageUnknown, true);
+    assert.equal(status.ageLimited, false);
+    await ctx.service.runAutoUpdate();
+    assert.equal((await ctx.service.status()).current.host, '1.0.0');
+    const installed = await ctx.service.install();
+    assert.equal(installed.current.host, '1.1.0');
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('does not pause auto-update for an unknown release age without an age setting', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({
+      root,
+      profileMinimumReleaseAge: undefined,
+      publishedAt: null,
+      prefs: { autoUpdate: true },
+    });
+    const status = await ctx.service.check({ fresh: true });
+    assert.equal(status.ageUnknown, false);
+    assert.equal(status.ageLimited, false);
+    await ctx.service.runAutoUpdate();
+    assert.equal((await ctx.service.status()).current.host, '1.1.0');
     ctx.service.dispose();
   } finally {
     cleanup(root);

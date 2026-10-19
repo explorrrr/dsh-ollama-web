@@ -4,7 +4,7 @@
 
 | DSH | Node | Plugin |
 |---|---|---|
-| 0.2.1-rc.2 | 22.x, 24.x | 1.1.x |
+| 0.2.1-rc.2 | 22.x, 24.x | 1.2.x |
 
 The host peer range is `@deepseek-ai/dsh-web >=0.2.1-rc.1 <0.3.0`. The client
 package depends on the `plugins.row.config` / `configForms` contract, the

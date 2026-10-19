@@ -26,7 +26,8 @@
 - [ ] Tar extraction rejects traversal, symlinks, hardlinks, devices and
       oversized entries; no npm lifecycle script runs.
 - [ ] Persisted release URLs are validated; installs are locked and journaled.
-- [ ] Auto-update remains opt-in, same-major and `minimumReleaseAge`-aware;
+- [ ] Auto-update remains opt-in and same-major, respects an explicitly
+      configured `minimumReleaseAge`, and has no default age wait;
       linked installs are refused.
 - [ ] Tests cover the changed behavior, including failure paths.
 - [ ] README/README.ja/README.zh, CHANGELOG and the relevant docs are updated.

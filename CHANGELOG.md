@@ -6,8 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-19
+
 ### Changed
 
+- **`minimumReleaseAge` is opt-in.** The updater no longer assumes 60 minutes
+  when the profile does not set a value. An unset, unreadable, invalid or `0`
+  setting means no age wait; an explicit positive value is still honored. An
+  unknown publish time no longer blocks auto-update when no age is configured.
 - Restructured the English, Japanese and Simplified Chinese READMEs around
   install, configuration, usage, updates and security. Added a Buy Me a Coffee
   badge and the GitHub Sponsor button, and removed the top-of-README release
@@ -38,6 +44,16 @@ All notable changes to this project are documented here. The format follows
 - Restrict `apiKeyEnv` to `OLLAMA_*` environment variable names. The settings
   card can no longer select unrelated environment variables or credential
   references as the Ollama search key.
+
+### Notes
+
+- Profiles that set `minimumReleaseAge` keep the existing wait. Remove the
+  setting, or set it to `0`, to disable the wait.
+- The DSH desktop profile currently sets 60 minutes explicitly; the plugin does
+  not modify that profile.
+- Updating from 1.1.0 to 1.2.0 still uses the 1.1.0 updater's 60-minute default
+  when the profile omits the setting. The new behavior applies to updates after
+  1.2.0 is installed.
 
 ## [1.1.0] - 2026-10-18
 

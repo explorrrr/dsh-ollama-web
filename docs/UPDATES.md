@@ -35,11 +35,12 @@ Both packages must advertise the same version; a split release is reported as
 seconds, redirects are refused, and only HTTPS registries and tarball hosts are
 accepted.
 
-The profile's `pnpm-workspace.yaml` `minimumReleaseAge` (minutes) is respected.
-When the setting is absent the updater uses 60 minutes. A release that is newer
-than that age is shown as **waiting for the minimum release age**; it is not
-installed by the button or by auto-update until the eligible time. Set
-`minimumReleaseAge: 0` in the profile if immediate installation is required.
+The updater honors the profile's `pnpm-workspace.yaml` `minimumReleaseAge`
+(minutes) **only when the profile explicitly sets a non-zero integer**. When the
+setting is absent, unreadable or invalid, the updater uses 0 minutes (no wait);
+`minimumReleaseAge: 0` also disables the wait. A release that is newer than an
+explicitly configured age is shown as **waiting for the minimum release age**;
+it is not installed by the button or by auto-update until the eligible time.
 
 A check caches its result for one hour. **Check for updates** always performs a
 fresh check. Opening the card only reads the cached host state; it does not
@@ -96,11 +97,12 @@ When enabled:
   service then checks every six hours while the host is running;
 - only a newer **same-major** release is installed automatically;
 - major updates require the explicit **Install update** button;
-- `minimumReleaseAge`, linked installs and unknown release ages stop automatic
-  installation;
-- when the publish time is missing or invalid, automatic updates are paused but
-  the explicit **Install update** button remains available; the card reports
-  that automatic updates are paused;
+- an explicitly configured `minimumReleaseAge` and linked installs stop
+  automatic installation;
+- when an age is configured and the publish time is missing or invalid,
+  automatic updates are paused but the explicit **Install update** button remains
+  available; the card reports that automatic updates are paused. When no age is
+  configured, an unknown publish time does not block automatic updates;
 - the preference is stored per profile in
   `<profile>/data/dsh-ollama-web/update-prefs.json`.
 
@@ -127,8 +129,8 @@ Manual commands for a non-desktop profile:
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@1.1.0
-dsh plugin --profile <profile> add dsh-ollama-web-client@1.1.0
+dsh plugin --profile <profile> add dsh-ollama-web@1.2.0
+dsh plugin --profile <profile> add dsh-ollama-web-client@1.2.0
 ```
 
 The desktop profile is managed by the Electron app; use **Plugins** there.
@@ -147,16 +149,18 @@ reload DSH for development changes.
 must be installed manually:
 
 ```bash
-dsh plugin --profile desktop add dsh-ollama-web@1.1.0
-dsh plugin --profile desktop add dsh-ollama-web-client@1.1.0
+dsh plugin --profile desktop add dsh-ollama-web@1.2.0
+dsh plugin --profile desktop add dsh-ollama-web-client@1.2.0
 ```
 
-After that, later 1.1.x releases can be installed from the card or by
+After that, later 1.2.x releases can be installed from the card or by
 auto-update.
 
-If the profile sets a pnpm `minimumReleaseAge` (the desktop profile uses 60
-minutes), a just-published bootstrap version can be held back by pnpm. Wait for
-the age to pass, add exact-version `minimumReleaseAgeExclude` entries
+If the profile sets a pnpm `minimumReleaseAge` (the desktop profile currently
+sets 60 minutes), a just-published bootstrap version can be held back by pnpm.
+This is a profile setting, not an updater default; remove it or set it to `0`
+to disable the wait. Otherwise, wait for the age to pass, add exact-version
+`minimumReleaseAgeExclude` entries
 temporarily, or pass `--config.minimum-release-age=0` to the explicit bootstrap
 install. That override applies only to the command; the profile setting stays
 unchanged, and later updater checks still respect it.
@@ -190,7 +194,7 @@ unchanged, and later updater checks still respect it.
 | `permission` | The installed directory could not be replaced |
 | `install-failed` | A swap failed and was rolled back |
 | `state-write` | Update state/preferences could not be stored |
-| `age-limited` | The release is newer than `minimumReleaseAge` |
+| `age-limited` | The release is newer than the configured `minimumReleaseAge` |
 | `major-blocked` | Auto-update refused a major version |
 | `no-update` | Nothing newer is available |
 | `busy` | Another update operation is running |
