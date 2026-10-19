@@ -25,7 +25,7 @@ One package provides the `web_search` backend and the settings card. Install it 
 1. Add the package.
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.1.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.2.0
    ```
 
    Replace `desktop` with your profile name if needed. You can also use **Plugins -> Add plugin** in the Web UI. npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -47,14 +47,14 @@ One package provides the `web_search` backend and the settings card. Install it 
 
 ### Upgrading from 1.x
 
-2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.1.0:
+2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.2.0:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
 ```
 
-The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.1.0`. Leaving the old client installed can register the settings card twice and is not supported.
+The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.2.0`. Leaving the old client installed can register the settings card twice and is not supported.
 
 ## Configure
 
@@ -91,7 +91,7 @@ Ask the model to search, then check that results come from Ollama. The search re
 
 ## Updates
 
-As of 2.1.0, **Plugins -> `dsh-ollama-web` -> Configure** (or the bundle detail page) shows an Updates section. Use **Check for updates** / **Install update**, then restart DSH (quit and reopen the desktop app) to load the new version.
+**Plugins -> `dsh-ollama-web` -> Configure** (or the bundle detail page) shows an Updates section. As of 2.2.0, the bundle detail page also shows the support card. Use **Check for updates** / **Install update**, then restart DSH (quit and reopen the desktop app) to load the new version.
 
 - **Check:** the host reads the npm registry (fallback: npmmirror) and honours the profile's pnpm `minimumReleaseAge` only when it is explicitly set. Unset, unreadable, invalid or `0` means no age wait. A release newer than a configured age is shown as waiting instead of being installed.
 - **Compatibility:** the updater compares the release's `engines.dsh` with the running DSH version (`DSH_CLIENT_VERSION` or `DSH_APP_VERSION`). A known-incompatible release is blocked; if compatibility cannot be verified, auto-update pauses while the manual Install button remains available.
@@ -117,7 +117,7 @@ See [docs/UPDATES.md](docs/UPDATES.md) for details.
 
 If `dsh-ollama-web` saves you time, you can support its development with a coffee at [Buy Me a Coffee](https://buymeacoffee.com/explorrrr). You can also use the GitHub **Sponsor** button. Donations are optional and do not unlock features or change the license.
 
-The link in the settings card makes no request to Buy Me a Coffee until you click it. The plugin does not read or store donation information.
+The support links in the settings card and on the bundle detail page make no request to Buy Me a Coffee until you click them. The plugin does not read or store donation information.
 
 ## Development
 

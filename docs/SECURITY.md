@@ -11,12 +11,12 @@ users should still treat installing/updating this plugin as a trust decision.
 The client bundle ships in the same npm package and runs in the Web GUI origin.
 Its bundle is intentionally small: no external `fetch`, no storage, no HTML
 sinks (`innerHTML` / `dangerouslySetInnerHTML`), no `postMessage`, no
-`window.open`. It registers a `plugins.row.config` slot and a
-`plugins.detail.section`, calls `form.mutate`, asks the host's update service
-through DSH's same-origin `connection.rpc` when the user invokes an update
-action, and injects two static `<style>` elements for the support and update
-sections. The donation link is a plain HTTPS anchor; the card sends nothing
-until the user clicks it.
+`window.open`. It registers a `plugins.row.config` slot and two
+`plugins.detail.section` entries, calls `form.mutate`, asks the host's update
+service through DSH's same-origin `connection.rpc` when the user invokes an
+update action, and injects two static `<style>` elements for the support and
+update sections. The donation link is a plain HTTPS anchor; the cards send
+nothing until the user clicks it.
 
 ## Data flow
 

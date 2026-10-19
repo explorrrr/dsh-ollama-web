@@ -114,6 +114,10 @@ function registration(calls, name) {
   return found;
 }
 
+function registrations(calls, name) {
+  return calls.registrations.filter((entry) => entry.options.name === name);
+}
+
 function rowRegistration(calls) {
   return registration(calls, 'plugins.row.config');
 }
@@ -244,7 +248,7 @@ test('bundle contains no external network, storage or HTML sink calls', () => {
   assert.doesNotMatch(source, /dsh-ollama-web-client/);
 });
 
-test('apply registers the row config and detail section slots', () => {
+test('apply registers the row config and both detail section entries', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
   const { ctx, calls } = mockContext(fakeConnection().connection);
@@ -256,8 +260,12 @@ test('apply registers the row config and detail section slots', () => {
   const row = rowRegistration(calls);
   assert.equal(row.options.key, 'dsh-ollama-web#ollama-web');
   assert.equal(typeof row.component, 'function');
-  const detail = registration(calls, 'plugins.detail.section');
-  assert.equal(detail.options.id, 'dsh-ollama-web-updates');
+  const details = registrations(calls, 'plugins.detail.section');
+  assert.deepEqual(details.map((entry) => entry.options.id), [
+    'dsh-ollama-web-updates',
+    'dsh-ollama-web-support',
+  ]);
+  assert.equal(details[1].options.order, 10);
   assert.deepEqual(Object.keys(calls.locale.dictionaries).sort(), ['en', 'ja', 'zh']);
 });
 
@@ -334,6 +342,7 @@ test('page view renders the support block with the donation link', () => {
   assert.equal(support.type, 'div');
   assert.equal(support.props.className, 'dsh-ollama-web-support');
   assert.equal(support.props.role, 'note');
+  assert.equal(support.props['data-view'], 'card');
   const [title, body, link] = support.props.children;
   assert.equal(title.type, 'p');
   assert.equal(title.props.children[0], 'supportTitle');
@@ -658,6 +667,25 @@ test('detail section renders only for the package bundle', () => {
   const node = detail({ subject: { kind: 'bundle', pkg: { name: 'dsh-ollama-web' } }, t: (key) => key });
   assert.equal(typeof node.type, 'function');
   assert.equal(node.props.view, 'detail');
+});
+
+test('detail support section renders the donation link only for the package bundle', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const support = exports.makeSupportDetailSection((key) => key);
+  assert.equal(support({ subject: { kind: 'bundle', pkg: { name: 'other' } }, t: (key) => key }), null);
+  assert.equal(support({ subject: { kind: 'row', pkg: { name: 'dsh-ollama-web' } }, t: (key) => key }), null);
+  const node = support({ subject: { kind: 'bundle', pkg: { name: 'dsh-ollama-web' } }, t: (key) => key });
+  assert.equal(node.type, 'div');
+  assert.equal(node.props.className, 'dsh-ollama-web-support');
+  assert.equal(node.props.role, 'note');
+  assert.equal(node.props['data-view'], 'detail');
+  const link = node.props.children[2];
+  assert.equal(link.type, 'a');
+  assert.equal(link.props.href, exports.SUPPORT_URL);
+  assert.equal(link.props.target, '_blank');
+  assert.equal(link.props.rel, 'noopener noreferrer');
+  assert.equal(link.props.children[1], 'supportLink');
 });
 
 test('callUpdateRpc returns values and maps failures', async () => {
