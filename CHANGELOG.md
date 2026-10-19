@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Percent-encode Markdown delimiters in search result URLs and remove autolink
+  delimiters from titles/publish dates so hostile results cannot inject links
+  into the model-visible source list.
 - Keep `searchPath` under the configured `baseURL` path prefix. Percent-encoded
   dot segments and encoded path separators are rejected before a request is
   made.
