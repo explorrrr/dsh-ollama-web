@@ -2,34 +2,33 @@
 
 [English](README.md) | 日本語 | [中文](README.zh.md)
 
-Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）の `web_search` に接続する Host/Client プラグインです。Web UI の設定カード付き。検索バックエンドとして DeepSeek の API キー・provider・フォールバックは使わず、`web_fetch` は DSH 内蔵の HTTP provider（SSRF 対策済み）のままです。
+Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）の `web_search` に接続するプラグインです。host と Web UI の設定カードを1つの npm パッケージで提供します。検索バックエンドとして DeepSeek の API キー・provider・フォールバックは使わず、`web_fetch` は DSH 内蔵の HTTP provider（SSRF 対策済み）のままです。
 
 [![Buy Me a Coffee で支援](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/explorrrr)
 
 - 検索先は既定で `https://ollama.com/api/web_search`
 - API キーは設定カード（write-only）または `OLLAMA_API_KEY`
 - 更新チェック / 更新インストール / opt-in 自動更新に対応
-- `web_fetch` は DSH 内蔵 HTTP のまま。Ollama fetch は 1.x 対象外
+- `web_fetch` は DSH 内蔵 HTTP のまま。Ollama fetch は 2.x 対象外
 
 ## 必要環境
 
 - DSH 0.2.1-rc.2（peer: `>=0.2.1-rc.1 <0.3.0`）で動作確認済み
-- DSH 0.3.x は未対応（2.0 で計画）。詳細は [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)
+- DSH 0.3.x は未対応（3.0 で計画）。詳細は [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)
 - Node.js 20.3 以上
 - Ollama Cloud の API キー: <https://ollama.com/settings/keys>
 
 ## インストール
 
-Host が `web_search` の検索先を提供し、Client が設定カードを提供します。2パッケージを同じバージョンで入れてください。
+1つのパッケージが `web_search` の検索先と設定カードの両方を提供します。1回だけインストールしてください。
 
 1. パッケージを追加します。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@1.2.0
-   dsh plugin --profile desktop add dsh-ollama-web-client@1.2.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.0.0
    ```
 
-   `desktop` 以外のプロファイルでは `desktop` を置き換えてください。Web UI の **Plugins → Add plugin** で2回追加しても構いません。npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web) / [dsh-ollama-web-client](https://www.npmjs.com/package/dsh-ollama-web-client)
+   `desktop` 以外のプロファイルでは `desktop` を置き換えてください。Web UI の **Plugins → Add plugin** から追加しても構いません。npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
 
 2. `~/.dsh/profiles/<profile>/cordis.patch.yml` で検索先を固定します。
 
@@ -46,7 +45,16 @@ Host が `web_search` の検索先を提供し、Client が設定カードを提
 
    `fetchProvider: http` は `web_fetch` に DSH 内蔵の HTTP provider を使う指定です。
 
-1.0.x にはアップデータがありません。最初の1回は上記のように手動でインストールしてください。以後の 1.2.x はカードから更新できます（詳細は後述の更新セクション）。
+### 1.x からの移行
+
+2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.0.0 を入れる前に旧パッケージを削除してください。
+
+```bash
+dsh plugin --profile <profile> remove dsh-ollama-web-client
+dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
+```
+
+1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.0.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
 
 ## 設定
 
@@ -76,17 +84,17 @@ Host が `web_search` の検索先を提供し、Client が設定カードを提
 
 ### 設定カードが表示されない場合
 
-1. `dsh-ollama-web-client` がインストールされ、bundle が有効か確認する。
+1. `dsh-ollama-web` がインストールされ、bundle が有効か確認する。
 2. Web ページをリロードする。
-3. Host パッケージ名が `dsh-ollama-web`、行が `ollama-web` か確認する（カードキーは `dsh-ollama-web#ollama-web`）。
+3. パッケージ名が `dsh-ollama-web`、行が `ollama-web` か確認する（カードキーは `dsh-ollama-web#ollama-web`）。
 4. 上の patch 設定にフォールバックする。Host はカードなしでも動きます。
 
 ## 更新
 
-1.1.0 以降、**Plugins → `dsh-ollama-web` → Configure**（またはバンドル詳細ページ）に更新セクションが表示されます。**更新を確認** / **更新をインストール** を使い、適用後に DSH（desktop はアプリ）を再起動してください。
+2.0.0 以降、**Plugins → `dsh-ollama-web` → Configure**（またはバンドル詳細ページ）に更新セクションが表示されます。**更新を確認** / **更新をインストール** を使い、適用後に DSH（desktop はアプリ）を再起動してください。
 
 - **確認:** Host が npm registry（失敗時は npmmirror）を参照し、プロファイルの pnpm `minimumReleaseAge` を**明示設定時のみ**尊重します。未設定・読めない・不正値・`0` は待機なしです。設定された年齢より新しいリリースは待機中として表示され、自動ではインストールされません。
-- **インストール:** host/client 両方の tarball を取得し、npm の SHA-512 integrity とアーカイブを検証してから、インストール済みの両コピーをアトミックに置換します。途中で失敗した場合は両方ロールバックします。
+- **インストール:** tarball を1つ取得し、npm の SHA-512 integrity とアーカイブを検証してから、インストール済みパッケージをアトミックに置換します。途中で失敗した場合は元のコピーにロールバックします。
 - **自動更新（opt-in）:** 既定は OFF です。有効にすると6時間ごとに確認し、**同一メジャー**の新しいリリースだけを自動導入します。メジャー更新は明示ボタンが必要です。
 - **注意:** `link:` やプロファイル外ディレクトリの開発インストールは変更しません。DSH 0.2.1 には第三者の更新 API がないため、インストール済みファイルを直接置換します。profile の `package.json` / `pnpm-lock.yaml` は旧バージョンのままなので、記録も更新する場合は **Plugins**（または CLI）で再インストールしてください。
 

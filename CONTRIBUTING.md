@@ -14,7 +14,7 @@ pnpm check
 
 ## Pull requests
 
-- Keep the host and client package versions in lockstep. Follow
+- Keep `packages/host/package.json` and the changelogs in sync. Follow
   [docs/VERSIONING.md](docs/VERSIONING.md) for major/minor/patch and tags.
 - Add tests for behavior changes. Security-relevant changes need a test that
   exercises the failure path, not only the happy path.
@@ -22,12 +22,13 @@ pnpm check
   scripts and transitive tree. The default runtime dependency set is
   `@deepseek-ai/schemastery` only.
 - Do not add `preinstall`, `install`, `postinstall` or `prepare` scripts. The
-  published packages ship built artifacts; `prepublishOnly` is the only allowed
+  published package ships built artifacts; `prepublishOnly` is the only allowed
   lifecycle hook.
 - Do not add external network calls, `fetch`, storage access, `innerHTML`,
   `dangerouslySetInnerHTML`, `postMessage`, `window.open`, `eval` or
-  `new Function` to the client bundle. Same-origin update requests through
-  DSH's `connection.rpc` are the only allowed client-to-host transport.
+  `new Function` to the client bundle (`packages/host/client.js`). Same-origin
+  update requests through DSH's `connection.rpc` are the only allowed
+  client-to-host transport.
 - Keep filesystem access inside `src/update/**`. `scripts/check-dist.mjs` and
   the security test reject `node:fs` elsewhere and allow only the update
   builtins in that directory.
@@ -77,12 +78,12 @@ for the residual risk and repository settings.
 
 ## Release
 
-1. Read [docs/VERSIONING.md](docs/VERSIONING.md), bump both package versions and
+1. Read [docs/VERSIONING.md](docs/VERSIONING.md), bump the package version and
    add a CHANGELOG section.
 2. Run `pnpm verify` and the browser/update smoke tests.
 3. Open a PR, self-review, wait for checks and squash-merge; tag the merged
-   commit `v<version>` and publish from the split release workflow with npm
+   commit `v<version>` and publish from the release workflow with npm
    trusted publishing (OIDC, no `NPM_TOKEN`). The tag must be on `main`.
-4. Attach both tarballs and `SHA512SUMS` to the GitHub Release.
+4. Attach the tarball and `SHA512SUMS` to the GitHub Release.
 5. Record the published attestations/hashes and smoke results in
    `docs/PROVENANCE.md` and `docs/SMOKE-RESULTS.md`.

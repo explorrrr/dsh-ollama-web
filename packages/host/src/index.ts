@@ -2,9 +2,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Config, snapshot } from './config.js';
 import { OllamaSearchProvider } from './provider.js';
-import { profileFromBaseUrl, readPackageVersion } from './update/install.js';
+import { detectPackageInstall, profileFromBaseUrl, readPackageVersion } from './update/install.js';
 import { createUpdateDispatch, registerFetchRoutes, registerRpcChannel } from './update/rpc.js';
 import { UpdateService } from './update/service.js';
+import { LEGACY_CLIENT_PACKAGE } from './update/types.js';
 import type { ConfigRefs, InjectScope, PluginContext } from './types.js';
 
 export const name = 'ollama-web';
@@ -43,15 +44,20 @@ function rpcFrom(scope: InjectScope): unknown {
 function startUpdateService(ctx: PluginContext): void {
   const profile = profileFromBaseUrl(ctx.baseUrl);
   if (profile === undefined) return;
-  const hostPackageDir = dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
-  const hostVersion = readPackageVersion(hostPackageDir);
-  if (hostVersion === null) return;
+  const packageDir = dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
+  const runningVersion = readPackageVersion(packageDir);
+  if (runningVersion === null) return;
+  const legacy = detectPackageInstall(profile, LEGACY_CLIENT_PACKAGE);
+  if (legacy.linked || legacy.dirs.length > 0) {
+    ctx.logger?.warn?.(
+      'ollama-web: dsh-ollama-web-client is no longer used; remove it and reinstall dsh-ollama-web',
+    );
+  }
   const service = new UpdateService({
     profile,
-    hostPackageName: 'dsh-ollama-web',
-    clientPackageName: 'dsh-ollama-web-client',
-    hostPackageDir,
-    hostRunningVersion: hostVersion,
+    packageName: 'dsh-ollama-web',
+    packageDir,
+    runningVersion,
     dataDir: join(profile.dir, 'data', 'dsh-ollama-web'),
     ...(ctx.logger === undefined
       ? {}

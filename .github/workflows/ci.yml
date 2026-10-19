@@ -35,10 +35,17 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - run: pnpm check
-      - name: Host package contents
+      - name: Package contents
         working-directory: packages/host
-        run: npm pack --dry-run
-      - name: Client package contents
-        working-directory: packages/client
-        run: npm pack --dry-run
+        run: |
+          npm pack --dry-run --json > /tmp/dsh-pack.json
+          node -e '
+            const files = require("/tmp/dsh-pack.json")[0].files.map((file) => file.path);
+            for (const required of ["client.js", "dist/index.js", "cordis.patch.yml"]) {
+              if (!files.includes(required)) {
+                console.error(`missing packed file: ${required}`);
+                process.exit(1);
+              }
+            }
+          '
       - run: pnpm audit --prod

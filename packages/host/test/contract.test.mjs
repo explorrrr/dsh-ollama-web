@@ -5,7 +5,7 @@ import { createContext, runInContext } from 'node:vm';
 import { Config } from '../dist/index.js';
 
 const hostPackage = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-const clientSource = readFileSync(new URL('../../client/client.js', import.meta.url), 'utf8');
+const clientSource = readFileSync(new URL('../client.js', import.meta.url), 'utf8');
 
 function loadClient() {
   let definition;
@@ -24,6 +24,7 @@ function loadClient() {
   };
   runInContext(clientSource, createContext(sandbox));
   assert.ok(definition, 'client bundle did not register a loader definition');
+  assert.equal(definition.id, hostPackage.name);
   const fakeReact = {
     createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
     useState: () => [{}, () => {}],

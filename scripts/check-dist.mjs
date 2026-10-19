@@ -24,6 +24,7 @@ const required = [
   'dist/update/semver.js',
   'dist/update/state.js',
   'dist/update/tar.js',
+  'client.js',
   'cordis.patch.yml',
   'README.md',
   'LICENSE',

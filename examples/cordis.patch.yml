@@ -1,4 +1,4 @@
-# Example: install both packages, then pin the Ollama search provider.
+# Example: install the package, then pin the Ollama search provider.
 - insert:
     - id: ollama-web
       name: dsh-ollama-web
@@ -9,10 +9,6 @@
         snippetMax: 2000
         searchTimeoutMs: 30000
         maxResponseBytes: 2097152
-
-- insert:
-    - id: ollama-web-client
-      name: dsh-ollama-web-client
 
 - id: web
   config:

@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 export const REGISTRY = 'https://registry.example/';
+export const PACKAGE_NAME = 'dsh-ollama-web';
 
 export function makeTempDir(prefix = 'dsh-update-') {
   return mkdtempSync(join(tmpdir(), prefix));
@@ -99,33 +100,38 @@ export function makeTar(entries) {
   return Buffer.concat(chunks);
 }
 
-export function makePackageTarball({ name, version, dependencies = {}, extra = {} }) {
-  const client = name === 'dsh-ollama-web-client';
-  const manifest = {
+export function makePackageTarball({
+  name = PACKAGE_NAME,
+  version,
+  dependencies = {},
+  extra = {},
+  omit = [],
+  manifest: manifestOverride,
+}) {
+  const manifest = manifestOverride ?? {
     name,
     version,
     type: 'module',
-    main: client ? './index.js' : './dist/index.js',
+    main: './dist/index.js',
+    exports: {
+      '.': './dist/index.js',
+      './client': './client.js',
+    },
     dsh: {
       bundle: { patch: './cordis.patch.yml' },
-      ...(client ? { client: { platform: 'web', inject: [] } } : {}),
+      client: { platform: 'web', inject: [] },
     },
     dependencies,
   };
   const files = {
     'package/package.json': `${JSON.stringify(manifest, null, 2)}\n`,
     'package/cordis.patch.yml': '- insert: []\n',
-    ...(client
-      ? {
-        'package/client.js': 'window.__ModuleLoader__.load({ id: "dsh-ollama-web-client", factory: () => ({}) });\n',
-        'package/index.js': 'export function apply() {}\n',
-      }
-      : {
-        'package/dist/index.js': 'export const version = "test";\n',
-      }),
+    'package/dist/index.js': 'export const version = "test";\n',
+    'package/client.js': 'window.__ModuleLoader__.load({ id: "dsh-ollama-web", factory: () => ({}) });\n',
     ...extra,
   };
-  const entries = Object.entries(files).map(([name, data]) => ({ name, data }));
+  for (const entryName of omit) delete files[entryName];
+  const entries = Object.entries(files).map(([entryName, data]) => ({ name: entryName, data }));
   return gzipSync(makeTar(entries));
 }
 
@@ -155,15 +161,12 @@ export function makePackument({
   };
 }
 
-export function makeRegistryResponder({ host, client, tarballs = {}, calls = [] }) {
+export function makeRegistryResponder({ pkg, tarballs = {}, calls = [] }) {
   return async (input) => {
     const url = String(input);
     calls.push(url);
-    if (url === `${REGISTRY}${host.name}`) {
-      return new Response(JSON.stringify(host), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
-    if (url === `${REGISTRY}${client.name}`) {
-      return new Response(JSON.stringify(client), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (url === `${REGISTRY}${pkg.name}`) {
+      return new Response(JSON.stringify(pkg), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     const tarball = tarballs[url];
     if (tarball !== undefined) {
@@ -173,35 +176,20 @@ export function makeRegistryResponder({ host, client, tarballs = {}, calls = [] 
   };
 }
 
-export function makeRelease({ version, hostTarball, clientTarball, publishedAt = '2026-10-01T00:00:00.000Z', registry = REGISTRY }) {
-  const host = makePackument({
-    name: 'dsh-ollama-web',
+export function makeRelease({ version, tarball, publishedAt = '2026-10-01T00:00:00.000Z', registry = REGISTRY }) {
+  const pkg = makePackument({
+    name: PACKAGE_NAME,
     version,
-    tarball: `${registry}dsh-ollama-web/-/dsh-ollama-web-${version}.tgz`,
-    integrity: sha512Integrity(hostTarball),
-    publishedAt,
-  });
-  const client = makePackument({
-    name: 'dsh-ollama-web-client',
-    version,
-    tarball: `${registry}dsh-ollama-web-client/-/dsh-ollama-web-client-${version}.tgz`,
-    integrity: sha512Integrity(clientTarball),
+    tarball: `${registry}${PACKAGE_NAME}/-/${PACKAGE_NAME}-${version}.tgz`,
+    integrity: sha512Integrity(tarball),
     publishedAt,
   });
   const target = {
-    host: {
-      name: 'dsh-ollama-web',
+    pkg: {
+      name: PACKAGE_NAME,
       version,
-      tarball: host.versions[version].dist.tarball,
-      integrity: host.versions[version].dist.integrity,
-      publishedAt,
-      provenance: true,
-    },
-    client: {
-      name: 'dsh-ollama-web-client',
-      version,
-      tarball: client.versions[version].dist.tarball,
-      integrity: client.versions[version].dist.integrity,
+      tarball: pkg.versions[version].dist.tarball,
+      integrity: pkg.versions[version].dist.integrity,
       publishedAt,
       provenance: true,
     },
@@ -212,26 +200,21 @@ export function makeRelease({ version, hostTarball, clientTarball, publishedAt =
     provenance: true,
     registry,
   };
-  return { host, client, target };
+  return { pkg, target };
 }
 
 export function makeProfile({
   root,
-  hostVersion = '1.0.0',
-  clientVersion = '1.0.0',
+  version = '1.0.0',
   minimumReleaseAge = 0,
 }) {
   const profileDir = join(root, 'profiles', 'test');
-  const hostDir = join(profileDir, 'node_modules', 'dsh-ollama-web');
-  const clientDir = join(profileDir, 'node_modules', 'dsh-ollama-web-client');
+  const packageDir = join(profileDir, 'node_modules', PACKAGE_NAME);
   writeJson(join(profileDir, 'package.json'), {
     name: 'dsh-profile-test',
     private: true,
-    dependencies: {
-      'dsh-ollama-web': hostVersion,
-      'dsh-ollama-web-client': clientVersion,
-    },
-    dsh: { profile: { bundles: ['dsh-ollama-web', 'dsh-ollama-web-client'] } },
+    dependencies: { [PACKAGE_NAME]: version },
+    dsh: { profile: { bundles: [PACKAGE_NAME] } },
   });
   writeText(
     join(profileDir, 'pnpm-workspace.yaml'),
@@ -239,32 +222,30 @@ export function makeProfile({
       ? 'packages:\n  - .\n'
       : `minimumReleaseAge: ${minimumReleaseAge}\n`,
   );
-  writeJson(join(hostDir, 'package.json'), {
-    name: 'dsh-ollama-web',
-    version: hostVersion,
+  writeJson(join(packageDir, 'package.json'), {
+    name: PACKAGE_NAME,
+    version,
     type: 'module',
     main: './dist/index.js',
-    dsh: { bundle: { patch: './cordis.patch.yml' } },
+    exports: {
+      '.': './dist/index.js',
+      './client': './client.js',
+    },
+    dsh: {
+      bundle: { patch: './cordis.patch.yml' },
+      client: { platform: 'web', inject: [] },
+    },
     dependencies: { 'legacy-dep': '1.0.0' },
   });
-  writeText(join(hostDir, 'dist', 'index.js'), `export const version = "${hostVersion}";\n`);
-  writeText(join(hostDir, 'cordis.patch.yml'), '- insert: []\n');
-  writeJson(join(hostDir, 'node_modules', 'legacy-dep', 'package.json'), {
+  writeText(join(packageDir, 'dist', 'index.js'), `export const version = "${version}";\n`);
+  writeText(join(packageDir, 'client.js'), 'window.__ModuleLoader__.load({ id: "dsh-ollama-web", factory: () => ({}) });\n');
+  writeText(join(packageDir, 'cordis.patch.yml'), '- insert: []\n');
+  writeJson(join(packageDir, 'node_modules', 'legacy-dep', 'package.json'), {
     name: 'legacy-dep',
     version: '1.0.0',
     main: 'index.js',
   });
-  writeText(join(hostDir, 'node_modules', 'legacy-dep', 'index.js'), 'module.exports = 1;\n');
-  writeJson(join(clientDir, 'package.json'), {
-    name: 'dsh-ollama-web-client',
-    version: clientVersion,
-    type: 'module',
-    main: './index.js',
-    dsh: { bundle: { patch: './cordis.patch.yml' }, client: { platform: 'web', inject: [] } },
-  });
-  writeText(join(clientDir, 'client.js'), 'window.__ModuleLoader__.load({ id: "dsh-ollama-web-client", factory: () => ({}) });\n');
-  writeText(join(clientDir, 'index.js'), 'export function apply() {}\n');
-  writeText(join(clientDir, 'cordis.patch.yml'), '- insert: []\n');
+  writeText(join(packageDir, 'node_modules', 'legacy-dep', 'index.js'), 'module.exports = 1;\n');
   return {
     root,
     profileDir,
@@ -275,8 +256,7 @@ export function makeProfile({
       restartKind: 'host',
     },
     profileUrl: pathToFileURL(profileDir).href,
-    hostDir,
-    clientDir,
+    packageDir,
   };
 }
 

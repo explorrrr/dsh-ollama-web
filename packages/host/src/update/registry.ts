@@ -157,14 +157,6 @@ async function fetchLatest(
   return parsePackument(name, registry, value, options.allowInsecureLocalhost === true);
 }
 
-function laterTimestamp(left: string | null, right: string | null): string | null {
-  if (left === null || right === null) return null;
-  const leftMs = Date.parse(left);
-  const rightMs = Date.parse(right);
-  if (!Number.isFinite(leftMs) || !Number.isFinite(rightMs)) return null;
-  return new Date(Math.max(leftMs, rightMs)).toISOString();
-}
-
 function pickFailure(failures: readonly UpdateFailure[]): UpdateFailure {
   const timeout = failures.find((error) => error.code === 'timeout');
   if (timeout !== undefined) return timeout;
@@ -192,14 +184,12 @@ export async function readMinimumReleaseAge(
 }
 
 /**
- * Read host and client releases from the first registry that answers for both.
- * The two packages must advertise the same version.
+ * Read the latest release from the first registry that answers.
  */
 export async function checkRelease(
-  packages: readonly [string, string],
+  packageName: string,
   options: RegistryOptions,
 ): Promise<ReleaseTarget> {
-  const [hostName, clientName] = packages;
   const failures: UpdateFailure[] = [];
   for (const rawRegistry of options.registries) {
     let registry: URL;
@@ -210,25 +200,17 @@ export async function checkRelease(
       continue;
     }
     try {
-      const [host, client] = await Promise.all([
-        fetchLatest(hostName, registry, options),
-        fetchLatest(clientName, registry, options),
-      ]);
-      if (host.version !== client.version) {
-        throw new UpdateFailure('release-mismatch', 'host and client releases have different versions');
-      }
-      const publishedAt = laterTimestamp(host.publishedAt, client.publishedAt);
-      const eligibleAt = publishedAt === null
+      const pkg = await fetchLatest(packageName, registry, options);
+      const eligibleAt = pkg.publishedAt === null
         ? null
-        : new Date(Date.parse(publishedAt) + options.minReleaseAgeMinutes * 60_000).toISOString();
+        : new Date(Date.parse(pkg.publishedAt) + options.minReleaseAgeMinutes * 60_000).toISOString();
       return {
-        host,
-        client,
-        version: host.version,
-        publishedAt,
+        pkg,
+        version: pkg.version,
+        publishedAt: pkg.publishedAt,
         eligibleAt,
-        releaseUrl: `${RELEASES_URL}/v${host.version}`,
-        provenance: host.provenance && client.provenance,
+        releaseUrl: `${RELEASES_URL}/v${pkg.version}`,
+        provenance: pkg.provenance,
         registry: registry.toString(),
       };
     } catch (error) {

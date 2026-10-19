@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { UpdateService } from '../dist/update/service.js';
 import { journalPath, readPrefs, writeJournal } from '../dist/update/state.js';
 import {
+  PACKAGE_NAME,
   REGISTRY,
   cleanup,
   makePackageTarball,
@@ -16,9 +17,8 @@ import {
   writeJson,
 } from './update-helpers.mjs';
 
-function hostTarball(version) {
+function packageTarball(version) {
   return makePackageTarball({
-    name: 'dsh-ollama-web',
     version,
     dependencies: { 'legacy-dep': '1.0.0' },
     extra: { 'package/dist/index.js': `export const version = "${version}";\n` },
@@ -32,27 +32,22 @@ function makeService({
   minAge,
   profileMinimumReleaseAge = 0,
   now = Date.parse('2026-10-02T00:00:00.000Z'),
-  hostRunningDir,
+  runningDir,
   prefs,
 } = {}) {
   const profile = makeProfile({ root, minimumReleaseAge: profileMinimumReleaseAge });
-  const hostBytes = hostTarball(version);
-  const clientBytes = makePackageTarball({ name: 'dsh-ollama-web-client', version });
-  const { host, client, target } = makeRelease({ version, hostTarball: hostBytes, clientTarball: clientBytes, publishedAt });
-  const tarballs = {
-    [target.host.tarball]: hostBytes,
-    [target.client.tarball]: clientBytes,
-  };
+  const bytes = packageTarball(version);
+  const { pkg, target } = makeRelease({ version, tarball: bytes, publishedAt });
+  const tarballs = { [target.pkg.tarball]: bytes };
   const calls = [];
-  const fetchImpl = makeRegistryResponder({ host, client, tarballs, calls });
+  const fetchImpl = makeRegistryResponder({ pkg, tarballs, calls });
   const dataDir = join(profile.profileDir, 'data', 'dsh-ollama-web');
   if (prefs !== undefined) writeJson(join(dataDir, 'update-prefs.json'), prefs);
   const service = new UpdateService({
     profile: profile.profile,
-    hostPackageName: 'dsh-ollama-web',
-    clientPackageName: 'dsh-ollama-web-client',
-    hostPackageDir: hostRunningDir ?? profile.hostDir,
-    hostRunningVersion: '1.0.0',
+    packageName: PACKAGE_NAME,
+    packageDir: runningDir ?? profile.packageDir,
+    runningVersion: '1.0.0',
     dataDir,
     fetchImpl,
     registries: [REGISTRY],
@@ -61,7 +56,7 @@ function makeService({
     autoUpdateIntervalMs: 3_600_000,
     startupDelayMs: 3_600_000,
   });
-  return { profile, host, client, target, hostBytes, clientBytes, calls, service, dataDir };
+  return { profile, pkg, target, bytes, calls, service, dataDir };
 }
 
 test('status is read-only and starts with no network call', async () => {
@@ -71,9 +66,8 @@ test('status is read-only and starts with no network call', async () => {
     const status = await ctx.service.status();
     assert.equal(ctx.calls.length, 0);
     assert.equal(status.available, true);
-    assert.equal(status.current.host, '1.0.0');
-    assert.equal(status.current.client, '1.0.0');
-    assert.equal(status.running.host, '1.0.0');
+    assert.equal(status.current, '1.0.0');
+    assert.equal(status.running, '1.0.0');
     assert.equal(status.state, 'unknown');
     assert.equal(status.autoUpdate, false);
     ctx.service.dispose();
@@ -87,46 +81,47 @@ test('checks the registry, caches a result, and reports an update', async () => 
   try {
     const ctx = makeService({ root });
     const status = await ctx.service.check({ fresh: true });
-    assert.equal(ctx.calls.length, 2);
-    assert.equal(status.latest?.host, '1.1.0');
-    assert.equal(status.latest?.client, '1.1.0');
+    assert.equal(ctx.calls.length, 1);
+    assert.equal(status.latest?.version, '1.1.0');
     assert.equal(status.state, 'update');
     assert.equal(status.phase, 'idle');
     assert.equal(status.busy, false);
     assert.equal(status.ageLimited, false);
     assert.equal(typeof status.checkedAt, 'string');
     const cached = await ctx.service.check({ fresh: false });
-    assert.equal(ctx.calls.length, 2);
+    assert.equal(ctx.calls.length, 1);
     assert.equal(cached.state, 'update');
     await ctx.service.check({ fresh: true });
-    assert.equal(ctx.calls.length, 4);
+    assert.equal(ctx.calls.length, 2);
     ctx.service.dispose();
   } finally {
     cleanup(root);
   }
 });
 
-test('installs both packages and reports a restart', async () => {
+test('installs the package and reports a restart', async () => {
   const root = makeTempDir();
   try {
     const ctx = makeService({ root });
     await ctx.service.check({ fresh: true });
     const status = await ctx.service.install({ allowMajor: false });
-    assert.equal(ctx.calls.length, 4);
+    assert.equal(ctx.calls.length, 2);
     assert.equal(status.state, 'installed');
     assert.equal(status.phase, 'idle');
     assert.equal(status.busy, false);
-    assert.equal(status.current.host, '1.1.0');
-    assert.equal(status.current.client, '1.1.0');
-    assert.equal(status.running.host, '1.0.0');
+    assert.equal(status.current, '1.1.0');
+    assert.equal(status.running, '1.0.0');
     assert.equal(status.staleProcess, true);
     assert.equal(status.installed?.needsRestart, true);
-    assert.equal(readJson(join(ctx.profile.hostDir, 'package.json')).version, '1.1.0');
-    assert.equal(readJson(join(ctx.profile.clientDir, 'package.json')).version, '1.1.0');
-    assert.equal(existsSync(join(ctx.profile.hostDir, 'node_modules', 'legacy-dep', 'index.js')), true);
+    assert.equal(readJson(join(ctx.profile.packageDir, 'package.json')).version, '1.1.0');
+    assert.equal(existsSync(join(ctx.profile.packageDir, 'client.js')), true);
+    assert.equal(existsSync(join(ctx.profile.packageDir, 'node_modules', 'legacy-dep', 'index.js')), true);
     const state = readJson(join(ctx.dataDir, 'update-state.json'));
+    assert.equal(state.schemaVersion, 2);
+    assert.equal(state.installed.version, '1.1.0');
     assert.equal(state.needsRestart, true);
     assert.equal(Array.isArray(state.backups), true);
+    assert.equal(state.backups.length, 1);
     assert.equal(existsSync(join(ctx.dataDir, 'update.lock')), false);
     ctx.service.dispose();
   } finally {
@@ -140,14 +135,13 @@ test('clears needsRestart and backups after the new version starts', async () =>
     const first = makeService({ root });
     await first.service.install();
     const backups = readJson(join(first.dataDir, 'update-state.json')).backups;
-    assert.equal(backups.length, 2);
+    assert.equal(backups.length, 1);
     first.service.dispose();
     const next = new UpdateService({
       profile: first.profile.profile,
-      hostPackageName: 'dsh-ollama-web',
-      clientPackageName: 'dsh-ollama-web-client',
-      hostPackageDir: first.profile.hostDir,
-      hostRunningVersion: '1.1.0',
+      packageName: PACKAGE_NAME,
+      packageDir: first.profile.packageDir,
+      runningVersion: '1.1.0',
       dataDir: first.dataDir,
       registries: [REGISTRY],
       minReleaseAgeMinutes: 0,
@@ -157,10 +151,9 @@ test('clears needsRestart and backups after the new version starts', async () =>
     });
     const status = await next.status();
     assert.equal(status.state, 'current');
-    assert.equal(status.running.host, '1.1.0');
+    assert.equal(status.running, '1.1.0');
     assert.equal(status.installed, null);
     assert.equal(existsSync(backups[0]), false);
-    assert.equal(existsSync(backups[1]), false);
     next.dispose();
   } finally {
     cleanup(root);
@@ -185,7 +178,7 @@ test('does not wait when minimumReleaseAge is absent', async () => {
     assert.equal(status.latest?.eligibleAt, '2026-10-01T00:00:00.000Z');
     await ctx.service.runAutoUpdate();
     const installed = await ctx.service.status();
-    assert.equal(installed.current.host, '1.1.0');
+    assert.equal(installed.current, '1.1.0');
     assert.equal(installed.state, 'installed');
     ctx.service.dispose();
   } finally {
@@ -211,8 +204,8 @@ test('respects an explicitly configured minimumReleaseAge', async () => {
     assert.equal(status.latest?.eligibleAt, '2026-10-01T01:00:00.000Z');
     await assert.rejects(ctx.service.install(), /minimumReleaseAge/);
     await ctx.service.runAutoUpdate();
-    assert.equal((await ctx.service.status()).current.host, '1.0.0');
-    assert.equal(readJson(join(ctx.profile.hostDir, 'package.json')).version, '1.0.0');
+    assert.equal((await ctx.service.status()).current, '1.0.0');
+    assert.equal(readJson(join(ctx.profile.packageDir, 'package.json')).version, '1.0.0');
     ctx.service.dispose();
   } finally {
     cleanup(root);
@@ -232,9 +225,9 @@ test('pauses auto-update for an unknown release age when an age is configured', 
     assert.equal(status.ageUnknown, true);
     assert.equal(status.ageLimited, false);
     await ctx.service.runAutoUpdate();
-    assert.equal((await ctx.service.status()).current.host, '1.0.0');
+    assert.equal((await ctx.service.status()).current, '1.0.0');
     const installed = await ctx.service.install();
-    assert.equal(installed.current.host, '1.1.0');
+    assert.equal(installed.current, '1.1.0');
     ctx.service.dispose();
   } finally {
     cleanup(root);
@@ -254,7 +247,7 @@ test('does not pause auto-update for an unknown release age without an age setti
     assert.equal(status.ageUnknown, false);
     assert.equal(status.ageLimited, false);
     await ctx.service.runAutoUpdate();
-    assert.equal((await ctx.service.status()).current.host, '1.1.0');
+    assert.equal((await ctx.service.status()).current, '1.1.0');
     ctx.service.dispose();
   } finally {
     cleanup(root);
@@ -264,12 +257,12 @@ test('does not pause auto-update for an unknown release age without an age setti
 test('blocks major updates until explicitly allowed', async () => {
   const root = makeTempDir();
   try {
-    const ctx = makeService({ root, version: '2.0.0' });
+    const ctx = makeService({ root, version: '3.0.0' });
     const status = await ctx.service.check({ fresh: true });
     assert.equal(status.state, 'major');
     await assert.rejects(ctx.service.install({ allowMajor: false }), /major updates/);
     const installed = await ctx.service.install({ allowMajor: true });
-    assert.equal(installed.current.host, '2.0.0');
+    assert.equal(installed.current, '3.0.0');
     assert.equal(installed.state, 'installed');
     ctx.service.dispose();
   } finally {
@@ -286,7 +279,7 @@ test('auto-update installs a newer same-major release', async () => {
     });
     await ctx.service.runAutoUpdate();
     const status = await ctx.service.status();
-    assert.equal(status.current.host, '1.1.0');
+    assert.equal(status.current, '1.1.0');
     assert.equal(status.state, 'installed');
     const state = readJson(join(ctx.dataDir, 'update-state.json'));
     assert.equal(typeof state.lastAutoUpdateAt, 'string');
@@ -316,30 +309,29 @@ test('setAutoUpdate persists the preference', async () => {
 test('recovers an interrupted update before reporting status', async () => {
   const root = makeTempDir();
   try {
-    const profile = makeProfile({ root, hostVersion: '1.0.0', clientVersion: '1.0.0' });
+    const profile = makeProfile({ root, version: '1.0.0' });
     const dataDir = join(profile.profileDir, 'data', 'dsh-ollama-web');
-    const backupDir = join(dirname(profile.hostDir), '.dsh-ollama-web-bak-dsh-ollama-web-test');
-    const stageDir = join(dirname(profile.hostDir), '.dsh-ollama-web-next-dsh-ollama-web-test');
-    cpSync(profile.hostDir, backupDir, { recursive: true });
-    writeJson(join(profile.hostDir, 'package.json'), { name: 'dsh-ollama-web', version: '1.1.0' });
+    const backupDir = join(dirname(profile.packageDir), `.dsh-ollama-web-bak-${PACKAGE_NAME}-test`);
+    const stageDir = join(dirname(profile.packageDir), `.dsh-ollama-web-next-${PACKAGE_NAME}-test`);
+    cpSync(profile.packageDir, backupDir, { recursive: true });
+    writeJson(join(profile.packageDir, 'package.json'), { name: PACKAGE_NAME, version: '1.1.0' });
     mkdirSync(stageDir, { recursive: true });
     await writeJournal(dataDir, {
       schemaVersion: 1,
       id: 'service-recovery',
       startedAt: new Date().toISOString(),
       targets: [{
-        packageName: 'dsh-ollama-web',
-        targetDir: profile.hostDir,
+        packageName: PACKAGE_NAME,
+        targetDir: profile.packageDir,
         stageDir,
         backupDir,
       }],
     });
     const service = new UpdateService({
       profile: profile.profile,
-      hostPackageName: 'dsh-ollama-web',
-      clientPackageName: 'dsh-ollama-web-client',
-      hostPackageDir: profile.hostDir,
-      hostRunningVersion: '1.0.0',
+      packageName: PACKAGE_NAME,
+      packageDir: profile.packageDir,
+      runningVersion: '1.0.0',
       dataDir,
       registries: [REGISTRY],
       minReleaseAgeMinutes: 0,
@@ -348,7 +340,7 @@ test('recovers an interrupted update before reporting status', async () => {
       startupDelayMs: 3_600_000,
     });
     const status = await service.status();
-    assert.equal(status.current.host, '1.0.0');
+    assert.equal(status.current, '1.0.0');
     assert.match(status.error?.message ?? '', /interruption/);
     assert.equal(existsSync(journalPath(dataDir)), false);
     assert.equal(existsSync(stageDir), false);
@@ -369,7 +361,7 @@ test('refuses to install while another process holds the profile lock', async ()
       startedAt: new Date().toISOString(),
     });
     await assert.rejects(ctx.service.install(), /another update/);
-    assert.equal(readJson(join(ctx.profile.hostDir, 'package.json')).version, '1.0.0');
+    assert.equal(readJson(join(ctx.profile.packageDir, 'package.json')).version, '1.0.0');
     ctx.service.dispose();
   } finally {
     cleanup(root);
@@ -382,10 +374,9 @@ test('reports a registry failure without touching the install', async () => {
     const profile = makeProfile({ root });
     const service = new UpdateService({
       profile: profile.profile,
-      hostPackageName: 'dsh-ollama-web',
-      clientPackageName: 'dsh-ollama-web-client',
-      hostPackageDir: profile.hostDir,
-      hostRunningVersion: '1.0.0',
+      packageName: PACKAGE_NAME,
+      packageDir: profile.packageDir,
+      runningVersion: '1.0.0',
       dataDir: join(profile.profileDir, 'data', 'dsh-ollama-web'),
       fetchImpl: async () => new Response('bad', { status: 500 }),
       registries: [REGISTRY],
@@ -397,7 +388,7 @@ test('reports a registry failure without touching the install', async () => {
     await assert.rejects(service.check({ fresh: true }), /rejected/);
     const status = await service.status();
     assert.equal(status.error?.code, 'registry-status');
-    assert.equal(readJson(join(profile.hostDir, 'package.json')).version, '1.0.0');
+    assert.equal(readJson(join(profile.packageDir, 'package.json')).version, '1.0.0');
     service.dispose();
   } finally {
     cleanup(root);

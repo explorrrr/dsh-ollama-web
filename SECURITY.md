@@ -14,6 +14,7 @@ disclosure timeline.
 
 | Version | Supported |
 |---|---|
+| 2.0.x | Yes |
 | 1.2.x | Yes |
 | 1.1.x | Yes |
 | 1.0.x | Yes (no update feature) |
@@ -27,12 +28,13 @@ user's files, credentials and sessions if it is malicious or compromised. That
 is a property of the plugin platform, not of this specific code; install only
 plugins you trust, pin versions and review updates.
 
-The client package runs in the DSH Web GUI origin. It can access the page's
-services, but this plugin's client bundle contains no external network calls,
-storage access or HTML sinks. It requests update status/actions from the host
-through DSH's authenticated same-origin Connection RPC, and only when the user
-presses Check/Update or changes auto-update. Its optional donation link is a
-plain HTTPS anchor and makes no request until the user clicks it.
+The client bundle ships in the same npm package and runs in the DSH Web GUI
+origin. It can access the page's services, but this plugin's client bundle
+contains no external network calls, storage access or HTML sinks. It requests
+update status/actions from the host through DSH's authenticated same-origin
+Connection RPC, and only when the user presses Check/Update or changes
+auto-update. Its optional donation link is a plain HTTPS anchor and makes no
+request until the user clicks it.
 
 ## Data egress
 
@@ -44,7 +46,7 @@ For search, the host contacts only `https://ollama.com` by default:
 For updates, the host contacts the npm registry (primary) or npmmirror
 (fallback) only when the user checks/installs, or while auto-update is enabled:
 
-- the package names `dsh-ollama-web` and `dsh-ollama-web-client`;
+- the package name `dsh-ollama-web`;
 - the package metadata and tarballs returned by the registry.
 
 No API key, search query, session ID, user ID, conversation text or filesystem
@@ -89,7 +91,7 @@ make an untrusted endpoint trustworthy.
 
 ## Fetch policy
 
-Version 1.x does not implement Ollama `/api/web_fetch`. `web_fetch` remains on
+Version 2.x does not implement Ollama `/api/web_fetch`. `web_fetch` remains on
 DSH's built-in HTTP provider, which applies URL validation, public-address
 checks, DNS pinning and response caps. Do not enable an Ollama fetch provider
 unless you have reviewed its SSRF and status-code semantics.

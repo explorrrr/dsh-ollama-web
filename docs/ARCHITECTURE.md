@@ -11,10 +11,11 @@
   -> map {title,url,content} to {title,url,snippet}
 ```
 
-The client package never talks to Ollama. It renders a configuration card and
-the bundle update section, and writes settings through the DSH Plugin Manager's
-`configForms` transport. The card also shows an optional static donation link;
-the link is inert until clicked and adds no external network call to the plugin.
+The browser half (`client.js`) ships in the same npm package and never talks to
+Ollama. It renders a configuration card and the bundle update section, and
+writes settings through the DSH Plugin Manager's `configForms` transport. The
+card also shows an optional static donation link; the link is inert until
+clicked and adds no external network call to the plugin.
 
 ## Update flow
 
@@ -23,18 +24,18 @@ the link is inert until clicked and adds no external network call to the plugin.
   -> DSH connection.rpc.call('/ollama-web-update', method, payload)
   -> Host RPC (Web: connection.rpc.handle; desktop: /api exact fetch routes)
   -> UpdateService
-       -> npm registry / npmmirror packuments
+       -> npm registry / npmmirror packument for dsh-ollama-web
        -> SHA-512 SRI check -> safe tar extraction -> staging
-       -> atomic rename of the installed host/client dirs (+ rollback)
+       -> atomic rename of the installed package dir (+ rollback)
        -> <profile>/data/dsh-ollama-web/update-state.json
   -> UpdateStatus
 ```
 
 The update service never reads the Ollama API key, search query or session
-state. The client never makes an external network request; it only uses the
-same-origin Connection RPC.
+state. The client bundle never makes an external network request; it only uses
+the same-origin Connection RPC.
 
-## Host modules
+## Package modules
 
 | Module | Role |
 |---|---|
@@ -55,14 +56,23 @@ same-origin Connection RPC.
 | `src/update/state.ts` | Atomic prefs/state/journal persistence |
 | `src/update/service.ts` | Check/install/auto-update orchestration |
 | `src/update/rpc.ts` | `/ollama-web-update` dispatch and route registration |
+| `client.js` | Browser half: row config card, update section, locale and styles |
+
+## Client bundle
+
+`client.js` registers `window.__ModuleLoader__.load({ id: 'dsh-ollama-web' })`.
+DSH attaches the browser half to the Loader row whose specifier is the bare
+package name (`ollama-web` -> `dsh-ollama-web`). The bundle registers the
+`plugins.row.config` card keyed `dsh-ollama-web#ollama-web` and the
+`plugins.detail.section` update section.
 
 ## IDs
 
 - Provider id: `ollama`
 - Host loader row: `ollama-web`
-- Client loader row: `ollama-web-client`
 - Config namespace: `ollama-web`
 - Client card key: `dsh-ollama-web#ollama-web`
+- Client module id: `dsh-ollama-web`
 - Update RPC channel: `/ollama-web-update`
 - Update data directory: `<profile>/data/dsh-ollama-web/`
 
@@ -89,10 +99,9 @@ discarded; only the status and a short classification are surfaced.
 |---|---|
 | Registry/tarball unavailable | `network`, `timeout` |
 | Registry error or invalid metadata | `registry-status`, `registry-json` |
-| Host/client latest versions differ | `release-mismatch` |
 | SHA-512 mismatch | `integrity` |
 | Unsafe/invalid/oversized archive | `archive` |
-| Missing files, wrong manifest, unresolved dependency | `package-invalid` |
+| Missing files, wrong manifest, missing client half, unresolved dependency | `package-invalid` |
 | `file:`/`link:` install | `linked` |
 | Package/profile missing | `no-install`, `no-profile` |
 | Directory replacement refused | `permission`, `install-failed` |

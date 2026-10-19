@@ -1,5 +1,8 @@
 /** Types for the self-update subsystem. Nothing here reads search settings or credentials. */
 
+/** The 1.x browser package; kept only to warn and to recover an old journal. */
+export const LEGACY_CLIENT_PACKAGE = 'dsh-ollama-web-client';
+
 export type UpdateErrorCode =
   | 'unavailable'
   | 'no-profile'
@@ -11,7 +14,6 @@ export type UpdateErrorCode =
   | 'registry-status'
   | 'registry-json'
   | 'registry-mismatch'
-  | 'release-mismatch'
   | 'integrity'
   | 'archive'
   | 'package-invalid'
@@ -39,10 +41,9 @@ export interface PublishedPackage {
   readonly provenance: boolean;
 }
 
-/** A host/client pair that must be released together. */
+/** A release from the single package this plugin publishes. */
 export interface ReleaseTarget {
-  readonly host: PublishedPackage;
-  readonly client: PublishedPackage;
+  readonly pkg: PublishedPackage;
   readonly version: string;
   readonly publishedAt: string | null;
   readonly eligibleAt: string | null;
@@ -57,7 +58,6 @@ export type UpdateState =
   | 'major'
   | 'age-limited'
   | 'ahead'
-  | 'mismatch'
   | 'installed'
   | 'linked'
   | 'unavailable'
@@ -68,11 +68,10 @@ export type UpdatePhase = 'idle' | 'checking' | 'installing' | 'saving';
 export interface UpdateStatus {
   readonly available: boolean;
   readonly profile: { readonly name: string; readonly restartKind: 'app' | 'host' } | null;
-  readonly running: { readonly host: string | null };
-  readonly current: { readonly host: string | null; readonly client: string | null };
+  readonly running: string;
+  readonly current: string | null;
   readonly latest: {
-    readonly host: string;
-    readonly client: string;
+    readonly version: string;
     readonly publishedAt: string | null;
     readonly eligibleAt: string | null;
     readonly releaseUrl: string;
@@ -92,8 +91,6 @@ export interface UpdateStatus {
   readonly ageLimited: boolean;
   readonly ageUnknown: boolean;
   readonly staleProcess: boolean;
-  readonly versionsMatch: boolean;
-  readonly clientInstalled: boolean;
 }
 
 export interface UpdatePrefs {
@@ -101,8 +98,7 @@ export interface UpdatePrefs {
 }
 
 export interface StoredLatest {
-  readonly host: string;
-  readonly client: string;
+  readonly version: string;
   readonly publishedAt: string | null;
   readonly eligibleAt: string | null;
   readonly releaseUrl: string;
@@ -110,12 +106,11 @@ export interface StoredLatest {
 }
 
 export interface StoredInstalled {
-  readonly host: string;
-  readonly client: string;
+  readonly version: string;
 }
 
 export interface StoredUpdateState {
-  schemaVersion: 1;
+  schemaVersion: 2;
   lastCheckAt?: string;
   latest?: StoredLatest;
   installedAt?: string;
@@ -153,9 +148,4 @@ export interface PackageInstall {
   readonly version: string | null;
   readonly dirs: string[];
   readonly linked: boolean;
-}
-
-export interface InstalledSnapshot {
-  readonly host: PackageInstall;
-  readonly client: PackageInstall;
 }

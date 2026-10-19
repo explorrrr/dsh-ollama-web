@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const packageDir = new URL('../packages/client/', import.meta.url);
+const packageDir = new URL('../packages/host/', import.meta.url);
 const pkg = JSON.parse(readFileSync(new URL('package.json', packageDir), 'utf8'));
 const source = readFileSync(new URL('client.js', packageDir), 'utf8');
 
@@ -14,9 +14,11 @@ for (const dependency of [
     throw new Error(`dsh.client.inject is missing ${dependency}`);
   }
 }
-if (pkg.dsh?.bundle?.patch !== './cordis.patch.yml') throw new Error('client bundle patch is not declared');
-for (const file of ['client.js', 'index.js', 'cordis.patch.yml', 'README.md', 'LICENSE', 'CHANGELOG.md']) {
-  if (!existsSync(new URL(file, packageDir))) throw new Error(`missing client package file: ${file}`);
+if (pkg.dsh?.bundle?.patch !== './cordis.patch.yml') throw new Error('bundle patch is not declared');
+if (pkg.exports?.['./client'] !== './client.js') throw new Error('package does not export ./client');
+if (!pkg.files?.includes('client.js')) throw new Error('package files do not include client.js');
+for (const file of ['client.js', 'cordis.patch.yml', 'README.md', 'LICENSE', 'CHANGELOG.md']) {
+  if (!existsSync(new URL(file, packageDir))) throw new Error(`missing package file: ${file}`);
 }
 
 const forbidden = [
@@ -43,7 +45,13 @@ for (const id of requires) {
 if (!requires.includes('react') || !requires.includes('@deepseek-ai/dsh-client-ui-primitives')) {
   throw new Error('client.js must require react and the official primitives');
 }
-if (!source.includes("plugins.row.config") || !source.includes('dsh-ollama-web#ollama-web')) {
+if (!source.includes("id: 'dsh-ollama-web'")) {
+  throw new Error('client.js module id must equal the package name');
+}
+if (source.includes('dsh-ollama-web-client')) {
+  throw new Error('client.js still references the removed client package');
+}
+if (!source.includes('plugins.row.config') || !source.includes('dsh-ollama-web#ollama-web')) {
   throw new Error('client.js does not register the expected row config slot');
 }
 if (!source.includes('ollama-web-update')) {
