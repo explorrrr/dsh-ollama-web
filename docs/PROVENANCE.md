@@ -1,6 +1,59 @@
 # npm provenance verification
 
-Date: 2026-10-18
+Date: 2026-10-19 (1.2.0); 1.1.0 checks were recorded on 2026-10-18.
+
+## 1.2.0
+
+`dsh-ollama-web@1.2.0` and `dsh-ollama-web-client@1.2.0` were published by
+GitHub Actions through npm trusted publishing (OIDC). No `NPM_TOKEN` is used.
+
+### Attestations
+
+| Package | Attestation |
+|---|---|
+| `dsh-ollama-web@1.2.0` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@1.2.0> |
+| `dsh-ollama-web-client@1.2.0` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web-client@1.2.0> |
+
+Both use SLSA provenance v1. Decoded build information:
+
+```text
+workflow.ref:        refs/tags/v1.2.0
+workflow.repository: https://github.com/explorrrr/dsh-ollama-web
+workflow.path:       .github/workflows/release.yml
+git commit:         613b12be9c27b99fa888378b06095aee570aea45
+builder:             https://github.com/actions/runner/github-hosted
+```
+
+The tag commit is the same:
+
+```bash
+git rev-parse 'v1.2.0^{commit}'
+# 613b12be9c27b99fa888378b06095aee570aea45
+```
+
+### Subject digests
+
+| Package | npm tarball SHA-512 | SLSA subject |
+|---|---|---|
+| `dsh-ollama-web@1.2.0` | `9d5c7369b2fd1e245dd33c6e36d3b00041e843b62c01799244b42b1ba1257d43fcb66d726d9e96c79308fc1222b8ca8fbfa4909e120e81bca36869d6d18fc8b9` | matches |
+| `dsh-ollama-web-client@1.2.0` | `10d1537a396d44b487c5841fb4c3a784d82d02d53623f750be35bdd81eb5e2ff37fea9d65507ed24cba9ee7b67aafc1ea0f85c14f155196f286b833392953c90` | matches |
+
+The GitHub Release `v1.2.0` `SHA512SUMS` contains the same two hashes, computed
+from the npm tarballs downloaded by the release workflow. The release workflow
+completed successfully (build and publish jobs both `success`).
+
+### Reproduce
+
+```bash
+npm view dsh-ollama-web@1.2.0 dist.attestations
+npm view dsh-ollama-web-client@1.2.0 dist.attestations
+
+mkdir -p /tmp/prov-check-120 && cd /tmp/prov-check-120
+for p in dsh-ollama-web dsh-ollama-web-client; do
+  curl -fsSL "$(npm view "$p@1.2.0" dist.tarball)" -o "$p-1.2.0.tgz"
+done
+shasum -a 512 ./*.tgz
+```
 
 ## 1.1.0
 
