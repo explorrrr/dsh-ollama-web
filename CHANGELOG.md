@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Record the applied ruleset/Environment/Actions values and the two Secret
+  Scanning options GitHub still reports disabled.
 - Document the solo-maintainer self-review policy, release settings, rollback
   procedure and accepted unknown-age manual-install behavior.
 - Run CodeQL against GitHub Actions workflows as well as JavaScript/TypeScript.
