@@ -126,6 +126,21 @@ export interface StoredUpdateState {
   backups?: string[];
 }
 
+export interface JournalTarget {
+  readonly packageName: string;
+  readonly targetDir: string;
+  readonly stageDir: string;
+  readonly backupDir: string;
+}
+
+/** Written before a multi-directory swap so a crash can be rolled back on startup. */
+export interface StoredUpdateJournal {
+  schemaVersion: 1;
+  readonly id: string;
+  readonly startedAt: string;
+  readonly targets: readonly JournalTarget[];
+}
+
 export interface ProfileInfo {
   readonly dir: string;
   readonly name: string;

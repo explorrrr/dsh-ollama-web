@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Journal host/client swaps and restore backups if a previous install was
+  interrupted.
 - Serialize installs per profile with a mode-0600 lock and reclaim stale locks
   from dead or expired processes.
 - Validate persisted update release metadata and drop unsafe or inconsistent

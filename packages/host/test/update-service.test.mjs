@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { UpdateService } from '../dist/update/service.js';
-import { readPrefs } from '../dist/update/state.js';
+import { journalPath, readPrefs, writeJournal } from '../dist/update/state.js';
 import {
   REGISTRY,
   cleanup,
@@ -227,6 +227,51 @@ test('setAutoUpdate persists the preference', async () => {
     assert.equal(disabled.autoUpdate, false);
     assert.deepEqual(await readPrefs(ctx.dataDir), { autoUpdate: false });
     ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('recovers an interrupted update before reporting status', async () => {
+  const root = makeTempDir();
+  try {
+    const profile = makeProfile({ root, hostVersion: '1.0.0', clientVersion: '1.0.0' });
+    const dataDir = join(profile.profileDir, 'data', 'dsh-ollama-web');
+    const backupDir = join(dirname(profile.hostDir), '.dsh-ollama-web-bak-dsh-ollama-web-test');
+    const stageDir = join(dirname(profile.hostDir), '.dsh-ollama-web-next-dsh-ollama-web-test');
+    cpSync(profile.hostDir, backupDir, { recursive: true });
+    writeJson(join(profile.hostDir, 'package.json'), { name: 'dsh-ollama-web', version: '1.1.0' });
+    mkdirSync(stageDir, { recursive: true });
+    await writeJournal(dataDir, {
+      schemaVersion: 1,
+      id: 'service-recovery',
+      startedAt: new Date().toISOString(),
+      targets: [{
+        packageName: 'dsh-ollama-web',
+        targetDir: profile.hostDir,
+        stageDir,
+        backupDir,
+      }],
+    });
+    const service = new UpdateService({
+      profile: profile.profile,
+      hostPackageName: 'dsh-ollama-web',
+      clientPackageName: 'dsh-ollama-web-client',
+      hostPackageDir: profile.hostDir,
+      hostRunningVersion: '1.0.0',
+      dataDir,
+      registries: [REGISTRY],
+      minReleaseAgeMinutes: 0,
+      now: () => Date.parse('2026-10-02T00:00:00.000Z'),
+      autoUpdateIntervalMs: 3_600_000,
+      startupDelayMs: 3_600_000,
+    });
+    const status = await service.status();
+    assert.equal(status.current.host, '1.0.0');
+    assert.match(status.error?.message ?? '', /interruption/);
+    assert.equal(existsSync(journalPath(dataDir)), false);
+    assert.equal(existsSync(stageDir), false);
+    service.dispose();
   } finally {
     cleanup(root);
   }

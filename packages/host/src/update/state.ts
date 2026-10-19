@@ -4,10 +4,11 @@ import { basename, dirname, join } from 'node:path';
 import { UpdateFailure } from './errors.js';
 import { isAllowedReleaseUrl } from './registry.js';
 import { parseVersion } from './semver.js';
-import type { StoredUpdateState, UpdateError, UpdatePrefs } from './types.js';
+import type { StoredUpdateJournal, JournalTarget, StoredUpdateState, UpdateError, UpdatePrefs } from './types.js';
 
 const PREFS_FILE = 'update-prefs.json';
 const STATE_FILE = 'update-state.json';
+const JOURNAL_FILE = 'update-journal.json';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -19,6 +20,10 @@ export function prefsPath(dataDir: string): string {
 
 export function statePath(dataDir: string): string {
   return join(dataDir, STATE_FILE);
+}
+
+export function journalPath(dataDir: string): string {
+  return join(dataDir, JOURNAL_FILE);
 }
 
 export async function ensureDataDir(dataDir: string): Promise<void> {
@@ -56,6 +61,44 @@ async function atomicWriteJson(path: string, value: unknown): Promise<void> {
   } finally {
     await rm(temporary, { force: true }).catch(() => undefined);
   }
+}
+
+function normalizeJournalTarget(value: unknown): JournalTarget | undefined {
+  if (!isRecord(value)) return undefined;
+  if (typeof value.packageName !== 'string') return undefined;
+  if (typeof value.targetDir !== 'string' || typeof value.stageDir !== 'string') return undefined;
+  if (typeof value.backupDir !== 'string') return undefined;
+  return {
+    packageName: value.packageName,
+    targetDir: value.targetDir,
+    stageDir: value.stageDir,
+    backupDir: value.backupDir,
+  };
+}
+
+function normalizeJournal(value: unknown): StoredUpdateJournal | undefined {
+  if (!isRecord(value) || value.schemaVersion !== 1) return undefined;
+  if (typeof value.id !== 'string' || typeof value.startedAt !== 'string') return undefined;
+  if (!Array.isArray(value.targets)) return undefined;
+  const targets: JournalTarget[] = [];
+  for (const entry of value.targets) {
+    const target = normalizeJournalTarget(entry);
+    if (target === undefined) return undefined;
+    targets.push(target);
+  }
+  return { schemaVersion: 1, id: value.id, startedAt: value.startedAt, targets };
+}
+
+export async function readJournal(dataDir: string): Promise<StoredUpdateJournal | undefined> {
+  return normalizeJournal(await readJson(journalPath(dataDir)));
+}
+
+export async function writeJournal(dataDir: string, journal: StoredUpdateJournal): Promise<void> {
+  await atomicWriteJson(journalPath(dataDir), { ...journal, schemaVersion: 1 });
+}
+
+export async function clearJournal(dataDir: string): Promise<void> {
+  await rm(journalPath(dataDir), { force: true });
 }
 
 export async function readPrefs(dataDir: string): Promise<UpdatePrefs> {

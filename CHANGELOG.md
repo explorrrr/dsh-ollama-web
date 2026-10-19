@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Write an update journal before a host/client swap and roll back interrupted
+  swaps on the next start; invalid journal paths are ignored.
 - Serialize installs per profile with a mode-0600 `update.lock` and reclaim
   stale locks left by dead or expired processes.
 - Drop persisted update metadata whose release URL is not the canonical

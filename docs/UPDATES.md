@@ -62,7 +62,8 @@ contact the registry.
    directory into place. If any target fails, every earlier target is restored.
 
 A failed check, download, verification or swap leaves the installed version in
-place. The updater does not run npm, pnpm or any package lifecycle script.
+place. A journal written before the swap lets the next host start roll back an
+interrupted host/client replacement to the previous directories. The updater does not run npm, pnpm or any package lifecycle script.
 
 Each profile allows one install at a time. The host writes a mode-0600
 `update.lock` under `<profile>/data/dsh-ollama-web/`; a second host either

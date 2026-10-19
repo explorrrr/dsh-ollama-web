@@ -178,6 +178,7 @@ test('installs both packages end to end', async () => {
       hostPackageName: 'dsh-ollama-web',
       clientPackageName: 'dsh-ollama-web-client',
       hostRunningDir: setup.hostDir,
+      dataDir: join(setup.profileDir, 'data', 'dsh-ollama-web'),
       fetchImpl: fetchTarballs(target, hostTarball, clientTarball),
     });
     assert.equal(result.host, '1.1.0');
@@ -187,6 +188,7 @@ test('installs both packages end to end', async () => {
     assert.equal(existsSync(join(setup.hostDir, 'node_modules', 'legacy-dep', 'index.js')), true);
     assert.equal(result.backups.length, 2);
     for (const backup of result.backups) assert.equal(existsSync(backup), true);
+    assert.equal(existsSync(join(setup.profileDir, 'data', 'dsh-ollama-web', 'update-journal.json')), false);
   } finally {
     cleanup(root);
   }
@@ -208,6 +210,7 @@ test('refuses a linked host install outside the profiles root', async () => {
         hostPackageName: 'dsh-ollama-web',
         clientPackageName: 'dsh-ollama-web-client',
         hostRunningDir: outside,
+        dataDir: join(setup.profileDir, 'data', 'dsh-ollama-web'),
         fetchImpl: fetchTarballs(target, hostTarball, clientTarball),
       }),
       /linked development/,

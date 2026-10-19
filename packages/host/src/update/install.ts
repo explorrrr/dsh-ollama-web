@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { UpdateFailure } from './errors.js';
 import { fetchBytes } from './http.js';
 import { extractPackageTarball } from './tar.js';
+import { clearJournal, readJournal, writeJournal } from './state.js';
 import type {
   InstalledSnapshot,
   PackageInstall,
@@ -28,10 +29,17 @@ function isInside(root: string, target: string): boolean {
 }
 
 function canonicalPath(path: string): string {
+  const resolved = resolve(path);
   try {
-    return realpathSync(path);
+    return realpathSync(resolved);
   } catch {
-    return resolve(path);
+    // Canonicalize the existing parent so a missing lock/journal leaf still
+    // compares correctly with a realpath-based profile root.
+    try {
+      return join(realpathSync(dirname(resolved)), basename(resolved));
+    } catch {
+      return resolved;
+    }
   }
 }
 
@@ -172,6 +180,7 @@ export interface StagedPackage {
   readonly stageDir: string;
   readonly packageName: string;
   readonly version: string;
+  readonly backupDir?: string;
 }
 
 function validateManifest(value: unknown, pkg: PublishedPackage): void {
@@ -338,7 +347,7 @@ export async function swapStaged(
     }
   };
   for (const entry of entries) {
-    const backup = join(
+    const backup = entry.backupDir ?? join(
       dirname(entry.targetDir),
       `.dsh-ollama-web-bak-${entry.packageName}-${randomUUID()}`,
     );
@@ -377,6 +386,7 @@ async function cleanupStages(staged: readonly StagedPackage[]): Promise<void> {
 export interface InstallReleaseOptions {
   readonly target: ReleaseTarget;
   readonly profile: ProfileInfo;
+  readonly dataDir: string;
   readonly hostPackageName: string;
   readonly clientPackageName: string;
   readonly hostRunningDir: string;
@@ -428,17 +438,75 @@ export async function installRelease(options: InstallReleaseOptions): Promise<In
     await cleanupStages(staged);
     throw error;
   }
+  const planned = staged.map((entry) => ({
+    ...entry,
+    backupDir: join(
+      dirname(entry.targetDir),
+      `.dsh-ollama-web-bak-${entry.packageName}-${randomUUID()}`,
+    ),
+  }));
   try {
-    const backups = await swapStaged(staged, options.swapOps);
+    await writeJournal(options.dataDir, {
+      schemaVersion: 1,
+      id: randomUUID(),
+      startedAt: new Date().toISOString(),
+      targets: planned.map((entry) => ({
+        packageName: entry.packageName,
+        targetDir: entry.targetDir,
+        stageDir: entry.stageDir,
+        backupDir: entry.backupDir,
+      })),
+    });
+    const backups = await swapStaged(planned, options.swapOps);
+    try {
+      await clearJournal(options.dataDir);
+    } catch (error) {
+      throw new UpdateFailure('state-write', 'could not finalize the update journal', error);
+    }
     return {
       host: options.target.host.version,
       client: clientInstalled ? options.target.client.version : null,
       backups,
     };
   } catch (error) {
+    await clearJournal(options.dataDir).catch(() => undefined);
     await cleanupStages(staged);
     throw error;
   }
+}
+
+/**
+ * Roll back a host/client swap that was interrupted after the journal was
+ * written. Backups are restored to their target directories and staged copies
+ * are removed. Paths outside the profile or with unexpected names are ignored.
+ */
+export async function recoverInterruptedInstall(
+  profile: ProfileInfo,
+  dataDir: string,
+): Promise<boolean> {
+  const journal = await readJournal(dataDir);
+  if (journal === undefined) return false;
+  const root = canonicalPath(profile.profilesRoot);
+  let restored = false;
+  for (const entry of journal.targets) {
+    if (entry.packageName !== 'dsh-ollama-web' && entry.packageName !== 'dsh-ollama-web-client') continue;
+    const targetDir = canonicalPath(resolve(entry.targetDir));
+    const stageDir = canonicalPath(resolve(entry.stageDir));
+    const backupDir = canonicalPath(resolve(entry.backupDir));
+    if (!isInside(root, targetDir) || basename(targetDir) !== entry.packageName) continue;
+    if (!isInside(root, stageDir) || !basename(stageDir).startsWith('.dsh-ollama-web-next-')) continue;
+    if (!isInside(root, backupDir) || !basename(backupDir).startsWith('.dsh-ollama-web-bak-')) continue;
+    if (existsSync(backupDir)) {
+      if (existsSync(targetDir)) await rm(targetDir, { recursive: true, force: true });
+      await rename(backupDir, targetDir);
+      restored = true;
+    }
+    if (existsSync(stageDir)) {
+      await rm(stageDir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  }
+  await clearJournal(dataDir);
+  return restored;
 }
 
 /** Remove backups recorded by a completed install after the new code has started. */
