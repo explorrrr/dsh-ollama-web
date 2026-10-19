@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Document the solo-maintainer self-review policy, release settings, rollback
+  procedure and accepted unknown-age manual-install behavior.
 - Run CodeQL against GitHub Actions workflows as well as JavaScript/TypeScript.
 - Split release publishing into a read-only build job and an OIDC-only
   `npm` Environment publish job; add a tag-on-main check and production audit.

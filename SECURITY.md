@@ -66,7 +66,11 @@ make an untrusted endpoint trustworthy.
 - Auto-update is opt-in, default off, limited to the same major version, and
   respects the profile's pnpm `minimumReleaseAge`.
 - Linked development installs are never modified.
+- Installs are serialized per profile with a mode-0600 lock and journaled for
+  startup rollback after an interruption.
 - The update RPC accepts no version, URL, path or package spec from the browser.
+- Release settings and the solo self-review policy are documented in
+  [docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md).
 - The profile's `package.json` / `pnpm-lock.yaml` are not rewritten; a later
   pnpm operation can reinstall the recorded version. See
   [docs/UPDATES.md](docs/UPDATES.md).

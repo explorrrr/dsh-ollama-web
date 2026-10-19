@@ -101,6 +101,7 @@ See [docs/UPDATES.md](docs/UPDATES.md) for details.
 - Update tarballs are checked against the npm SHA-512 integrity; symlinks, traversal and oversized entries are rejected. No npm lifecycle script runs.
 - Auto-update installs new code without a prompt. It is opt-in and limited to the current major version.
 - The client card makes no third-party external request. It reads update state and performs update actions only through DSH's same-origin Connection RPC to the host. It does not use `innerHTML` / `dangerouslySetInnerHTML`.
+- Release and self-review settings: [docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md).
 - Published packages carry npm provenance. See [docs/PROVENANCE.md](docs/PROVENANCE.md) and [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md) for verification records, and [SECURITY.md](SECURITY.md) / [docs/SECURITY.md](docs/SECURITY.md) for the full policy.
 
 ## Support
