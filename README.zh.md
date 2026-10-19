@@ -2,34 +2,33 @@
 
 [English](README.md) | [日本語](README.ja.md) | 中文
 
-用于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的 Ollama Cloud Web 搜索提供方，附带 Web UI 设置卡片。仅替换 `web_search` 后端：不使用 DeepSeek API 密钥、提供方或回退。`web_fetch` 仍使用 DSH 内置的 HTTP 提供方（已具备 SSRF 防护）。
+用于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的 Ollama Cloud Web 搜索提供方。一个 npm 包同时提供 host 后端和 Web UI 设置卡片。仅替换 `web_search` 后端：不使用 DeepSeek API 密钥、提供方或回退。`web_fetch` 仍使用 DSH 内置的 HTTP 提供方（已具备 SSRF 防护）。
 
 [![通过 Buy Me a Coffee 支持](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/explorrrr)
 
 - 搜索端点默认是 `https://ollama.com/api/web_search`
 - 在设置卡片（只写）或通过 `OLLAMA_API_KEY` 配置 API 密钥
 - 支持更新检查、安装更新和 opt-in 自动更新
-- `web_fetch` 仍使用 DSH 内置 HTTP；1.x 不包含 Ollama `web_fetch`
+- `web_fetch` 仍使用 DSH 内置 HTTP；2.x 不包含 Ollama `web_fetch`
 
 ## 环境要求
 
 - DSH 0.2.1-rc.2（peer: `>=0.2.1-rc.1 <0.3.0`），已在该版本验证
-- 不支持 DSH 0.3.x（计划在 2.0 支持）。详见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)
+- 不支持 DSH 0.3.x（计划在 3.0 支持）。详见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)
 - Node.js 20.3 以上
 - Ollama Cloud API 密钥：<https://ollama.com/settings/keys>
 
 ## 安装
 
-Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相同版本安装两个包。
+一个包同时提供 `web_search` 后端和设置卡片。只需安装一次。
 
-1. 添加两个包。
+1. 添加包。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@1.2.0
-   dsh plugin --profile desktop add dsh-ollama-web-client@1.2.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.0.0
    ```
 
-   如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加两次。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web) / [dsh-ollama-web-client](https://www.npmjs.com/package/dsh-ollama-web-client)
+   如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
 
 2. 在 `~/.dsh/profiles/<profile>/cordis.patch.yml` 中固定搜索提供方。
 
@@ -46,7 +45,16 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 
    `fetchProvider: http` 表示 `web_fetch` 继续使用 DSH 内置的 HTTP 提供方。
 
-1.0.x 没有更新器。请先按上面的命令手动安装当前版本；之后的 1.2.x 可从卡片更新（详见后文“更新”）。
+### 从 1.x 迁移
+
+2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.0.0 前请先删除旧包：
+
+```bash
+dsh plugin --profile <profile> remove dsh-ollama-web-client
+dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
+```
+
+1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.0.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
 
 ## 配置
 
@@ -76,17 +84,17 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 
 ### 如果设置卡片未出现
 
-1. 确认 `dsh-ollama-web-client` 已安装且其 bundle 已启用。
+1. 确认 `dsh-ollama-web` 已安装且其 bundle 已启用。
 2. 刷新 Web 页面。
-3. 确认 Host 包名为 `dsh-ollama-web`，行 ID 为 `ollama-web`（卡片键为 `dsh-ollama-web#ollama-web`）。
+3. 确认包名为 `dsh-ollama-web`，行 ID 为 `ollama-web`（卡片键为 `dsh-ollama-web#ollama-web`）。
 4. 回退到上面的 patch 配置；即使没有卡片，Host 也能工作。
 
 ## 更新
 
-从 1.1.0 起，**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
+从 2.0.0 起，**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
 
 - **检查：** Host 读取 npm registry（失败时使用 npmmirror），仅在 profile **明确设置** pnpm 的 `minimumReleaseAge` 时遵守。未设置、无法读取、无效或 `0` 表示不等待。比配置年龄更新的版本会显示为等待中，不会自动安装。
-- **安装：** 下载 host/client 两个 tarball，校验 npm SHA-512 integrity 和压缩包内容，然后原子替换已安装的两个副本。任一步失败都会回滚两个包。
+- **安装：** 下载一个 tarball，校验 npm SHA-512 integrity 和压缩包内容，然后原子替换已安装的包。任一步失败都会回滚到原副本。
 - **自动更新（opt-in）：** 默认关闭。启用后每 6 小时检查一次，只自动安装**同一主版本**的新版本。主版本更新需要点击按钮。
 - **注意：** `link:` 或 profile 外目录的开发安装不会被修改。DSH 0.2.1 没有第三方更新 API，因此直接替换已安装文件。profile 的 `package.json` / `pnpm-lock.yaml` 仍记录旧版本；如需同步记录，请通过 **Plugins**（或 CLI）重新安装。
 

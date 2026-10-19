@@ -113,19 +113,46 @@ export async function writePrefs(dataDir: string, prefs: UpdatePrefs): Promise<v
 function normalizeError(value: unknown): UpdateError | undefined {
   if (!isRecord(value)) return undefined;
   if (typeof value.code !== 'string' || typeof value.message !== 'string') return undefined;
-  return { code: value.code as UpdateError['code'], message: value.message };
+  const code = value.code === 'release-mismatch' ? 'unknown' : value.code;
+  if (!Object.prototype.hasOwnProperty.call(ERROR_CODES, code)) return undefined;
+  return { code: code as UpdateError['code'], message: value.message };
 }
+
+const ERROR_CODES: Record<UpdateError['code'], true> = {
+  unavailable: true,
+  'no-profile': true,
+  linked: true,
+  'no-install': true,
+  busy: true,
+  network: true,
+  timeout: true,
+  'registry-status': true,
+  'registry-json': true,
+  'registry-mismatch': true,
+  integrity: true,
+  archive: true,
+  'package-invalid': true,
+  permission: true,
+  'install-failed': true,
+  'state-write': true,
+  'age-limited': true,
+  'major-blocked': true,
+  'no-update': true,
+  'invalid-payload': true,
+  unknown: true,
+};
 
 function normalizeLatest(value: unknown): StoredUpdateState['latest'] {
   if (!isRecord(value)) return undefined;
-  if (typeof value.host !== 'string' || typeof value.client !== 'string') return undefined;
+  const version = typeof value.version === 'string'
+    ? value.version
+    : (typeof value.host === 'string' && value.host === value.client ? value.host : undefined);
+  if (version === undefined) return undefined;
   if (typeof value.releaseUrl !== 'string' || typeof value.provenance !== 'boolean') return undefined;
-  if (value.host !== value.client) return undefined;
-  if (parseVersion(value.host) === undefined) return undefined;
+  if (parseVersion(version) === undefined) return undefined;
   if (!isAllowedReleaseUrl(value.releaseUrl)) return undefined;
   return {
-    host: value.host,
-    client: value.client,
+    version,
     publishedAt: typeof value.publishedAt === 'string' ? value.publishedAt : null,
     eligibleAt: typeof value.eligibleAt === 'string' ? value.eligibleAt : null,
     releaseUrl: value.releaseUrl,
@@ -134,14 +161,17 @@ function normalizeLatest(value: unknown): StoredUpdateState['latest'] {
 }
 
 function normalizeState(raw: unknown): StoredUpdateState {
-  if (!isRecord(raw) || raw.schemaVersion !== 1) return { schemaVersion: 1 };
-  const state: StoredUpdateState = { schemaVersion: 1 };
+  const state: StoredUpdateState = { schemaVersion: 2 };
+  if (!isRecord(raw) || (raw.schemaVersion !== 1 && raw.schemaVersion !== 2)) return state;
   if (typeof raw.lastCheckAt === 'string') state.lastCheckAt = raw.lastCheckAt;
   const latest = normalizeLatest(raw.latest);
   if (latest !== undefined) state.latest = latest;
   if (typeof raw.installedAt === 'string') state.installedAt = raw.installedAt;
-  if (isRecord(raw.installed) && typeof raw.installed.host === 'string' && typeof raw.installed.client === 'string') {
-    state.installed = { host: raw.installed.host, client: raw.installed.client };
+  if (isRecord(raw.installed)) {
+    const version = typeof raw.installed.version === 'string'
+      ? raw.installed.version
+      : (typeof raw.installed.host === 'string' ? raw.installed.host : undefined);
+    if (version !== undefined) state.installed = { version };
   }
   if (raw.needsRestart === true) state.needsRestart = true;
   if (typeof raw.lastAutoUpdateAt === 'string') state.lastAutoUpdateAt = raw.lastAutoUpdateAt;
@@ -158,5 +188,5 @@ export async function readState(dataDir: string): Promise<StoredUpdateState> {
 }
 
 export async function writeState(dataDir: string, state: StoredUpdateState): Promise<void> {
-  await atomicWriteJson(statePath(dataDir), { ...state, schemaVersion: 1 });
+  await atomicWriteJson(statePath(dataDir), { ...state, schemaVersion: 2 });
 }

@@ -6,6 +6,37 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-19
+
+### Added
+
+- The package now also ships the Web UI client bundle (`client.js`) with a
+  `dsh.client` declaration and a `./client` export. One `ollama-web` Loader row
+  serves both halves.
+
+### Changed
+
+- Update checks and installs target the single package: one packument, one
+  tarball and one installed package. The status shape reports `running` and
+  `current` as single versions.
+- Update state uses schema 2 and reads the 1.x host/client shape.
+- The updater still stages every installed copy and keeps the atomic swap,
+  journal, rollback and lock behavior.
+
+### Removed
+
+- The separate `dsh-ollama-web-client` package, its row and its CI/release
+  steps.
+- The `release-mismatch` error code and the `versionsMatch` / `clientInstalled`
+  fields.
+
+### Notes
+
+- 1.x users must remove `dsh-ollama-web-client` before installing 2.0.0. The
+  1.x auto-updater only installs the current major.
+- An interrupted 1.x journal that names the old client package is still
+  recoverable.
+
 ## [1.2.0] - 2026-10-19
 
 ### Changed

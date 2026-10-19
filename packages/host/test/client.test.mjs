@@ -52,6 +52,7 @@ function loadClient(react, document) {
   if (document !== undefined) sandbox.document = document;
   runInContext(source, createContext(sandbox));
   assert.ok(definition, 'client bundle did not register a loader definition');
+  assert.equal(definition.id, 'dsh-ollama-web');
   const primitives = {
     SettingsForm: 'SettingsForm',
     SettingsValueField: 'SettingsValueField',
@@ -168,11 +169,10 @@ async function flush() {
 const BASE_STATUS = {
   available: true,
   profile: { name: 'desktop', restartKind: 'app' },
-  running: { host: '1.0.0' },
-  current: { host: '1.0.0', client: '1.0.0' },
+  running: '1.0.0',
+  current: '1.0.0',
   latest: {
-    host: '1.1.0',
-    client: '1.1.0',
+    version: '1.1.0',
     publishedAt: '2026-10-01T00:00:00.000Z',
     eligibleAt: '2026-10-01T01:00:00.000Z',
     releaseUrl: 'https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.1.0',
@@ -188,8 +188,6 @@ const BASE_STATUS = {
   ageLimited: false,
   ageUnknown: false,
   staleProcess: false,
-  versionsMatch: true,
-  clientInstalled: true,
 };
 
 function fakeConnection(status = BASE_STATUS, overrides = {}) {
@@ -237,6 +235,7 @@ test('bundle contains no external network, storage or HTML sink calls', () => {
   }
   assert.match(source, /ollama-web-update/);
   assert.match(source, /plugins\.detail\.section/);
+  assert.doesNotMatch(source, /dsh-ollama-web-client/);
 });
 
 test('apply registers the row config and detail section slots', () => {
@@ -245,6 +244,7 @@ test('apply registers the row config and detail section slots', () => {
   const { ctx, calls } = mockContext(fakeConnection().connection);
   exports.apply(ctx);
   assert.equal(calls.served[0], 'ollama-web');
+  assert.equal(exports.PACKAGE_NAME, 'dsh-ollama-web');
   assert.ok(calls.injections.includes('plugins.row.config'));
   assert.ok(calls.injections.includes('plugins.detail.section'));
   const row = rowRegistration(calls);
@@ -367,10 +367,10 @@ test('both stylesheets are injected once', () => {
   const first = makeDocument();
   loadClient(makeReact(), first.document);
   assert.equal(first.appended.length, 2);
-  assert.equal(first.styles.get('dsh-ollama-web-client/SupportSection.css').tag, 'style');
-  assert.equal(first.styles.get('dsh-ollama-web-client/UpdateSection.css').tag, 'style');
-  assert.match(first.styles.get('dsh-ollama-web-client/SupportSection.css').textContent, /\.dsh-ollama-web-support/);
-  assert.match(first.styles.get('dsh-ollama-web-client/UpdateSection.css').textContent, /\.dsh-ollama-web-updates/);
+  assert.equal(first.styles.get('dsh-ollama-web/SupportSection.css').tag, 'style');
+  assert.equal(first.styles.get('dsh-ollama-web/UpdateSection.css').tag, 'style');
+  assert.match(first.styles.get('dsh-ollama-web/SupportSection.css').textContent, /\.dsh-ollama-web-support/);
+  assert.match(first.styles.get('dsh-ollama-web/UpdateSection.css').textContent, /\.dsh-ollama-web-updates/);
   loadClient(makeReact(), first.document);
   assert.equal(first.appended.length, 2);
 });
@@ -590,7 +590,7 @@ test('update section reports an unavailable RPC without throwing', async () => {
   assert.equal(tree.props.className, 'dsh-ollama-web-updates');
 });
 
-test('detail section renders only for the two bundles', () => {
+test('detail section renders only for the package bundle', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
   const detail = exports.makeDetailSection((key) => key, () => fakeConnection().connection);

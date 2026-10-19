@@ -8,8 +8,8 @@ import { UpdateFailure } from './errors.js';
 import { fetchBytes } from './http.js';
 import { extractPackageTarball } from './tar.js';
 import { clearJournal, readJournal, writeJournal } from './state.js';
+import { LEGACY_CLIENT_PACKAGE } from './types.js';
 import type {
-  InstalledSnapshot,
   PackageInstall,
   ProfileInfo,
   PublishedPackage,
@@ -132,18 +132,6 @@ export function detectPackageInstall(
   };
 }
 
-export function detectInstalls(
-  profile: ProfileInfo,
-  hostRunningDir: string,
-  hostPackageName: string,
-  clientPackageName: string,
-): InstalledSnapshot {
-  return {
-    host: detectPackageInstall(profile, hostPackageName, [hostRunningDir]),
-    client: detectPackageInstall(profile, clientPackageName),
-  };
-}
-
 /** Verify an npm SHA-512 SRI integrity string against downloaded bytes. */
 export function verifyIntegrity(bytes: Uint8Array, integrity: string): boolean {
   const hashes = integrity.trim().split(/\s+/);
@@ -183,6 +171,12 @@ export interface StagedPackage {
   readonly backupDir?: string;
 }
 
+function clientExportPath(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (isRecord(value) && typeof value.default === 'string') return value.default;
+  return undefined;
+}
+
 function validateManifest(value: unknown, pkg: PublishedPackage): void {
   if (!isRecord(value)) {
     throw new UpdateFailure('package-invalid', 'downloaded package has no readable manifest');
@@ -194,17 +188,17 @@ function validateManifest(value: unknown, pkg: PublishedPackage): void {
   if (!isRecord(dsh) || !isRecord(dsh.bundle) || typeof dsh.bundle.patch !== 'string') {
     throw new UpdateFailure('package-invalid', 'downloaded package does not declare a DSH bundle patch');
   }
-  if (pkg.name === 'dsh-ollama-web-client') {
-    if (!isRecord(dsh.client) || dsh.client.platform !== 'web') {
-      throw new UpdateFailure('package-invalid', 'downloaded client package is not a web client bundle');
-    }
+  if (!isRecord(dsh.client) || dsh.client.platform !== 'web') {
+    throw new UpdateFailure('package-invalid', 'downloaded package does not declare a web client bundle');
+  }
+  const exports = value.exports;
+  if (!isRecord(exports) || clientExportPath(exports['./client']) !== './client.js') {
+    throw new UpdateFailure('package-invalid', 'downloaded package does not export its client bundle');
   }
 }
 
-async function validateRequiredFiles(stageDir: string, packageName: string): Promise<void> {
-  const required = packageName === 'dsh-ollama-web'
-    ? ['dist/index.js', 'cordis.patch.yml']
-    : ['client.js', 'index.js', 'cordis.patch.yml'];
+async function validateRequiredFiles(stageDir: string): Promise<void> {
+  const required = ['dist/index.js', 'client.js', 'cordis.patch.yml'];
   for (const file of required) {
     const path = join(stageDir, file);
     let info;
@@ -279,7 +273,7 @@ export async function stagePackage(
       throw new UpdateFailure('package-invalid', 'downloaded package has no readable package.json', error);
     }
     validateManifest(manifest, pkg);
-    await validateRequiredFiles(stageDir, pkg.name);
+    await validateRequiredFiles(stageDir);
     await preserveNodeModules(target, stageDir);
     await validateDependencies(stageDir, pkg.name);
     return { targetDir: target, stageDir, packageName: pkg.name, version: pkg.version };
@@ -387,52 +381,35 @@ export interface InstallReleaseOptions {
   readonly target: ReleaseTarget;
   readonly profile: ProfileInfo;
   readonly dataDir: string;
-  readonly hostPackageName: string;
-  readonly clientPackageName: string;
-  readonly hostRunningDir: string;
+  readonly packageName: string;
+  readonly runningDir: string;
   readonly fetchImpl: typeof fetch;
   readonly signal?: AbortSignal;
   readonly swapOps?: SwapOps;
 }
 
 export interface InstallResult {
-  readonly host: string;
-  readonly client: string | null;
+  readonly version: string;
   readonly backups: string[];
 }
 
-/** Download, verify, stage and atomically install both installed packages. */
+/** Download, verify, stage and atomically install the package. */
 export async function installRelease(options: InstallReleaseOptions): Promise<InstallResult> {
-  const installs = detectInstalls(
-    options.profile,
-    options.hostRunningDir,
-    options.hostPackageName,
-    options.clientPackageName,
-  );
-  if (installs.host.linked || installs.client.linked) {
+  const install = detectPackageInstall(options.profile, options.packageName, [options.runningDir]);
+  if (install.linked) {
     throw new UpdateFailure('linked', 'linked development installs cannot be updated from the card');
   }
-  if (installs.host.dirs.length === 0) {
-    throw new UpdateFailure('no-install', 'the host package is not installed in this profile');
+  if (install.dirs.length === 0) {
+    throw new UpdateFailure('no-install', 'the package is not installed in this profile');
   }
-  const clientInstalled = installs.client.dirs.length > 0;
-  const packages = [
-    { pkg: options.target.host, dirs: installs.host.dirs },
-    ...(clientInstalled ? [{ pkg: options.target.client, dirs: installs.client.dirs }] : []),
-  ];
-  const downloaded = await Promise.all(packages.map(async (entry) => ({
-    ...entry,
-    bytes: await downloadAndVerify(entry.pkg, {
-      fetchImpl: options.fetchImpl,
-      ...(options.signal === undefined ? {} : { signal: options.signal }),
-    }),
-  })));
+  const bytes = await downloadAndVerify(options.target.pkg, {
+    fetchImpl: options.fetchImpl,
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  });
   const staged: StagedPackage[] = [];
   try {
-    for (const entry of downloaded) {
-      for (const directory of entry.dirs) {
-        staged.push(await stagePackage(entry.pkg, entry.bytes, directory, options.profile));
-      }
+    for (const directory of install.dirs) {
+      staged.push(await stagePackage(options.target.pkg, bytes, directory, options.profile));
     }
   } catch (error) {
     await cleanupStages(staged);
@@ -464,8 +441,7 @@ export async function installRelease(options: InstallReleaseOptions): Promise<In
       throw new UpdateFailure('state-write', 'could not finalize the update journal', error);
     }
     return {
-      host: options.target.host.version,
-      client: clientInstalled ? options.target.client.version : null,
+      version: options.target.version,
       backups,
     };
   } catch (error) {
@@ -476,9 +452,11 @@ export async function installRelease(options: InstallReleaseOptions): Promise<In
 }
 
 /**
- * Roll back a host/client swap that was interrupted after the journal was
+ * Roll back a package swap that was interrupted after the journal was
  * written. Backups are restored to their target directories and staged copies
  * are removed. Paths outside the profile or with unexpected names are ignored.
+ * The 1.x client target is still recoverable so an interrupted upgrade from
+ * 1.x does not strand its backup.
  */
 export async function recoverInterruptedInstall(
   profile: ProfileInfo,
@@ -487,9 +465,10 @@ export async function recoverInterruptedInstall(
   const journal = await readJournal(dataDir);
   if (journal === undefined) return false;
   const root = canonicalPath(profile.profilesRoot);
+  const recoverable = new Set(['dsh-ollama-web', LEGACY_CLIENT_PACKAGE]);
   let restored = false;
   for (const entry of journal.targets) {
-    if (entry.packageName !== 'dsh-ollama-web' && entry.packageName !== 'dsh-ollama-web-client') continue;
+    if (!recoverable.has(entry.packageName)) continue;
     const targetDir = canonicalPath(resolve(entry.targetDir));
     const stageDir = canonicalPath(resolve(entry.stageDir));
     const backupDir = canonicalPath(resolve(entry.backupDir));

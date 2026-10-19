@@ -6,6 +6,47 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-19
+
+### Added
+
+- The package now ships both halves: the host search provider and the Web UI
+  settings/update client bundle (`./client`, `dsh.client`). One Loader row
+  (`ollama-web`) provides both.
+- A startup warning when the removed 1.x client package is still installed.
+- Update-state migration from the 1.x host/client schema to the single-package
+  schema.
+
+### Changed
+
+- **One npm package, one install.** `dsh-ollama-web@2.0.0` is installed once and
+  provides the `web_search` backend and the settings card.
+- Update checks read one npm packument and install one tarball. The update
+  status reports one running/current version instead of a host/client pair.
+- Update state schema is now 2; schema-1 files are read and mapped
+  automatically.
+- The update journal still handles multiple installed copies and keeps a
+  recovery path for a 1.x journal that names the old client package.
+
+### Removed
+
+- The `dsh-ollama-web-client` npm package and its `ollama-web-client` Loader
+  row.
+- The `release-mismatch` update error and the `versionsMatch` /
+  `clientInstalled` status fields.
+- The second package from the release workflow, CI package check and npm
+  publishing setup.
+
+### Notes
+
+- 1.x auto-update only installs releases in the current major, so it will not
+  move users to 2.0.0. Remove `dsh-ollama-web-client` and install
+  `dsh-ollama-web@2.0.0` manually.
+- The old client package is deprecated on npm. Leaving it installed while
+  using 2.0.0 can register the settings card twice and is not supported.
+- The package is still MIT; the search provider, sandbox boundaries and update
+  security controls are unchanged.
+
 ## [1.2.0] - 2026-10-19
 
 ### Changed

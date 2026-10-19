@@ -1,5 +1,6 @@
-# The bundle inserts this row only. It deliberately does not seize the web
-# seam: pin `searchProvider: ollama` in your own profile patch.
+# The bundle row loads the host provider and serves the package's `./client`
+# browser half. It deliberately does not seize the web seam: pin
+# `searchProvider: ollama` in your own profile patch.
 - insert:
     - id: ollama-web
       name: dsh-ollama-web

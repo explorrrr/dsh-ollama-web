@@ -38,7 +38,7 @@ jobs:
           git merge-base --is-ancestor "$TAG_COMMIT" origin/main
       - name: Verify repository metadata
         run: |
-          if ! grep -q 'github.com/explorrrr/dsh-ollama-web' packages/host/package.json packages/client/package.json; then
+          if ! grep -q 'github.com/explorrrr/dsh-ollama-web' packages/host/package.json; then
             echo "Repository metadata must point to github.com/explorrrr/dsh-ollama-web." >&2
             exit 1
           fi
@@ -48,19 +48,16 @@ jobs:
       - run: pnpm test
       - run: pnpm check
       - run: pnpm audit --prod
-      - name: Verify tag matches package versions
+      - name: Verify tag matches package version
         run: |
           set -euo pipefail
-          HOST=$(node -p "require('./packages/host/package.json').version")
-          CLIENT=$(node -p "require('./packages/client/package.json').version")
-          test "$HOST" = "$CLIENT"
-          test "$GITHUB_REF_NAME" = "v$HOST"
-      - name: Stage publish directories
+          VERSION=$(node -p "require('./packages/host/package.json').version")
+          test "$GITHUB_REF_NAME" = "v$VERSION"
+      - name: Stage publish directory
         run: |
           set -euo pipefail
           mkdir -p package-artifacts
-          tar --exclude=node_modules --exclude='*.tgz' -czf package-artifacts/host-package.tgz -C packages/host .
-          tar --exclude=node_modules --exclude='*.tgz' -czf package-artifacts/client-package.tgz -C packages/client .
+          tar --exclude=node_modules --exclude='*.tgz' -czf package-artifacts/dsh-ollama-web-package.tgz -C packages/host .
           (cd package-artifacts && shasum -a 512 ./*.tgz > SHA512SUMS)
           cat package-artifacts/SHA512SUMS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -96,45 +93,29 @@ jobs:
         with:
           name: release-packages
           path: release-artifacts
-      - name: Verify and extract publish artifacts
+      - name: Verify and extract publish artifact
         run: |
           set -euo pipefail
           (cd release-artifacts && shasum -a 512 -c SHA512SUMS)
-          mkdir -p stage/host stage/client
-          tar -xzf release-artifacts/host-package.tgz -C stage/host
-          tar -xzf release-artifacts/client-package.tgz -C stage/client
-          HOST=$(node -p "require('./stage/host/package.json').version")
-          CLIENT=$(node -p "require('./stage/client/package.json').version")
-          test "$HOST" = "$CLIENT"
-          test "$GITHUB_REF_NAME" = "v$HOST"
-          test "$(node -p "require('./stage/host/package.json').name")" = "dsh-ollama-web"
-          test "$(node -p "require('./stage/client/package.json').name")" = "dsh-ollama-web-client"
-      - name: Publish host package
+          mkdir -p stage/package
+          tar -xzf release-artifacts/dsh-ollama-web-package.tgz -C stage/package
+          VERSION=$(node -p "require('./stage/package/package.json').version")
+          test "$GITHUB_REF_NAME" = "v$VERSION"
+          test "$(node -p "require('./stage/package/package.json').name")" = "dsh-ollama-web"
+      - name: Publish package
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./stage/host/package.json').version")
+          VERSION=$(node -p "require('./stage/package/package.json').version")
           if npm view "dsh-ollama-web@$VERSION" version >/dev/null 2>&1; then
             echo "dsh-ollama-web@$VERSION already exists; skipping."
           else
             if [[ "$VERSION" == *-* ]]; then DIST_TAG=next; else DIST_TAG=latest; fi
-            npm publish ./stage/host --provenance --access public --tag "$DIST_TAG" --ignore-scripts
+            npm publish ./stage/package --provenance --access public --tag "$DIST_TAG" --ignore-scripts
           fi
-      - name: Publish client package
+      - name: Download published npm tarball
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./stage/client/package.json').version")
-          if npm view "dsh-ollama-web-client@$VERSION" version >/dev/null 2>&1; then
-            echo "dsh-ollama-web-client@$VERSION already exists; skipping."
-          else
-            if [[ "$VERSION" == *-* ]]; then DIST_TAG=next; else DIST_TAG=latest; fi
-            npm publish ./stage/client --provenance --access public --tag "$DIST_TAG" --ignore-scripts
-          fi
-      - name: Download published npm tarballs
-        run: |
-          set -euo pipefail
-          VERSION=$(node -p "require('./stage/host/package.json').version")
-          CLIENT_VERSION=$(node -p "require('./stage/client/package.json').version")
-          test "$VERSION" = "$CLIENT_VERSION"
+          VERSION=$(node -p "require('./stage/package/package.json').version")
           mkdir -p dist
           fetch_tarball() {
             local pkg="$1"
@@ -153,28 +134,29 @@ jobs:
             return 1
           }
           fetch_tarball dsh-ollama-web "dist/dsh-ollama-web-$VERSION.tgz"
-          fetch_tarball dsh-ollama-web-client "dist/dsh-ollama-web-client-$VERSION.tgz"
           (cd dist && shasum -a 512 ./*.tgz > SHA512SUMS)
           cat dist/SHA512SUMS
-      - name: Verify release assets contain the updater
+      - name: Verify release asset contains both halves
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./stage/host/package.json').version")
+          VERSION=$(node -p "require('./stage/package/package.json').version")
           HOST_LIST=$(mktemp)
           CLIENT_JS=$(mktemp)
           trap 'rm -f "$HOST_LIST" "$CLIENT_JS"' EXIT
           tar -tzf "dist/dsh-ollama-web-$VERSION.tgz" > "$HOST_LIST"
           grep -qx 'package/dist/update/service.js' "$HOST_LIST"
           grep -qx 'package/dist/update/install.js' "$HOST_LIST"
-          tar -xOzf "dist/dsh-ollama-web-client-$VERSION.tgz" package/client.js > "$CLIENT_JS"
+          grep -qx 'package/client.js' "$HOST_LIST"
+          tar -xOzf "dist/dsh-ollama-web-$VERSION.tgz" package/client.js > "$CLIENT_JS"
           grep -q 'ollama-web-update' "$CLIENT_JS"
           grep -q 'plugins.detail.section' "$CLIENT_JS"
+          grep -q "id: 'dsh-ollama-web'" "$CLIENT_JS"
       - name: Ensure GitHub Release exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./stage/host/package.json').version")
+          VERSION=$(node -p "require('./stage/package/package.json').version")
           PRERELEASE=""
           if [[ "$VERSION" == *-* ]]; then PRERELEASE="--prerelease"; fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \

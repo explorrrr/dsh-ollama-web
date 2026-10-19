@@ -8,8 +8,6 @@ importers:
 
   .: {}
 
-  packages/client: {}
-
   packages/host:
     dependencies:
       '@deepseek-ai/schemastery':

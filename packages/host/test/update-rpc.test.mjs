@@ -1,17 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { apply } from '../dist/index.js';
 import { UpdateFailure } from '../dist/update/errors.js';
 import { UPDATE_CHANNEL, createUpdateDispatch, registerFetchRoutes, registerRpcChannel } from '../dist/update/rpc.js';
 import { makeConfig } from './helpers.mjs';
-import { cleanup, makeProfile, makeTempDir } from './update-helpers.mjs';
+import { cleanup, makeProfile, makeTempDir, writeJson } from './update-helpers.mjs';
 
 const STATUS = {
   available: true,
   profile: { name: 'test', restartKind: 'host' },
-  running: { host: '1.0.0' },
-  current: { host: '1.0.0', client: '1.0.0' },
+  running: '1.0.0',
+  current: '1.0.0',
   latest: null,
   state: 'unknown',
   phase: 'idle',
@@ -23,8 +24,6 @@ const STATUS = {
   ageLimited: false,
   ageUnknown: false,
   staleProcess: false,
-  versionsMatch: true,
-  clientInstalled: true,
 };
 
 function fakeService(overrides = {}) {
@@ -104,7 +103,7 @@ test('registers exact /api fetch routes and answers a client request', async () 
   assert.equal(body.type, 'server-response');
   assert.equal(body.rpcId, 'rpc-1');
   assert.equal(body.result.ok, true);
-  assert.equal(body.result.value.current.host, '1.0.0');
+  assert.equal(body.result.value.current, '1.0.0');
   assert.equal(route.methods[0], 'POST');
   assert.equal(route.requestBody, 'buffered');
   const bad = await route.fetch(new Request('http://localhost/api/ollama-web-update/status', {
@@ -132,10 +131,17 @@ test('host apply registers search, fetch routes, and the RPC channel', async () 
   const root = makeTempDir();
   try {
     const setup = makeProfile({ root });
+    const legacyDir = join(setup.profileDir, 'node_modules', 'dsh-ollama-web-client');
+    mkdirSync(legacyDir, { recursive: true });
+    writeJson(join(legacyDir, 'package.json'), {
+      name: 'dsh-ollama-web-client',
+      version: '1.2.0',
+    });
     const routes = [];
     const handled = [];
     const injections = [];
     const providers = [];
+    const warnings = [];
     const connection = {
       fetch: { register: (route) => routes.push(route) },
       rpc: { handle: (channel, handler) => handled.push([channel, handler]) },
@@ -152,7 +158,7 @@ test('host apply registers search, fetch routes, and the RPC channel', async () 
         const dispose = callback();
         return typeof dispose === 'function' ? dispose : () => {};
       },
-      logger: { warn: () => {} },
+      logger: { warn: (message) => warnings.push(message) },
     };
     apply(ctx, makeConfig());
     assert.equal(providers.length, 1);
@@ -160,6 +166,7 @@ test('host apply registers search, fetch routes, and the RPC channel', async () 
     assert.equal(routes.length, 4);
     assert.equal(handled.length, 1);
     assert.equal(handled[0][0], UPDATE_CHANNEL);
+    assert.ok(warnings.some((message) => message.includes('dsh-ollama-web-client')));
   } finally {
     cleanup(root);
   }

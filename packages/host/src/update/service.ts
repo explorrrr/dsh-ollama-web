@@ -6,7 +6,7 @@ import {
 import {
   cleanupBackups,
   cleanupStaleArtifacts,
-  detectInstalls,
+  detectPackageInstall,
   installRelease,
   recoverInterruptedInstall,
 } from './install.js';
@@ -20,7 +20,7 @@ import {
 import { compareVersions, sameMajor } from './semver.js';
 import { readPrefs, readState, writePrefs, writeState } from './state.js';
 import type {
-  InstalledSnapshot,
+  PackageInstall,
   ReleaseTarget,
   StoredUpdateState,
   UpdateError,
@@ -41,10 +41,9 @@ export interface UpdateServiceOptions {
     readonly profilesRoot: string;
     readonly restartKind: 'app' | 'host';
   };
-  readonly hostPackageName: string;
-  readonly clientPackageName: string;
-  readonly hostPackageDir: string;
-  readonly hostRunningVersion: string;
+  readonly packageName: string;
+  readonly packageDir: string;
+  readonly runningVersion: string;
   readonly dataDir: string;
   readonly fetchImpl?: typeof fetch;
   readonly now?: () => number;
@@ -64,8 +63,7 @@ interface AgeInfo {
 }
 
 interface LatestView {
-  readonly host: string;
-  readonly client: string;
+  readonly version: string;
   readonly publishedAt: string | null;
   readonly eligibleAt: string | null;
   readonly releaseUrl: string;
@@ -77,8 +75,8 @@ export class UpdateService {
   private readonly abort = new AbortController();
   private readonly ready: Promise<void>;
   private prefs: UpdatePrefs = { autoUpdate: false };
-  private state: StoredUpdateState = { schemaVersion: 1 };
-  private installs: InstalledSnapshot | null = null;
+  private state: StoredUpdateState = { schemaVersion: 2 };
+  private installs: PackageInstall | null = null;
   private latestTarget: ReleaseTarget | null = null;
   private checkedAt: string | null = null;
   private lastError: UpdateError | null = null;
@@ -113,24 +111,21 @@ export class UpdateService {
       }
     }
     this.state = await readState(this.options.dataDir);
-    this.installs = detectInstalls(
+    this.installs = detectPackageInstall(
       this.options.profile,
-      this.options.hostPackageDir,
-      this.options.hostPackageName,
-      this.options.clientPackageName,
+      this.options.packageName,
+      [this.options.packageDir],
     );
     this.checkedAt = this.state.lastCheckAt ?? null;
     this.lastError = recovered
       ? { code: 'install-failed', message: 'a previous update was rolled back after an interruption' }
       : this.state.lastError ?? null;
-    const hostVersion = this.installs.host.version;
-    const clientVersion = this.installs.client.version;
+    const version = this.installs.version;
     if (
       this.state.needsRestart === true
-      && hostVersion !== null
+      && version !== null
       && this.state.installed !== undefined
-      && this.state.installed.host === hostVersion
-      && this.state.installed.client === (clientVersion ?? '')
+      && this.state.installed.version === version
     ) {
       this.state.needsRestart = false;
       delete this.state.installed;
@@ -143,7 +138,7 @@ export class UpdateService {
     }
     await cleanupStaleArtifacts(
       this.options.profile,
-      [...this.installs.host.dirs, ...this.installs.client.dirs],
+      this.installs.dirs,
       this.now(),
     ).catch(() => undefined);
     if (this.prefs.autoUpdate) this.startTimers();
@@ -161,7 +156,7 @@ export class UpdateService {
     this.options.logger?.(message, error);
   }
 
-  private requireInstalls(): InstalledSnapshot {
+  private requireInstall(): PackageInstall {
     if (this.installs === null) {
       throw new UpdateFailure('unavailable', 'update service is not initialized');
     }
@@ -190,8 +185,7 @@ export class UpdateService {
   private latestFromTarget(target: ReleaseTarget): LatestView {
     const age = this.ageInfo(target.publishedAt, target.eligibleAt);
     return {
-      host: target.host.version,
-      client: target.client.version,
+      version: target.version,
       publishedAt: target.publishedAt,
       eligibleAt: age.eligibleAt,
       releaseUrl: target.releaseUrl,
@@ -204,8 +198,7 @@ export class UpdateService {
     if (latest === undefined) return null;
     const age = this.ageInfo(latest.publishedAt, latest.eligibleAt);
     return {
-      host: latest.host,
-      client: latest.client,
+      version: latest.version,
       publishedAt: latest.publishedAt,
       eligibleAt: age.eligibleAt,
       releaseUrl: latest.releaseUrl,
@@ -218,37 +211,31 @@ export class UpdateService {
   }
 
   private stateOf(
-    installs: InstalledSnapshot,
+    install: PackageInstall,
     latest: LatestView | null,
     age: AgeInfo,
   ): UpdateState {
-    if (installs.host.linked || installs.client.linked) return 'linked';
-    if (installs.host.version === null || installs.host.dirs.length === 0) return 'unavailable';
+    if (install.linked) return 'linked';
+    if (install.version === null || install.dirs.length === 0) return 'unavailable';
     if (this.state.needsRestart === true) return 'installed';
     if (latest === null) return 'unknown';
-    const hostCompare = compareVersions(latest.host, installs.host.version);
-    const clientCompare = installs.client.version === null
-      ? 0
-      : compareVersions(latest.client, installs.client.version);
-    if (hostCompare < 0 || clientCompare < 0) return 'ahead';
-    if (installs.client.version !== null && installs.host.version !== installs.client.version) {
-      return 'mismatch';
-    }
+    const comparison = compareVersions(latest.version, install.version);
+    if (comparison < 0) return 'ahead';
     if (age.ageLimited) return 'age-limited';
-    if (hostCompare > 0 || clientCompare > 0) {
-      return sameMajor(latest.host, installs.host.version) ? 'update' : 'major';
+    if (comparison > 0) {
+      return sameMajor(latest.version, install.version) ? 'update' : 'major';
     }
     return 'current';
   }
 
   private buildStatus(): UpdateStatus {
-    const installs = this.installs;
-    if (installs === null) {
+    const install = this.installs;
+    if (install === null) {
       return {
         available: false,
         profile: { name: this.options.profile.name, restartKind: this.options.profile.restartKind },
-        running: { host: this.options.hostRunningVersion },
-        current: { host: null, client: null },
+        running: this.options.runningVersion,
+        current: null,
         latest: null,
         state: 'unavailable',
         phase: this.phase,
@@ -260,8 +247,6 @@ export class UpdateService {
         ageLimited: false,
         ageUnknown: false,
         staleProcess: false,
-        versionsMatch: true,
-        clientInstalled: false,
       };
     }
     const latest = this.latestView();
@@ -271,17 +256,17 @@ export class UpdateService {
     const installed = this.state.installed === undefined
       ? null
       : {
-        version: this.state.installed.host,
+        version: this.state.installed.version,
         at: this.state.installedAt ?? null,
         needsRestart: this.state.needsRestart === true,
       };
     return {
       available: true,
       profile: { name: this.options.profile.name, restartKind: this.options.profile.restartKind },
-      running: { host: this.options.hostRunningVersion },
-      current: { host: installs.host.version, client: installs.client.version },
+      running: this.options.runningVersion,
+      current: install.version,
       latest,
-      state: this.stateOf(installs, latest, age),
+      state: this.stateOf(install, latest, age),
       phase: this.phase,
       checkedAt: this.checkedAt,
       autoUpdate: this.prefs.autoUpdate,
@@ -290,11 +275,7 @@ export class UpdateService {
       busy: this.phase !== 'idle',
       ageLimited: age.ageLimited,
       ageUnknown: age.ageUnknown,
-      staleProcess: installs.host.version !== null && this.options.hostRunningVersion !== installs.host.version,
-      versionsMatch: installs.host.version === null
-        || installs.client.version === null
-        || installs.host.version === installs.client.version,
-      clientInstalled: installs.client.version !== null,
+      staleProcess: install.version !== null && this.options.runningVersion !== install.version,
     };
   }
 
@@ -334,7 +315,7 @@ export class UpdateService {
   private async doCheck(): Promise<UpdateStatus> {
     try {
       const target = await checkRelease(
-        [this.options.hostPackageName, this.options.clientPackageName],
+        this.options.packageName,
         {
           fetchImpl: this.fetchImpl(),
           registries: this.options.registries ?? [NPM_REGISTRY, NPMMIRROR_REGISTRY],
@@ -351,8 +332,7 @@ export class UpdateService {
       this.lastError = null;
       this.state.lastCheckAt = this.checkedAt;
       this.state.latest = {
-        host: target.host.version,
-        client: target.client.version,
+        version: target.version,
         publishedAt: target.publishedAt,
         eligibleAt: target.eligibleAt,
         releaseUrl: target.releaseUrl,
@@ -388,12 +368,12 @@ export class UpdateService {
   }
 
   private async doInstall(allowMajor: boolean): Promise<UpdateStatus> {
-    let installs = this.requireInstalls();
-    if (installs.host.linked || installs.client.linked) {
+    let install = this.requireInstall();
+    if (install.linked) {
       throw new UpdateFailure('linked', 'linked development installs cannot be updated from the card');
     }
-    if (installs.host.dirs.length === 0 || installs.host.version === null) {
-      throw new UpdateFailure('no-install', 'the host package is not installed in this profile');
+    if (install.dirs.length === 0 || install.version === null) {
+      throw new UpdateFailure('no-install', 'the package is not installed in this profile');
     }
     const checkedAt = this.checkedAt === null ? Number.NaN : Date.parse(this.checkedAt);
     const stale = !Number.isFinite(checkedAt)
@@ -410,23 +390,16 @@ export class UpdateService {
     if (age.ageLimited) {
       throw new UpdateFailure('age-limited', 'the release is newer than the profile minimumReleaseAge');
     }
-    const currentHost = installs.host.version;
-    if (currentHost === null) throw new UpdateFailure('no-install', 'the host package has no readable version');
-    const hostCompare = compareVersions(target.version, currentHost);
-    const clientCompare = installs.client.version === null
-      ? 0
-      : compareVersions(target.version, installs.client.version);
-    if (hostCompare < 0 || clientCompare < 0) {
+    const current = install.version;
+    if (current === null) throw new UpdateFailure('no-install', 'the package has no readable version');
+    const comparison = compareVersions(target.version, current);
+    if (comparison < 0) {
       throw new UpdateFailure('no-update', 'the installed version is ahead of the latest release');
     }
-    if (
-      hostCompare === 0
-      && clientCompare === 0
-      && this.state.needsRestart !== true
-    ) {
+    if (comparison === 0 && this.state.needsRestart !== true) {
       throw new UpdateFailure('no-update', 'the installed version is already current');
     }
-    if (!sameMajor(target.version, currentHost) && !allowMajor) {
+    if (!sameMajor(target.version, current) && !allowMajor) {
       throw new UpdateFailure('major-blocked', 'major updates require an explicit confirmation');
     }
     const lock = await acquireUpdateLock(this.options.dataDir, this.now());
@@ -436,25 +409,20 @@ export class UpdateService {
         target,
         profile: this.options.profile,
         dataDir: this.options.dataDir,
-        hostPackageName: this.options.hostPackageName,
-        clientPackageName: this.options.clientPackageName,
-        hostRunningDir: this.options.hostPackageDir,
+        packageName: this.options.packageName,
+        runningDir: this.options.packageDir,
         fetchImpl: this.fetchImpl(),
         signal: this.abort.signal,
       });
-      this.installs = detectInstalls(
+      this.installs = detectPackageInstall(
         this.options.profile,
-        this.options.hostPackageDir,
-        this.options.hostPackageName,
-        this.options.clientPackageName,
+        this.options.packageName,
+        [this.options.packageDir],
       );
-      installs = this.installs;
+      install = this.installs;
       this.checkedAt = new Date(this.now()).toISOString();
       this.state.lastCheckAt = this.checkedAt;
-      this.state.installed = {
-        host: result.host,
-        client: result.client ?? installs.client.version ?? '',
-      };
+      this.state.installed = { version: result.version };
       this.state.installedAt = this.checkedAt;
       this.state.needsRestart = true;
       this.state.backups = result.backups;
@@ -477,12 +445,12 @@ export class UpdateService {
   async setAutoUpdate(options: { readonly enabled: boolean }): Promise<UpdateStatus> {
     await this.ready;
     const enabled = options.enabled === true;
-    const installs = this.requireInstalls();
-    if (enabled && (installs.host.linked || installs.client.linked)) {
+    const install = this.requireInstall();
+    if (enabled && install.linked) {
       throw new UpdateFailure('linked', 'linked development installs cannot use auto-update');
     }
-    if (enabled && installs.host.dirs.length === 0) {
-      throw new UpdateFailure('no-install', 'the host package is not installed in this profile');
+    if (enabled && install.dirs.length === 0) {
+      throw new UpdateFailure('no-install', 'the package is not installed in this profile');
     }
     this.phase = 'saving';
     try {
@@ -537,18 +505,12 @@ export class UpdateService {
     }
     const target = this.latestTarget;
     if (target === null) return;
-    const installs = this.requireInstalls();
-    if (installs.host.linked || installs.client.linked || installs.host.version === null) return;
+    const install = this.requireInstall();
+    if (install.linked || install.version === null) return;
     const age = this.ageInfo(target.publishedAt, target.eligibleAt);
     if (age.ageLimited || age.ageUnknown) return;
-    if (!sameMajor(target.version, installs.host.version)) return;
-    const hostCompare = compareVersions(target.version, installs.host.version);
-    const clientCompare = installs.client.version === null
-      ? 0
-      : compareVersions(target.version, installs.client.version);
-    const needsHost = hostCompare > 0;
-    const needsClient = installs.client.version !== null && clientCompare > 0;
-    if (!needsHost && !needsClient) return;
+    if (!sameMajor(target.version, install.version)) return;
+    if (compareVersions(target.version, install.version) <= 0) return;
     try {
       await this.install({ allowMajor: false });
     } catch (error) {

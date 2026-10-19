@@ -1,7 +1,7 @@
 {
   "name": "dsh-ollama-web",
-  "version": "1.2.0",
-  "description": "Ollama Cloud web search provider for DeepSeek Harness, with update checks and installs",
+  "version": "2.0.0",
+  "description": "Ollama Cloud web search provider for DeepSeek Harness, with a Web UI settings card and update checks and installs",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,12 +10,14 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./client": "./client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
     "dist",
     "src",
+    "client.js",
     "cordis.patch.yml",
     "README.md",
     "LICENSE",
@@ -24,6 +26,13 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-plugin-manager",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
     }
   },
   "engines": {
@@ -46,7 +55,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm build && node --test test/*.test.mjs",
-    "prepublishOnly": "pnpm typecheck && pnpm test && node ../../scripts/check-dist.mjs",
+    "prepublishOnly": "pnpm typecheck && pnpm test && node ../../scripts/check-dist.mjs && node ../../scripts/check-client.mjs",
     "test:e2e": "node --test test/e2e/*.test.mjs"
   },
   "keywords": [

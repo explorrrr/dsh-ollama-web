@@ -8,14 +8,15 @@ credentials and sessions if it is malicious or compromised. The reviewed code
 only reads the configured `OLLAMA_*` API-key reference and the search query, but
 users should still treat installing/updating this plugin as a trust decision.
 
-The client package runs in the Web GUI origin. Its bundle is intentionally
-small: no external `fetch`, no storage, no HTML sinks (`innerHTML` /
-`dangerouslySetInnerHTML`), no `postMessage`, no `window.open`. It registers a
-`plugins.row.config` slot and a `plugins.detail.section`, calls `form.mutate`,
-asks the host's update service through DSH's same-origin `connection.rpc` when
-the user invokes an update action, and injects two static `<style>` elements for
-the support and update sections. The donation link is a plain HTTPS anchor; the
-card sends nothing until the user clicks it.
+The client bundle ships in the same npm package and runs in the Web GUI origin.
+Its bundle is intentionally small: no external `fetch`, no storage, no HTML
+sinks (`innerHTML` / `dangerouslySetInnerHTML`), no `postMessage`, no
+`window.open`. It registers a `plugins.row.config` slot and a
+`plugins.detail.section`, calls `form.mutate`, asks the host's update service
+through DSH's same-origin `connection.rpc` when the user invokes an update
+action, and injects two static `<style>` elements for the support and update
+sections. The donation link is a plain HTTPS anchor; the card sends nothing
+until the user clicks it.
 
 ## Data flow
 
@@ -25,7 +26,7 @@ card sends nothing until the user clicks it.
 | Query, `max_results` | `/api/web_search` | No session/user identifiers |
 | Response results | Local model context | Stored by DSH as a tool result |
 | Settings | DSH host settings/credentials | Key is write-only |
-| Update package names, metadata, tarballs | npm registry / npmmirror | Only on Check/Install or while auto-update is enabled |
+| Update package name, metadata, tarballs | npm registry / npmmirror | Only on Check/Install or while auto-update is enabled |
 | Update state/preferences | `<profile>/data/dsh-ollama-web/` | No secrets; mode 0o600 |
 
 Default search endpoint: `https://ollama.com`. Changing `baseURL` changes where
@@ -62,7 +63,7 @@ operator is responsible for the destination.
   `minimumReleaseAge`. When the setting is absent or `0`, there is no age wait.
 - Installs are serialized per profile with a mode-0600 lock; stale locks from
   dead processes are reclaimed.
-- A journal written before the host/client swap is used at startup to restore
+- A journal written before the package swap is used at startup to restore
   backups when a previous install was interrupted.
 - Linked development installs are never modified.
 - Persisted release metadata is validated on read: versions must parse and match,
@@ -84,5 +85,5 @@ operator is responsible for the destination.
 - The updater replaces installed files directly. The profile's
   `package.json` / `pnpm-lock.yaml` still record the previous version and a later
   pnpm operation can reinstall it; see [UPDATES.md](UPDATES.md).
-- `web_fetch` stays on DSH's local HTTP provider in 1.x; an Ollama fetch provider
+- `web_fetch` stays on DSH's local HTTP provider in 2.x; an Ollama fetch provider
   is deferred because its status-code semantics do not match the DSH contract.

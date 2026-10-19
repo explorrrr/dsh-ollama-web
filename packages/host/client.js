@@ -1,5 +1,5 @@
 /**
- * dsh-ollama-web-client - browser half.
+ * dsh-ollama-web - browser half.
  *
  * Registers the configuration card for the host bundle `dsh-ollama-web` and
  * its row `ollama-web`. The card edits the host's live settings namespace; it
@@ -8,7 +8,7 @@
  * service through DSH's same-origin Connection RPC.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-ollama-web-client',
+  id: 'dsh-ollama-web',
   factory: (require) => {
     const module = { exports: {} };
     const exports = module.exports;
@@ -20,11 +20,11 @@ window.__ModuleLoader__.load({
     const NS = 'settings.webSearchOllama';
     const TARGET_NS = 'ollama-web';
     const ROW_KEY = 'dsh-ollama-web#ollama-web';
+    const PACKAGE_NAME = 'dsh-ollama-web';
     const SUPPORT_URL = 'https://buymeacoffee.com/explorrrr';
     const UPDATE_CHANNEL = '/ollama-web-update';
-    const UPDATE_PACKAGES = ['dsh-ollama-web', 'dsh-ollama-web-client'];
-    const SUPPORT_STYLE_ID = 'dsh-ollama-web-client/SupportSection.css';
-    const UPDATE_STYLE_ID = 'dsh-ollama-web-client/UpdateSection.css';
+    const SUPPORT_STYLE_ID = 'dsh-ollama-web/SupportSection.css';
+    const UPDATE_STYLE_ID = 'dsh-ollama-web/UpdateSection.css';
     const SUPPORT_CSS = [
       '.dsh-ollama-web-support{display:flex;flex-direction:column;gap:6px;margin:12px 0 0;padding:12px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2)}',
       '.dsh-ollama-web-support-title{margin:0;font-size:13px;font-weight:500;line-height:1.5;color:var(--dsw-alias-label-primary)}',
@@ -103,7 +103,6 @@ window.__ModuleLoader__.load({
       updateTitle: 'Updates',
       updateDescription: 'The host checks npm for a newer release. The card makes no external request.',
       updateCurrent: 'Current',
-      updateClient: 'Client',
       updateRunning: 'Running',
       updateLatest: 'Latest',
       updateCheck: 'Check for updates',
@@ -117,7 +116,6 @@ window.__ModuleLoader__.load({
       updateAgeLimitedHint: 'This release is newer than your profile minimumReleaseAge setting.',
       updateAgeUnknown: 'Release age is unknown; automatic updates are paused.',
       updateAhead: 'The installed version is ahead of the latest release.',
-      updateMismatch: 'The host and client versions differ. Update both packages.',
       updateInstalled: 'Update installed. Restart to load it.',
       updateRestartApp: 'Quit and reopen DeepSeek Harness to load the new version.',
       updateRestartHost: 'Restart the dsh host to load the new version.',
@@ -137,13 +135,11 @@ window.__ModuleLoader__.load({
       updateInstallFailed: 'Update failed; the installed version was kept.',
       updateRetry: 'Retry',
       updateBusy: 'An update operation is already running.',
-      updateClientMissing: 'The client package is not installed.',
       updateStaleProcess: 'The running host still uses the old version.',
       updateNoUpdate: 'No update is available.',
       updateManual: 'Update manually',
-      updateManualHint: 'Use Plugins to remove and re-add both packages, or follow the README commands.',
+      updateManualHint: 'Use Plugins to reinstall this package, or follow the README commands.',
       updateCheckUnavailable: 'The host update service did not answer.',
-      updateVersionMismatch: 'Version mismatch',
       overridden: 'Overridden',
       reset: 'Reset to default',
       invalidNumber: 'Enter a number, or leave blank to use the default.',
@@ -182,7 +178,6 @@ window.__ModuleLoader__.load({
       updateTitle: 'アップデート',
       updateDescription: 'Hostがnpmの最新リリースを確認します。カード自体は外部通信しません。',
       updateCurrent: '現在',
-      updateClient: 'Client',
       updateRunning: '実行中',
       updateLatest: '最新',
       updateCheck: '更新を確認',
@@ -196,7 +191,6 @@ window.__ModuleLoader__.load({
       updateAgeLimitedHint: 'このリリースはプロファイルの minimumReleaseAge より新しいため、まだ自動更新できません。',
       updateAgeUnknown: '公開日時が不明なため、自動更新を保留しています。',
       updateAhead: 'インストール済みバージョンが最新リリースより進んでいます。',
-      updateMismatch: 'HostとClientのバージョンが一致しません。両方を更新してください。',
       updateInstalled: '更新をインストールしました。再起動で反映されます。',
       updateRestartApp: 'DeepSeek Harness を終了して再起動すると新しいバージョンが読み込まれます。',
       updateRestartHost: 'dshホストを再起動すると新しいバージョンが読み込まれます。',
@@ -216,13 +210,11 @@ window.__ModuleLoader__.load({
       updateInstallFailed: '更新に失敗しました。インストール済みバージョンは維持されています。',
       updateRetry: '再試行',
       updateBusy: '別の更新処理が実行中です。',
-      updateClientMissing: 'Clientパッケージがインストールされていません。',
       updateStaleProcess: '実行中のHostはまだ旧バージョンを使用しています。',
       updateNoUpdate: '更新はありません。',
       updateManual: '手動で更新',
-      updateManualHint: 'Pluginsから両パッケージを削除して再追加するか、READMEのコマンドを実行してください。',
+      updateManualHint: 'Pluginsからこのパッケージを再インストールするか、READMEのコマンドを実行してください。',
       updateCheckUnavailable: 'Hostの更新サービスが応答しませんでした。',
-      updateVersionMismatch: 'バージョン不一致',
       overridden: '上書き',
       reset: '既定に戻す',
       invalidNumber: '数値を入力するか、空欄で既定値を使ってください。',
@@ -261,7 +253,6 @@ window.__ModuleLoader__.load({
       updateTitle: '更新',
       updateDescription: '由 Host 检查 npm 上的最新版本；此卡片本身不发起外部请求。',
       updateCurrent: '当前',
-      updateClient: '客户端',
       updateRunning: '运行中',
       updateLatest: '最新',
       updateCheck: '检查更新',
@@ -275,7 +266,6 @@ window.__ModuleLoader__.load({
       updateAgeLimitedHint: '该版本比配置的 minimumReleaseAge 更新，暂时不能自动更新。',
       updateAgeUnknown: '发布日期未知，自动更新已暂停。',
       updateAhead: '已安装版本领先于最新发布。',
-      updateMismatch: 'Host 与 Client 版本不一致，请同时更新两个包。',
       updateInstalled: '更新已安装，重启后生效。',
       updateRestartApp: '退出并重新打开 DeepSeek Harness 以加载新版本。',
       updateRestartHost: '重启 dsh 宿主以加载新版本。',
@@ -295,13 +285,11 @@ window.__ModuleLoader__.load({
       updateInstallFailed: '更新失败，已保留当前版本。',
       updateRetry: '重试',
       updateBusy: '已有更新操作正在运行。',
-      updateClientMissing: '未安装 Client 包。',
       updateStaleProcess: '正在运行的 Host 仍使用旧版本。',
       updateNoUpdate: '没有可用更新。',
       updateManual: '手动更新',
-      updateManualHint: '在 Plugins 中移除并重新添加两个包，或按 README 的命令操作。',
+      updateManualHint: '在 Plugins 中重新安装此包，或按 README 的命令操作。',
       updateCheckUnavailable: 'Host 更新服务没有响应。',
-      updateVersionMismatch: '版本不一致',
       overridden: '已覆盖',
       reset: '恢复默认',
       invalidNumber: '请填数字；留空表示使用默认值。',
@@ -318,7 +306,7 @@ window.__ModuleLoader__.load({
       const selector = 'style[data-plugin-css=' + JSON.stringify(id) + ']';
       if (document.querySelector(selector) !== null) return;
       const tag = document.createElement('style');
-      tag.dataset.plugin = 'dsh-ollama-web-client';
+      tag.dataset.plugin = 'dsh-ollama-web';
       tag.dataset.pluginCss = id;
       tag.textContent = css;
       document.head.appendChild(tag);
@@ -468,7 +456,6 @@ window.__ModuleLoader__.load({
         case 'registry-status':
         case 'registry-json':
         case 'registry-mismatch':
-        case 'release-mismatch':
         case 'invalid-payload':
           return t('updateCheckFailed');
         default:
@@ -558,8 +545,8 @@ window.__ModuleLoader__.load({
         const update = useUpdateStatus(resolveConnection);
         const status = update.status;
         const latest = status && status.latest ? status.latest : null;
-        const current = status && status.current ? status.current : { host: null, client: null };
-        const running = status && status.running ? status.running : { host: null };
+        const current = status && status.current ? status.current : null;
+        const running = status && status.running ? status.running : null;
         const state = status ? status.state : (update.error ? 'unavailable' : 'unknown');
         const hostBusy = status !== undefined && status.busy === true;
         const locked = update.busy !== null || update.loading
@@ -579,16 +566,11 @@ window.__ModuleLoader__.load({
             className: 'dsh-ollama-web-updates-value',
           }, value));
         };
-        if (running.host && current.host && running.host !== current.host) {
-          addRow('running', labels('updateRunning'), running.host);
+        if (running && current && running !== current) {
+          addRow('running', labels('updateRunning'), running);
         }
-        if (current.host && current.client && current.host === current.client) {
-          addRow('current', labels('updateCurrent'), current.host);
-        } else {
-          if (current.host) addRow('current-host', labels('updateCurrent'), current.host);
-          if (current.client) addRow('current-client', labels('updateClient'), current.client);
-        }
-        if (latest) addRow('latest', labels('updateLatest'), latest.host);
+        if (current) addRow('current', labels('updateCurrent'), current);
+        if (latest) addRow('latest', labels('updateLatest'), latest.version);
         if (status && status.checkedAt) addRow('checked', labels('updateLastChecked'), formatTime(status.checkedAt));
         if (latest && latest.publishedAt) addRow('published', labels('updatePublishedAt'), formatTime(latest.publishedAt));
         if (latest && latest.eligibleAt && status && status.ageLimited) {
@@ -608,10 +590,10 @@ window.__ModuleLoader__.load({
               statusText = labels('updateUpToDate');
               break;
             case 'update':
-              statusText = labels('updateAvailable') + (latest ? ': ' + latest.host : '');
+              statusText = labels('updateAvailable') + (latest ? ': ' + latest.version : '');
               break;
             case 'major':
-              statusText = labels('updateMajorAvailable') + (latest ? ': ' + latest.host : '');
+              statusText = labels('updateMajorAvailable') + (latest ? ': ' + latest.version : '');
               tone = 'warning';
               break;
             case 'age-limited':
@@ -620,10 +602,6 @@ window.__ModuleLoader__.load({
               break;
             case 'ahead':
               statusText = labels('updateAhead');
-              break;
-            case 'mismatch':
-              statusText = labels('updateMismatch');
-              tone = 'warning';
               break;
             case 'installed':
               statusText = labels('updateInstalled') + ' '
@@ -694,7 +672,7 @@ window.__ModuleLoader__.load({
           links.push(react.createElement('a', {
             key: 'provenance',
             className: 'dsh-ollama-web-updates-link',
-            href: 'https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@' + latest.host,
+            href: 'https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@' + latest.version,
             target: '_blank',
             rel: 'noopener noreferrer',
           }, labels('updateProvenance')));
@@ -754,14 +732,6 @@ window.__ModuleLoader__.load({
             className: 'dsh-ollama-web-updates-status',
             'data-tone': 'error',
           }, updateErrorMessage(labels, shownError)) : null,
-          status && status.clientInstalled === false ? react.createElement('p', {
-            key: 'client-missing',
-            className: 'dsh-ollama-web-updates-note',
-          }, labels('updateClientMissing')) : null,
-          status && status.versionsMatch === false ? react.createElement('p', {
-            key: 'version-mismatch',
-            className: 'dsh-ollama-web-updates-note',
-          }, labels('updateVersionMismatch')) : null,
           actions.length > 0 ? react.createElement('div', {
             key: 'actions',
             className: 'dsh-ollama-web-updates-actions',
@@ -788,7 +758,7 @@ window.__ModuleLoader__.load({
       return function OllamaWebUpdatesDetail(props) {
         const subject = props.subject;
         if (!subject || subject.kind !== 'bundle' || !subject.pkg
-          || UPDATE_PACKAGES.indexOf(subject.pkg.name) === -1) {
+          || subject.pkg.name !== PACKAGE_NAME) {
           return null;
         }
         return react.createElement(UpdateSection, {
@@ -991,7 +961,7 @@ window.__ModuleLoader__.load({
     exports.ROW_KEY = ROW_KEY;
     exports.SUPPORT_URL = SUPPORT_URL;
     exports.UPDATE_CHANNEL = UPDATE_CHANNEL;
-    exports.UPDATE_PACKAGES = UPDATE_PACKAGES;
+    exports.PACKAGE_NAME = PACKAGE_NAME;
     exports.UPDATE_STYLE_ID = UPDATE_STYLE_ID;
     exports.UpdateRpcError = UpdateRpcError;
     exports.callUpdateRpc = callUpdateRpc;
