@@ -1,9 +1,40 @@
 # Smoke results
 
-Date: 2026-10-19 (2.1.0); 2.0.0, 1.2.0 and 1.1.0 checks were recorded earlier.
+Date: 2026-10-19 (2.2.0); 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks were recorded
+earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The 2.1.0 checks are package-level unless
+Environment: DSH 0.2.1-rc.2, macOS. The 2.2.0 checks are package-level unless
 noted; the full isolated DSH/browser result remains the 1.2.0 run below.
+
+## 2.2.0 support card checks (local)
+
+- [x] `pnpm install --frozen-lockfile --ignore-scripts` passed.
+- [x] `pnpm verify` passed: typecheck, build, 135 tests, `check-versions`,
+      `check-dist` and `check-client`.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/index.js`,
+      `dist/update/dsh.js`, `cordis.patch.yml` and `package.json` at 2.2.0.
+- [x] Client tests cover the second `plugins.detail.section` entry
+      (`dsh-ollama-web-support`, `order: 10`), subject filtering, the support
+      link URL/target/rel and the `data-view="detail"` marker.
+- [x] Published `dsh-ollama-web@2.2.0` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`01c3c47a25410bb36a1309e94751360708215ee80faf3964fbf3b981902feadd44413125ab7591b27fc69da18bd78ccfbd39ef4bfaaf852f401dc0a3aa52d72f`).
+- [x] Published `package/client.js` contains `dsh-ollama-web-support`,
+      `plugins.detail.section` and `makeSupportDetailSection`, and passes
+      `node --check`.
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.2.0` with the same
+      digest; workflow ref is `refs/tags/v2.2.0`, path is
+      `.github/workflows/release.yml`, and commit is
+      `a4f8109ed29a56b9aa093b114d9b87838b12b610`.
+- [x] npm `latest` points to `2.2.0`; the GitHub Release `v2.2.0` has
+      `dsh-ollama-web-2.2.0.tgz` and `SHA512SUMS` assets with the same digest.
+- [x] The first publish run published the package but failed while npm
+      propagation took about three minutes; re-running the failed `publish`
+      job completed the GitHub Release and asset upload.
+- [ ] Full isolated DSH/browser smoke was not re-run for 2.2.0; the 1.2.0
+      browser result below remains the last full UI smoke. The 2.2.0 change is
+      additive and covered by client unit tests and a published-bundle check.
 
 ## 2.1.0 compatibility checks (local)
 
