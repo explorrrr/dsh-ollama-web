@@ -44,7 +44,8 @@ For search, the host contacts only `https://ollama.com` by default:
 - The configured API key is sent only in the `Authorization: Bearer` header.
 
 For updates, the host contacts the npm registry (primary) or npmmirror
-(fallback) only when the user checks/installs, or while auto-update is enabled:
+(fallback) only when the user checks/installs, while auto-update is enabled, or
+when the update screen opens after five minutes without a successful check:
 
 - the package name `dsh-ollama-web`;
 - the package metadata and tarballs returned by the registry.

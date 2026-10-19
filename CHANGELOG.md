@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-19
+
+### Added
+
+- Opening the plugin's update screen now performs a fresh update check when
+  the last successful check is older than five minutes. The manual **Check for
+  updates** button still checks at any time. A failed automatic check leaves
+  the cached status visible.
+
 ## [2.2.0] - 2026-10-19
 
 ### Added

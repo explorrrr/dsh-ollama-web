@@ -25,7 +25,7 @@
 1. 添加包。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.2.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.3.0
    ```
 
    如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -47,14 +47,14 @@
 
 ### 从 1.x 迁移
 
-2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.2.0 前请先删除旧包：
+2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.3.0 前请先删除旧包：
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
 ```
 
-1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.2.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
+1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.3.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
 
 ## 配置
 
@@ -91,7 +91,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
 
 ## 更新
 
-**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。从 2.2.0 起，bundle 详情页还会显示支持卡片。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
+**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。从 2.2.0 起，bundle 详情页还会显示支持卡片。打开此页面时，如果上次成功检查已超过5分钟，也会自动检查；**检查更新** 始终立即检查。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
 
 - **检查：** Host 读取 npm registry（失败时使用 npmmirror），仅在 profile **明确设置** pnpm 的 `minimumReleaseAge` 时遵守。未设置、无法读取、无效或 `0` 表示不等待。比配置年龄更新的版本会显示为等待中，不会自动安装。
 - **兼容性：** 更新器会将目标版本的 `engines.dsh` 与当前运行的 DSH 版本（`DSH_CLIENT_VERSION` 或 `DSH_APP_VERSION`）进行比较。明确不兼容的版本会被阻止；无法确认兼容性时会暂停自动更新，但仍可使用手动安装按钮。
@@ -106,7 +106,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
 - Host 插件在进程内运行，位于工作区 sandbox 之外。安装前请审查代码并固定版本。
 - 搜索仅使用 HTTPS，拒绝重定向，限制响应/查询/片段大小，结果 URL 仅允许 `http(s)`。
 - 不记录查询或 API 密钥，无遥测，无自定义会话事件。
-- 搜索默认只连接 `ollama.com`。更新仅在明确操作或启用自动更新时连接 npm registry（失败时使用 npmmirror），且只发送包名。更改 `baseURL` 后，密钥和查询的发送目的地由你自行选择。
+- 搜索默认只连接 `ollama.com`。更新仅在明确操作、启用自动更新时，或上次成功检查超过5分钟后打开更新页面时连接 npm registry（失败时使用 npmmirror），且只发送包名。更改 `baseURL` 后，密钥和查询的发送目的地由你自行选择。
 - 更新 tarball 在解包前会校验 npm SHA-512 integrity；拒绝 symlink、路径穿越和过大条目。不执行 npm lifecycle script。
 - 自动更新会在不询问的情况下安装新代码。它是 opt-in，且仅限当前主版本。
 - Client 卡片不向第三方发起外部请求。更新状态和操作仅通过 DSH 的同源 Connection RPC 与 Host 通信。不使用 `innerHTML` / `dangerouslySetInnerHTML`。
