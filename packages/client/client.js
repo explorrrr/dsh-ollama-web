@@ -433,6 +433,20 @@ window.__ModuleLoader__.load({
       }
     }
 
+    function safeReleaseUrl(value) {
+      if (typeof value !== 'string') return undefined;
+      try {
+        const url = new URL(value);
+        if (url.protocol !== 'https:' || url.hostname !== 'github.com') return undefined;
+        if (url.username !== '' || url.password !== '' || url.port !== '') return undefined;
+        if (url.search !== '' || url.hash !== '') return undefined;
+        if (!url.pathname.startsWith('/explorrrr/dsh-ollama-web/releases/tag/')) return undefined;
+        return url.href;
+      } catch {
+        return undefined;
+      }
+    }
+
     function updateErrorMessage(t, error) {
       if (!error) return t('updateCheckFailed');
       switch (error.code) {
@@ -666,11 +680,12 @@ window.__ModuleLoader__.load({
         }
 
         const links = [];
-        if (latest && latest.releaseUrl) {
+        const releaseUrl = latest ? safeReleaseUrl(latest.releaseUrl) : undefined;
+        if (releaseUrl !== undefined) {
           links.push(react.createElement('a', {
             key: 'release',
             className: 'dsh-ollama-web-updates-link',
-            href: latest.releaseUrl,
+            href: releaseUrl,
             target: '_blank',
             rel: 'noopener noreferrer',
           }, labels('updateReleaseNotes')));

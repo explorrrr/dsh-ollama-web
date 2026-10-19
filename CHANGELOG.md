@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Drop persisted update metadata whose release URL is not the canonical
+  GitHub Releases URL or whose host/client versions are invalid or differ.
 - Percent-encode Markdown delimiters in search result URLs and remove autolink
   delimiters from titles/publish dates so hostile results cannot inject links
   into the model-visible source list.

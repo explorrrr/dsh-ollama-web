@@ -10,6 +10,24 @@ export const NPMMIRROR_REGISTRY = 'https://registry.npmmirror.com/';
 export const DEFAULT_MINIMUM_RELEASE_AGE_MINUTES = 60;
 export const RELEASES_URL = 'https://github.com/explorrrr/dsh-ollama-web/releases/tag';
 
+/** True for the canonical GitHub Releases tag URL of this repository. */
+export function isAllowedReleaseUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return url.protocol === 'https:'
+    && url.hostname === 'github.com'
+    && url.username === ''
+    && url.password === ''
+    && url.port === ''
+    && url.search === ''
+    && url.hash === ''
+    && url.pathname.startsWith('/explorrrr/dsh-ollama-web/releases/tag/');
+}
+
 const METADATA_MAX_BYTES = 256 * 1024;
 const METADATA_TIMEOUT_MS = 10_000;
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);

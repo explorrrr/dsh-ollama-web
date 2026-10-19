@@ -39,6 +39,7 @@ function loadClient(react, document) {
   let definition;
   const required = [];
   const sandbox = {
+    URL,
     window: {
       __ModuleLoader__: {
         load(value) {
@@ -488,6 +489,45 @@ test('update section shows an available update and triggers check/install/auto R
   await toggle.props.onChange(true);
   await flush();
   assert.ok(fake.calls.some((call) => call.method === 'setAutoUpdate' && call.payload.enabled === true));
+});
+
+test('update section ignores unsafe release URLs', async () => {
+  for (const releaseUrl of [
+    'javascript:alert(1)',
+    'https://evil.example/explorrrr/dsh-ollama-web/releases/tag/v1.1.0',
+    'https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.1.0?x=1',
+  ]) {
+    const react = makeReact();
+    const { exports } = loadClient(react);
+    const fake = fakeConnection({
+      ...BASE_STATUS,
+      latest: { ...BASE_STATUS.latest, releaseUrl },
+    });
+    const Section = makeSection(exports, react, fake.connection);
+    react.render(Section, { t: (key) => key, view: 'card' });
+    await flush();
+    const tree = react.render(Section, { t: (key) => key, view: 'card' });
+    const releaseLink = findElement(
+      tree,
+      (node) => node.type === 'a' && flatText(node.props.children).includes('updateReleaseNotes'),
+    );
+    assert.equal(releaseLink, undefined, releaseUrl);
+  }
+});
+
+test('update section renders the canonical release URL', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection();
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  const releaseLink = findElement(
+    tree,
+    (node) => node.type === 'a' && flatText(node.props.children).includes('updateReleaseNotes'),
+  );
+  assert.equal(releaseLink.props.href, BASE_STATUS.latest.releaseUrl);
 });
 
 test('update section renders a restart notice for an installed update', async () => {
