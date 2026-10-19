@@ -6,7 +6,7 @@ import type {
 } from '@deepseek-ai/dsh-web';
 import { providerError } from './errors.js';
 import { postJsonWithLimit } from './http.js';
-import { isHttpSourceUrl, sanitizeInline, sanitizeTitle } from './sanitize.js';
+import { sanitizeInline, sanitizeMetadata, sanitizeSourceUrl, sanitizeTitle } from './sanitize.js';
 import type { ResolvedOptions } from './config.js';
 
 export const OLLAMA_PROVIDER_ID = 'ollama';
@@ -76,8 +76,8 @@ function mapResponse(body: unknown, snippetMax: number, maxResults: number): Web
   for (const item of items) {
     if (item === null || typeof item !== 'object') continue;
     const record = item as Record<string, unknown>;
-    const url = record.url;
-    if (!isHttpSourceUrl(url) || seen.has(url)) continue;
+    const url = sanitizeSourceUrl(record.url);
+    if (url === undefined || seen.has(url)) continue;
     if (sources.length >= maxResults) {
       truncated = true;
       break;
@@ -91,7 +91,7 @@ function mapResponse(body: unknown, snippetMax: number, maxResults: number): Web
       : typeof record.page_age === 'string'
         ? record.page_age
         : undefined;
-    const publishedAt = published === undefined ? '' : sanitizeInline(published, 64);
+    const publishedAt = published === undefined ? '' : sanitizeMetadata(published, 64);
 
     const source: WebSearchSource = {
       url,

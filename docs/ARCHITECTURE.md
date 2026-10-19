@@ -43,7 +43,7 @@ same-origin Connection RPC.
 | `src/provider.ts` | `OllamaSearchProvider` and response mapping |
 | `src/http.ts` | POST, deadline, redirect refusal, byte cap, status mapping |
 | `src/credentials.ts` | (part of `config.ts`) literal -> credentials -> launch env |
-| `src/sanitize.ts` | URL scheme, title/snippet sanitization |
+| `src/sanitize.ts` | URL scheme, Markdown-safe URL/title/metadata sanitization |
 | `src/errors.ts` | `WebError` helpers |
 | `src/update/types.ts` | Update status, error codes, stored state |
 | `src/update/semver.ts` | Stable/prerelease comparison |

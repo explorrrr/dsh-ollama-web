@@ -42,9 +42,10 @@ operator is responsible for the destination.
   backslashes and protocol-relative paths are rejected.
 - `redirect: "error"`.
 - Response byte cap, query cap, snippet cap and result cap.
-- `http(s)`-only result URLs; username/password URLs dropped.
-- Titles have square brackets removed so a hostile title cannot break the
-  Markdown link label.
+- `http(s)`-only result URLs; username/password URLs dropped, and Markdown
+  delimiters in URLs are percent-encoded.
+- Titles and short metadata have Markdown/autolink delimiters removed so a
+  hostile result cannot break the `[label](url)` structure.
 - No logging, telemetry or custom session events.
 - Credentials are resolved per operation; a credentials-service failure is
   surfaced instead of silently falling back.

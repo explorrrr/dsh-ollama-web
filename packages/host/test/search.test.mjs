@@ -114,6 +114,29 @@ test('truncates sources at maxResults and reports it', async () => {
   }
 });
 
+test('neutralizes Markdown in source metadata', async () => {
+  const provider = makeProvider({ apiKey: 'secret' });
+  const mock = installFetch(() => jsonResponse({
+    results: [{
+      title: 'Click <https://evil.example> [now] \\',
+      url: 'https://a.example/x)[x](https://phish.example)',
+      content: 'content',
+      publishedAt: '2026-01-01)([x](https://evil.example)',
+    }],
+  }));
+  try {
+    const result = await provider.search({ query: 'x' });
+    assert.equal(result.sources.length, 1);
+    const source = result.sources[0];
+    assert.doesNotMatch(source.url, /[()[\]<>\\|]/);
+    assert.doesNotMatch(source.title, /[[\]<>\\]/);
+    assert.doesNotMatch(source.publishedAt, /[[\]()<>\\]/);
+    assert.equal(new URL(source.url).hostname, 'a.example');
+  } finally {
+    mock.restore();
+  }
+});
+
 test('caps snippets at snippetMax', async () => {
   const provider = makeProvider({ apiKey: 'secret', snippetMax: 5 });
   const mock = installFetch(() => jsonResponse({
