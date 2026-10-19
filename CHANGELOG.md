@@ -16,6 +16,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Run CodeQL against GitHub Actions workflows as well as JavaScript/TypeScript.
 - Split release publishing into a read-only build job and an OIDC-only
   `npm` Environment publish job; add a tag-on-main check and production audit.
 - Write an update journal before a host/client swap and roll back interrupted
