@@ -5,16 +5,22 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    environment: npm
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
@@ -23,22 +29,25 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
-      - name: Ensure npm supports trusted publishing
+      - name: Verify the release tag is on main
         run: |
-          npm install --global npm@11 --silent
-          npm --version
+          set -euo pipefail
+          git fetch --no-tags origin main
+          TAG_COMMIT=$(git rev-list -n 1 "$GITHUB_REF_NAME")
+          test "$TAG_COMMIT" = "$(git rev-parse HEAD)"
+          git merge-base --is-ancestor "$TAG_COMMIT" origin/main
       - name: Verify repository metadata
         run: |
           if ! grep -q 'github.com/explorrrr/dsh-ollama-web' packages/host/package.json packages/client/package.json; then
             echo "Repository metadata must point to github.com/explorrrr/dsh-ollama-web." >&2
             exit 1
           fi
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm test
       - run: pnpm check
+      - run: pnpm audit --prod
       - name: Verify tag matches package versions
         run: |
           set -euo pipefail
@@ -46,33 +55,85 @@ jobs:
           CLIENT=$(node -p "require('./packages/client/package.json').version")
           test "$HOST" = "$CLIENT"
           test "$GITHUB_REF_NAME" = "v$HOST"
-      - name: Publish host package
-        working-directory: packages/host
+      - name: Stage publish directories
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./package.json').version")
+          mkdir -p package-artifacts
+          tar --exclude=node_modules --exclude='*.tgz' -czf package-artifacts/host-package.tgz -C packages/host .
+          tar --exclude=node_modules --exclude='*.tgz' -czf package-artifacts/client-package.tgz -C packages/client .
+          (cd package-artifacts && shasum -a 512 ./*.tgz > SHA512SUMS)
+          cat package-artifacts/SHA512SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-packages
+          path: package-artifacts/
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Verify npm supports trusted publishing
+        run: |
+          set -euo pipefail
+          npm --version
+          NPM_VERSION=$(npm --version)
+          node -e 'const [major, minor] = process.argv[1].split(".").map(Number); if (major < 11 || (major === 11 && minor < 5)) { console.error("npm 11.5+ is required"); process.exit(1); }' "$NPM_VERSION"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-packages
+          path: release-artifacts
+      - name: Verify and extract publish artifacts
+        run: |
+          set -euo pipefail
+          (cd release-artifacts && shasum -a 512 -c SHA512SUMS)
+          mkdir -p stage/host stage/client
+          tar -xzf release-artifacts/host-package.tgz -C stage/host
+          tar -xzf release-artifacts/client-package.tgz -C stage/client
+          HOST=$(node -p "require('./stage/host/package.json').version")
+          CLIENT=$(node -p "require('./stage/client/package.json').version")
+          test "$HOST" = "$CLIENT"
+          test "$GITHUB_REF_NAME" = "v$HOST"
+          test "$(node -p "require('./stage/host/package.json').name")" = "dsh-ollama-web"
+          test "$(node -p "require('./stage/client/package.json').name")" = "dsh-ollama-web-client"
+      - name: Publish host package
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./stage/host/package.json').version")
           if npm view "dsh-ollama-web@$VERSION" version >/dev/null 2>&1; then
             echo "dsh-ollama-web@$VERSION already exists; skipping."
           else
             if [[ "$VERSION" == *-* ]]; then DIST_TAG=next; else DIST_TAG=latest; fi
-            npm publish --provenance --access public --tag "$DIST_TAG"
+            npm publish ./stage/host --provenance --access public --tag "$DIST_TAG" --ignore-scripts
           fi
       - name: Publish client package
-        working-directory: packages/client
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(node -p "require('./stage/client/package.json').version")
           if npm view "dsh-ollama-web-client@$VERSION" version >/dev/null 2>&1; then
             echo "dsh-ollama-web-client@$VERSION already exists; skipping."
           else
             if [[ "$VERSION" == *-* ]]; then DIST_TAG=next; else DIST_TAG=latest; fi
-            npm publish --provenance --access public --tag "$DIST_TAG"
+            npm publish ./stage/client --provenance --access public --tag "$DIST_TAG" --ignore-scripts
           fi
       - name: Download published npm tarballs
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./packages/host/package.json').version")
-          CLIENT_VERSION=$(node -p "require('./packages/client/package.json').version")
+          VERSION=$(node -p "require('./stage/host/package.json').version")
+          CLIENT_VERSION=$(node -p "require('./stage/client/package.json').version")
           test "$VERSION" = "$CLIENT_VERSION"
           mkdir -p dist
           fetch_tarball() {
@@ -98,7 +159,7 @@ jobs:
       - name: Verify release assets contain the updater
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./packages/host/package.json').version")
+          VERSION=$(node -p "require('./stage/host/package.json').version")
           HOST_LIST=$(mktemp)
           CLIENT_JS=$(mktemp)
           trap 'rm -f "$HOST_LIST" "$CLIENT_JS"' EXIT
@@ -113,7 +174,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./packages/host/package.json').version")
+          VERSION=$(node -p "require('./stage/host/package.json').version")
           PRERELEASE=""
           if [[ "$VERSION" == *-* ]]; then PRERELEASE="--prerelease"; fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
