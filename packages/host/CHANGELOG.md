@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Serialize installs per profile with a mode-0600 lock and reclaim stale locks
+  from dead or expired processes.
 - Validate persisted update release metadata and drop unsafe or inconsistent
   release URLs before exposing them to the client.
 - Neutralize Markdown delimiters in search result URLs, titles and publish

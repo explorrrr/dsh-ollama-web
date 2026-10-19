@@ -64,6 +64,11 @@ contact the registry.
 A failed check, download, verification or swap leaves the installed version in
 place. The updater does not run npm, pnpm or any package lifecycle script.
 
+Each profile allows one install at a time. The host writes a mode-0600
+`update.lock` under `<profile>/data/dsh-ollama-web/`; a second host either
+reports `busy` or, after a crash, reclaims a lock whose PID is dead or whose
+mtime is older than 15 minutes.
+
 ### Backups
 
 Successful swaps keep hidden `.dsh-ollama-web-bak-*` directories next to the

@@ -21,7 +21,7 @@ export function statePath(dataDir: string): string {
   return join(dataDir, STATE_FILE);
 }
 
-async function ensureDataDir(dataDir: string): Promise<void> {
+export async function ensureDataDir(dataDir: string): Promise<void> {
   try {
     await mkdir(dataDir, { recursive: true, mode: 0o700 });
     await chmod(dataDir, 0o700).catch(() => undefined);

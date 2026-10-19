@@ -1,4 +1,8 @@
 import {
+  acquireUpdateLock,
+  cleanupStaleUpdateLock,
+} from './lock.js';
+import {
   cleanupBackups,
   cleanupStaleArtifacts,
   detectInstalls,
@@ -94,6 +98,7 @@ export class UpdateService {
     this.minAgeMinutes = this.options.minReleaseAgeMinutes
       ?? await readMinimumReleaseAge(this.options.profile.dir);
     this.prefs = await readPrefs(this.options.dataDir);
+    await cleanupStaleUpdateLock(this.options.dataDir, this.now()).catch(() => undefined);
     this.state = await readState(this.options.dataDir);
     this.installs = detectInstalls(
       this.options.profile,
@@ -406,6 +411,7 @@ export class UpdateService {
     if (!sameMajor(target.version, currentHost) && !allowMajor) {
       throw new UpdateFailure('major-blocked', 'major updates require an explicit confirmation');
     }
+    const lock = await acquireUpdateLock(this.options.dataDir, this.now());
     this.phase = 'installing';
     try {
       const result = await installRelease({
@@ -444,6 +450,8 @@ export class UpdateService {
       this.state.lastError = failure;
       await this.persistState();
       throw error;
+    } finally {
+      await lock.release().catch(() => undefined);
     }
   }
 
