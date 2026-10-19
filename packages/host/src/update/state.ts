@@ -2,6 +2,8 @@ import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 import { UpdateFailure } from './errors.js';
+import { isAllowedReleaseUrl } from './registry.js';
+import { parseVersion } from './semver.js';
 import type { StoredUpdateState, UpdateError, UpdatePrefs } from './types.js';
 
 const PREFS_FILE = 'update-prefs.json';
@@ -75,6 +77,9 @@ function normalizeLatest(value: unknown): StoredUpdateState['latest'] {
   if (!isRecord(value)) return undefined;
   if (typeof value.host !== 'string' || typeof value.client !== 'string') return undefined;
   if (typeof value.releaseUrl !== 'string' || typeof value.provenance !== 'boolean') return undefined;
+  if (value.host !== value.client) return undefined;
+  if (parseVersion(value.host) === undefined) return undefined;
+  if (!isAllowedReleaseUrl(value.releaseUrl)) return undefined;
   return {
     host: value.host,
     client: value.client,

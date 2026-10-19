@@ -29,6 +29,38 @@ test('preferences default to off and round-trip', async () => {
   }
 });
 
+test('state rejects unsafe or inconsistent release metadata', async () => {
+  const root = makeTempDir();
+  try {
+    const dataDir = join(root, 'data');
+    const base = {
+      schemaVersion: 1,
+      latest: {
+        host: '1.1.0',
+        client: '1.1.0',
+        publishedAt: '2026-10-01T00:00:00.000Z',
+        eligibleAt: '2026-10-01T01:00:00.000Z',
+        releaseUrl: 'https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.1.0',
+        provenance: true,
+      },
+    };
+    for (const latest of [
+      { ...base.latest, releaseUrl: 'javascript:alert(1)' },
+      { ...base.latest, releaseUrl: 'https://evil.example/releases/tag/v1.1.0' },
+      { ...base.latest, host: 'not-a-version' },
+      { ...base.latest, client: '1.2.0' },
+    ]) {
+      await writeState(dataDir, { ...base, latest });
+      const state = await readState(dataDir);
+      assert.equal(state.latest, undefined);
+    }
+    await writeState(dataDir, base);
+    assert.equal((await readState(dataDir)).latest?.host, '1.1.0');
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('state defaults, round-trips, and ignores malformed JSON', async () => {
   const root = makeTempDir();
   try {

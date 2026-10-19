@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows
 
 - Clarify that `searchPath` must stay under the `baseURL` path prefix and that
   `apiKeyEnv` accepts only `OLLAMA_*` environment variable names.
+- Only render release-note links for the canonical GitHub Releases URL.
 
 ## [1.1.0] - 2026-10-18
 

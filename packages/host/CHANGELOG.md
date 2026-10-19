@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Validate persisted update release metadata and drop unsafe or inconsistent
+  release URLs before exposing them to the client.
 - Neutralize Markdown delimiters in search result URLs, titles and publish
   dates before they reach the DSH source list.
 - Keep `searchPath` under the configured `baseURL` path prefix and reject
