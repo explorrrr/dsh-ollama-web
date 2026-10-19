@@ -1,10 +1,39 @@
 # Smoke results
 
-Date: 2026-10-19 (2.2.0); 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks were recorded
-earlier.
+Date: 2026-10-19 (2.3.0); 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks were
+recorded earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The 2.2.0 checks are package-level unless
+Environment: DSH 0.2.1-rc.2, macOS. The 2.3.0 checks are package-level unless
 noted; the full isolated DSH/browser result remains the 1.2.0 run below.
+
+## 2.3.0 update-on-open checks (local)
+
+- [x] `pnpm install --frozen-lockfile --ignore-scripts` passed.
+- [x] `pnpm verify` passed: typecheck, build, 139 tests, `check-versions`,
+      `check-dist` and `check-client`.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/index.js`,
+      `dist/update/dsh.js`, `cordis.patch.yml` and `package.json` at 2.3.0.
+- [x] Client tests cover the five-minute auto-check threshold, the manual
+      **Check for updates** override (always fresh), silent automatic-check
+      failure, and the skip for persisted install errors.
+- [x] Published `dsh-ollama-web@2.3.0` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`7190e1eeb23376c0c5b4bce42134853bedbccfaa105a2472495e2f05c98e08703a046764d4fce88ce61bda934f71f04651d80e44ee3080981fa00417cd6dc57c`).
+- [x] Published `package/client.js` contains `autoCheckDue`,
+      `AUTO_CHECK_MIN_INTERVAL_MS` and the support-card registration, and
+      passes `node --check`.
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.3.0` with the same
+      digest; workflow ref is `refs/tags/v2.3.0`, path is
+      `.github/workflows/release.yml`, and commit is
+      `de0d6859a0c0cdab124ffc1fc10159a42d029297`.
+- [x] npm `latest` points to `2.3.0`; the GitHub Release `v2.3.0` has
+      `dsh-ollama-web-2.3.0.tgz` and `SHA512SUMS` assets with the same digest.
+- [x] The publish job completed in its first run; this release did not need the
+      npm-propagation rerun used for 2.1.0 and 2.2.0.
+- [ ] Full isolated DSH/browser smoke was not re-run for 2.3.0; the 1.2.0
+      browser result below remains the last full UI smoke. The 2.3.0 change is
+      covered by client unit tests and a published-bundle check.
 
 ## 2.2.0 support card checks (local)
 
