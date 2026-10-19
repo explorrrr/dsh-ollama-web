@@ -42,8 +42,9 @@ explicitly configured age is shown as **waiting for the minimum release age**;
 it is not installed by the button or by auto-update until the eligible time.
 
 A check caches its result for one hour. **Check for updates** always performs a
-fresh check. Opening the card only reads the cached host state; it does not
-contact the registry.
+fresh check. Opening the card reads the cached host state, and when the last
+successful check is older than five minutes it also performs a fresh check in
+the background. Within those five minutes it does not contact the registry.
 
 ## DSH compatibility
 
@@ -156,7 +157,7 @@ Manual commands for a non-desktop profile:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web
-dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
 ```
 
 The desktop profile is managed by the Electron app; use **Plugins** there.
@@ -164,11 +165,11 @@ The desktop profile is managed by the Electron app; use **Plugins** there.
 ## Upgrading from 1.x
 
 2.0.0 merges the former `dsh-ollama-web-client` package into
-`dsh-ollama-web`. Remove the old package before installing 2.2.0:
+`dsh-ollama-web`. Remove the old package before installing 2.3.0:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
 ```
 
 The 1.x updater reads packuments for both old packages and only installs
@@ -187,7 +188,7 @@ when it detects the legacy package.
 be installed manually. Current releases install the single package:
 
 ```bash
-dsh plugin --profile desktop add dsh-ollama-web@2.2.0
+dsh plugin --profile desktop add dsh-ollama-web@2.3.0
 ```
 
 After that, later 2.0.x releases can be installed from the card or by

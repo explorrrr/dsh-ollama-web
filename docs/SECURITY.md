@@ -14,9 +14,10 @@ sinks (`innerHTML` / `dangerouslySetInnerHTML`), no `postMessage`, no
 `window.open`. It registers a `plugins.row.config` slot and two
 `plugins.detail.section` entries, calls `form.mutate`, asks the host's update
 service through DSH's same-origin `connection.rpc` when the user invokes an
-update action, and injects two static `<style>` elements for the support and
-update sections. The donation link is a plain HTTPS anchor; the cards send
-nothing until the user clicks it.
+update action or the update screen opens with a check older than five minutes,
+and injects two static `<style>` elements for the support and update sections.
+The donation link is a plain HTTPS anchor; the cards send nothing until the user
+clicks it.
 
 ## Data flow
 
@@ -26,7 +27,7 @@ nothing until the user clicks it.
 | Query, `max_results` | `/api/web_search` | No session/user identifiers |
 | Response results | Local model context | Stored by DSH as a tool result |
 | Settings | DSH host settings/credentials | Key is write-only |
-| Update package name, metadata, tarballs | npm registry / npmmirror | Only on Check/Install or while auto-update is enabled |
+| Update package name, metadata, tarballs | npm registry / npmmirror | Only on Check/Install, auto-update, or an update-screen open after five minutes |
 | Update state/preferences | `<profile>/data/dsh-ollama-web/` | No secrets; mode 0o600 |
 
 Default search endpoint: `https://ollama.com`. Changing `baseURL` changes where

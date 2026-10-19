@@ -516,6 +516,88 @@ test('update section shows an available update and triggers check/install/auto R
   assert.ok(fake.calls.some((call) => call.method === 'setAutoUpdate' && call.payload.enabled === true));
 });
 
+test('auto check is due only for a missing or older-than-five-minute check', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const now = Date.now();
+  assert.equal(exports.autoCheckDue({
+    ...BASE_STATUS,
+    checkedAt: new Date(now - 4 * 60_000).toISOString(),
+  }), false);
+  assert.equal(exports.autoCheckDue({
+    ...BASE_STATUS,
+    checkedAt: new Date(now - 6 * 60_000).toISOString(),
+  }), true);
+  assert.equal(exports.autoCheckDue({ ...BASE_STATUS, checkedAt: null }), true);
+  assert.equal(exports.autoCheckDue({ ...BASE_STATUS, checkedAt: 'not-a-date' }), true);
+  assert.equal(exports.autoCheckDue({ ...BASE_STATUS, available: false }), false);
+  assert.equal(exports.autoCheckDue({ ...BASE_STATUS, busy: true }), false);
+  assert.equal(exports.autoCheckDue({ ...BASE_STATUS, state: 'linked' }), false);
+  assert.equal(exports.autoCheckDue({ ...BASE_STATUS, state: 'installed' }), false);
+  assert.equal(exports.autoCheckDue({ ...BASE_STATUS, state: 'unavailable' }), false);
+  assert.equal(exports.autoCheckDue({
+    ...BASE_STATUS,
+    error: { code: 'install-failed', message: 'failed', details: {} },
+  }), false);
+  assert.equal(exports.autoCheckDue({
+    ...BASE_STATUS,
+    error: { code: 'network', message: 'offline', details: {} },
+  }), true);
+});
+
+test('opening the update section refreshes a stale check', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection({
+    ...BASE_STATUS,
+    checkedAt: new Date(Date.now() - 6 * 60_000).toISOString(),
+  });
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const checks = fake.calls.filter((call) => call.method === 'check');
+  assert.equal(checks.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(checks[0].payload)), { fresh: true });
+});
+
+test('opening the update section reuses a recent check but the button still checks', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection({
+    ...BASE_STATUS,
+    checkedAt: new Date().toISOString(),
+  });
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  assert.equal(fake.calls.some((call) => call.method === 'check'), false);
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  await findButton(tree, 'updateCheck').props.onClick();
+  await flush();
+  const checks = fake.calls.filter((call) => call.method === 'check');
+  assert.equal(checks.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(checks[0].payload)), { fresh: true });
+});
+
+test('a failed automatic check leaves the cached status visible', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const failure = {
+    ok: false,
+    error: { code: 'network', message: 'offline', details: {} },
+  };
+  const fake = fakeConnection(
+    { ...BASE_STATUS, checkedAt: new Date(Date.now() - 6 * 60_000).toISOString() },
+    { check: async () => failure },
+  );
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  assert.match(flatText(statusLine(tree)), /updateAvailable/);
+  assert.doesNotMatch(flatText(tree), /updateCheckFailed/);
+});
+
 test('update section blocks an incompatible release and shows the DSH range', async () => {
   const react = makeReact();
   const { exports } = loadClient(react);

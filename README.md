@@ -25,7 +25,7 @@ One package provides the `web_search` backend and the settings card. Install it 
 1. Add the package.
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.2.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.3.0
    ```
 
    Replace `desktop` with your profile name if needed. You can also use **Plugins -> Add plugin** in the Web UI. npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -47,14 +47,14 @@ One package provides the `web_search` backend and the settings card. Install it 
 
 ### Upgrading from 1.x
 
-2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.2.0:
+2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.3.0:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
 ```
 
-The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.2.0`. Leaving the old client installed can register the settings card twice and is not supported.
+The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.3.0`. Leaving the old client installed can register the settings card twice and is not supported.
 
 ## Configure
 
@@ -91,7 +91,7 @@ Ask the model to search, then check that results come from Ollama. The search re
 
 ## Updates
 
-**Plugins -> `dsh-ollama-web` -> Configure** (or the bundle detail page) shows an Updates section. As of 2.2.0, the bundle detail page also shows the support card. Use **Check for updates** / **Install update**, then restart DSH (quit and reopen the desktop app) to load the new version.
+**Plugins -> `dsh-ollama-web` -> Configure** (or the bundle detail page) shows an Updates section. As of 2.2.0, the bundle detail page also shows the support card. Opening this screen performs a fresh check when the last successful check is older than five minutes; **Check for updates** always checks immediately. Use **Check for updates** / **Install update**, then restart DSH (quit and reopen the desktop app) to load the new version.
 
 - **Check:** the host reads the npm registry (fallback: npmmirror) and honours the profile's pnpm `minimumReleaseAge` only when it is explicitly set. Unset, unreadable, invalid or `0` means no age wait. A release newer than a configured age is shown as waiting instead of being installed.
 - **Compatibility:** the updater compares the release's `engines.dsh` with the running DSH version (`DSH_CLIENT_VERSION` or `DSH_APP_VERSION`). A known-incompatible release is blocked; if compatibility cannot be verified, auto-update pauses while the manual Install button remains available.
@@ -106,7 +106,7 @@ See [docs/UPDATES.md](docs/UPDATES.md) for details.
 - Host plugins run in-process, outside the workspace sandbox. Review plugins before installing and pin versions.
 - Search is HTTPS-only, refuses redirects, caps response/query/snippet sizes, and allows only `http(s)` result URLs.
 - No query or API key logging, no telemetry, no custom session events.
-- Search contacts only `ollama.com` by default. Updates contact the npm registry (fallback: npmmirror) only on explicit action or while auto-update is enabled, and send only the package name. Changing `baseURL` changes where the key and queries go.
+- Search contacts only `ollama.com` by default. Updates contact the npm registry (fallback: npmmirror) only on explicit action, while auto-update is enabled, or when the update screen opens after five minutes without a successful check, and send only the package name. Changing `baseURL` changes where the key and queries go.
 - Update tarballs are checked against the npm SHA-512 integrity; symlinks, traversal and oversized entries are rejected. No npm lifecycle script runs.
 - Auto-update installs new code without a prompt. It is opt-in and limited to the current major version.
 - The client card makes no third-party external request. It reads update state and performs update actions only through DSH's same-origin Connection RPC to the host. It does not use `innerHTML` / `dangerouslySetInnerHTML`.
