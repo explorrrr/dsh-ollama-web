@@ -25,7 +25,7 @@
 1. 添加包。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.1.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.2.0
    ```
 
    如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -47,14 +47,14 @@
 
 ### 从 1.x 迁移
 
-2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.1.0 前请先删除旧包：
+2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.2.0 前请先删除旧包：
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
 ```
 
-1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.1.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
+1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.2.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
 
 ## 配置
 
@@ -91,7 +91,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 
 ## 更新
 
-从 2.1.0 起，**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
+**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。从 2.2.0 起，bundle 详情页还会显示支持卡片。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
 
 - **检查：** Host 读取 npm registry（失败时使用 npmmirror），仅在 profile **明确设置** pnpm 的 `minimumReleaseAge` 时遵守。未设置、无法读取、无效或 `0` 表示不等待。比配置年龄更新的版本会显示为等待中，不会自动安装。
 - **兼容性：** 更新器会将目标版本的 `engines.dsh` 与当前运行的 DSH 版本（`DSH_CLIENT_VERSION` 或 `DSH_APP_VERSION`）进行比较。明确不兼容的版本会被阻止；无法确认兼容性时会暂停自动更新，但仍可使用手动安装按钮。
@@ -117,7 +117,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 
 如果 `dsh-ollama-web` 为你节省了时间，可以通过 [Buy Me a Coffee](https://buymeacoffee.com/explorrrr) 支持开发。也可以使用 GitHub 的 **Sponsor** 按钮。捐赠完全自愿，不会解锁功能，也不会改变许可证条件。
 
-设置卡片中的链接在你点击之前不会向 Buy Me a Coffee 发起任何请求。插件也不会读取或保存捐赠信息。
+设置卡片和捆绑包详情页中的链接在你点击之前不会向 Buy Me a Coffee 发起任何请求。插件也不会读取或保存捐赠信息。
 
 ## 开发
 

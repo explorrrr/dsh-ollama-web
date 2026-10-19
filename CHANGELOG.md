@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-19
+
+### Added
+
+- The bundle detail page now shows the same Buy Me a Coffee support card as the
+  settings card, below the Updates section. The link stays inert until the
+  person clicks it.
+
 ## [2.1.0] - 2026-10-19
 
 ### Added

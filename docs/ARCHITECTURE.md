@@ -12,10 +12,11 @@
 ```
 
 The browser half (`client.js`) ships in the same npm package and never talks to
-Ollama. It renders a configuration card and the bundle update section, and
-writes settings through the DSH Plugin Manager's `configForms` transport. The
-card also shows an optional static donation link; the link is inert until
-clicked and adds no external network call to the plugin.
+Ollama. It renders a configuration card plus the update and support sections on
+the bundle detail page, and writes settings through the DSH Plugin Manager's
+`configForms` transport. Both the card and the detail page show an optional
+static donation link; the link is inert until clicked and adds no external
+network call to the plugin.
 
 ## Update flow
 

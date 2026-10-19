@@ -29,6 +29,7 @@ Examples from this repository:
 - `2.1.0` — the updater checks the running DSH version against each release's
   `engines.dsh`, and the settings card's support button gains the inline Buy Me
   a Coffee logo.
+- `2.2.0` — the bundle detail page also shows the Buy Me a Coffee support card.
 - `3.0.0` — planned for DSH 0.3 compatibility or another breaking change.
 
 The project treats `0.x` as bootstrap/unstable. From `1.0.0` onward the table
@@ -79,7 +80,7 @@ of the 2.0 release workflow.
 
 | DSH | Plugin |
 |---|---|
-| 0.2.1-rc.2 | 2.1.x |
+| 0.2.1-rc.2 | 2.2.x |
 | 0.3.x | 3.0 (planned) |
 
 The update feature uses DSH's `connection` RPC and the plugin manager's
@@ -99,5 +100,5 @@ release; it reports the latest release as incompatible instead.
 
 1.x published two packages and the updater only installs releases in the current
 major. 2.0.0 is therefore a manual migration: remove `dsh-ollama-web-client`,
-then install `dsh-ollama-web@2.1.0`. See
+then install `dsh-ollama-web@2.2.0`. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

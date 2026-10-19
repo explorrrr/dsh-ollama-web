@@ -17,7 +17,7 @@ search query, session content or workspace files.
 - **Plugins -> `dsh-ollama-web` -> Configure** shows the **Updates** section
   below the search settings.
 - The bundle detail page for `dsh-ollama-web` shows the same section through
-  `plugins.detail.section`.
+  `plugins.detail.section`, followed by the support card.
 
 The section displays the running/installed version, the latest release, the
 last check time, the auto-update switch, release notes and the npm provenance
@@ -156,7 +156,7 @@ Manual commands for a non-desktop profile:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web
-dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
 ```
 
 The desktop profile is managed by the Electron app; use **Plugins** there.
@@ -164,11 +164,11 @@ The desktop profile is managed by the Electron app; use **Plugins** there.
 ## Upgrading from 1.x
 
 2.0.0 merges the former `dsh-ollama-web-client` package into
-`dsh-ollama-web`. Remove the old package before installing 2.1.0:
+`dsh-ollama-web`. Remove the old package before installing 2.2.0:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
 ```
 
 The 1.x updater reads packuments for both old packages and only installs
@@ -187,7 +187,7 @@ when it detects the legacy package.
 be installed manually. Current releases install the single package:
 
 ```bash
-dsh plugin --profile desktop add dsh-ollama-web@2.1.0
+dsh plugin --profile desktop add dsh-ollama-web@2.2.0
 ```
 
 After that, later 2.0.x releases can be installed from the card or by

@@ -2,10 +2,11 @@
  * dsh-ollama-web - browser half.
  *
  * Registers the configuration card for the host bundle `dsh-ollama-web` and
- * its row `ollama-web`. The card edits the host's live settings namespace; it
- * never reads the saved API key back and never performs an external network
- * request. Update checks and installs are requested from the host's update
- * service through DSH's same-origin Connection RPC.
+ * its row `ollama-web`, plus the update and support sections on the bundle's
+ * detail page. The card edits the host's live settings namespace; it never
+ * reads the saved API key back and never performs an external network request.
+ * Update checks and installs are requested from the host's update service
+ * through DSH's same-origin Connection RPC.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-ollama-web',
@@ -800,6 +801,61 @@ window.__ModuleLoader__.load({
       };
     }
 
+    function supportElement(t, view) {
+      return react.createElement('div', {
+        key: 'support',
+        className: 'dsh-ollama-web-support',
+        role: 'note',
+        'data-view': view === 'detail' ? 'detail' : 'card',
+      },
+        react.createElement('p', {
+          key: 'support-title',
+          className: 'dsh-ollama-web-support-title',
+        }, t('supportTitle')),
+        react.createElement('p', {
+          key: 'support-body',
+          className: 'dsh-ollama-web-support-body',
+        }, t('supportBody')),
+        react.createElement('a', {
+          key: 'support-link',
+          className: 'dsh-ollama-web-support-link',
+          href: SUPPORT_URL,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        },
+          react.createElement('svg', {
+            key: 'support-logo',
+            className: 'dsh-ollama-web-support-logo',
+            viewBox: '0 0 35 50',
+            width: 14,
+            height: 20,
+            'aria-hidden': 'true',
+            focusable: 'false',
+            xmlns: 'http://www.w3.org/2000/svg',
+          }, react.createElement('path', {
+            key: 'support-logo-cup',
+            d: SUPPORT_LOGO_CUP_PATH,
+            fill: '#0d0c22',
+          })),
+          t('supportLink'),
+        ),
+      );
+    }
+
+    function makeSupportDetailSection(t) {
+      return function OllamaWebSupportDetail(props) {
+        const subject = props.subject;
+        if (!subject || subject.kind !== 'bundle' || !subject.pkg
+          || subject.pkg.name !== PACKAGE_NAME) {
+          return null;
+        }
+        return supportElement(
+          typeof props.t === 'function' ? props.t : t,
+          'detail',
+        );
+      };
+    }
+
     function makeCard(t, getConnection) {
       const UpdateSection = makeUpdateSection(t, getConnection);
       return function OllamaWebCard(props) {
@@ -919,43 +975,7 @@ window.__ModuleLoader__.load({
           },
         }));
 
-        const support = react.createElement('div', {
-          key: 'support',
-          className: 'dsh-ollama-web-support',
-          role: 'note',
-        },
-          react.createElement('p', {
-            key: 'support-title',
-            className: 'dsh-ollama-web-support-title',
-          }, t('supportTitle')),
-          react.createElement('p', {
-            key: 'support-body',
-            className: 'dsh-ollama-web-support-body',
-          }, t('supportBody')),
-          react.createElement('a', {
-            key: 'support-link',
-            className: 'dsh-ollama-web-support-link',
-            href: SUPPORT_URL,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          },
-            react.createElement('svg', {
-              key: 'support-logo',
-              className: 'dsh-ollama-web-support-logo',
-              viewBox: '0 0 35 50',
-              width: 14,
-              height: 20,
-              'aria-hidden': 'true',
-              focusable: 'false',
-              xmlns: 'http://www.w3.org/2000/svg',
-            }, react.createElement('path', {
-              key: 'support-logo-cup',
-              d: SUPPORT_LOGO_CUP_PATH,
-              fill: '#0d0c22',
-            })),
-            t('supportLink'),
-          ),
-        );
+        const support = supportElement(t, 'card');
 
         return react.createElement(primitives.SettingsForm, {
           labels: {
@@ -995,12 +1015,17 @@ window.__ModuleLoader__.load({
           ctx.slots.register({ name: 'plugins.row.config', key: ROW_KEY }, makeCard(t, getConnection))
         ))
       )), 'ollama-web-client: row configuration');
-      ctx.effect(() => ctx.slots.inject('plugins.detail.section', () => (
+      ctx.effect(() => ctx.slots.inject('plugins.detail.section', () => [
         ctx.slots.register({
           name: 'plugins.detail.section',
           id: 'dsh-ollama-web-updates',
-        }, makeDetailSection(t, getConnection))
-      )), 'ollama-web-client: update detail section');
+        }, makeDetailSection(t, getConnection)),
+        ctx.slots.register({
+          name: 'plugins.detail.section',
+          id: 'dsh-ollama-web-support',
+          order: 10,
+        }, makeSupportDetailSection(t)),
+      ]), 'ollama-web-client: detail sections');
     }
 
     exports.NS = NS;
@@ -1014,6 +1039,7 @@ window.__ModuleLoader__.load({
     exports.callUpdateRpc = callUpdateRpc;
     exports.makeUpdateSection = makeUpdateSection;
     exports.makeDetailSection = makeDetailSection;
+    exports.makeSupportDetailSection = makeSupportDetailSection;
     exports.FIELDS = FIELDS;
     exports.parseDraft = parseDraft;
     exports.buildOps = buildOps;

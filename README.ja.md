@@ -25,7 +25,7 @@ Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai
 1. パッケージを追加します。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.1.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.2.0
    ```
 
    `desktop` 以外のプロファイルでは `desktop` を置き換えてください。Web UI の **Plugins → Add plugin** から追加しても構いません。npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -47,14 +47,14 @@ Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai
 
 ### 1.x からの移行
 
-2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.1.0 を入れる前に旧パッケージを削除してください。
+2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.2.0 を入れる前に旧パッケージを削除してください。
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.2.0
 ```
 
-1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.1.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
+1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.2.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
 
 ## 設定
 
@@ -91,7 +91,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 
 ## 更新
 
-2.1.0 以降、**Plugins → `dsh-ollama-web` → Configure**（またはバンドル詳細ページ）に更新セクションが表示されます。**更新を確認** / **更新をインストール** を使い、適用後に DSH（desktop はアプリ）を再起動してください。
+**Plugins → `dsh-ollama-web` → Configure**（またはバンドル詳細ページ）に更新セクションが表示されます。2.2.0 以降は、バンドル詳細ページに支援カードも表示されます。**更新を確認** / **更新をインストール** を使い、適用後に DSH（desktop はアプリ）を再起動してください。
 
 - **確認:** Host が npm registry（失敗時は npmmirror）を参照し、プロファイルの pnpm `minimumReleaseAge` を**明示設定時のみ**尊重します。未設定・読めない・不正値・`0` は待機なしです。設定された年齢より新しいリリースは待機中として表示され、自動ではインストールされません。
 - **対応バージョン:** 更新対象の `engines.dsh` と実行中の DSH バージョン（`DSH_CLIENT_VERSION` または `DSH_APP_VERSION`）を照合します。非対応と判定したリリースはブロックし、判定できない場合は自動更新を保留します（手動のインストールボタンは利用できます）。
@@ -117,7 +117,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 
 `dsh-ollama-web` が役に立ったら、[Buy Me a Coffee](https://buymeacoffee.com/explorrrr) で開発を支援できます。GitHub の **Sponsor** ボタンからも支援できます。寄付は任意で、機能の解放やライセンス条件の変更はありません。
 
-設定カードのリンクは、クリックするまで Buy Me a Coffee へ通信しません。プラグインが寄付情報を読み取ったり保存したりすることもありません。
+設定カードとバンドル詳細ページの支援リンクは、クリックするまで Buy Me a Coffee へ通信しません。プラグインが寄付情報を読み取ったり保存したりすることもありません。
 
 ## 開発
 
