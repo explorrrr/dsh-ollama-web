@@ -1,11 +1,38 @@
 # Smoke results
 
-Date: 2026-10-19 (1.2.0); 1.1.0 checks were recorded on 2026-10-18.
+Date: 2026-10-19 (2.0.0); 1.2.0 and 1.1.0 checks were recorded earlier.
 
-Environment: DSH 0.2.1-rc.2 (commit 332895e), isolated `DSH_HOME` under a
-temporary directory, macOS. The user's desktop profile was not modified.
+Environment: DSH 0.2.1-rc.2, macOS. The full isolated DSH/browser smoke was not
+re-run for 2.0.0 in this release; the package-level and registry checks below
+were run instead. The 1.2.0 browser result remains recorded further down.
 
-## Verified
+## 2.0.0 single-package checks
+
+- [x] `pnpm verify` passed: typecheck, build, 125 tests, `check-versions`,
+      `check-dist` and `check-client`.
+- [x] `npm pack --dry-run` contains `client.js`, `dist/index.js`,
+      `cordis.patch.yml` and `package.json`; the manifest declares
+      `dsh.bundle.patch`, `dsh.client.platform: web`, `exports['./client']` and
+      `files` includes `client.js`.
+- [x] Published `dsh-ollama-web@2.0.0` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`ed806d62d2f27d3208b774657060a90fd938e59d136d2ad96ed120e7c58ed441131b4d2ea2bde0a3229c9eeb56f50cfb0e764de80faa4128e79253aeba7703c8`).
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.0.0` with the same
+      digest; workflow ref is `refs/tags/v2.0.0`, path is
+      `.github/workflows/release.yml`, and commit is
+      `4e455172ca443d84c1da8450b4c83d0848dccbe6`.
+- [x] npm `latest` dist-tag points to `2.0.0`.
+- [x] Published tarball host smoke: importing `dist/index.js` and applying it
+      with a mock `ctx.web` registers the `ollama` provider as available.
+- [x] Published tarball client smoke: `client.js` registers the module id
+      `dsh-ollama-web` and contains the `dsh-ollama-web#ollama-web` row key and
+      the `plugins.detail.section` registration.
+- [ ] Full isolated DSH install / browser Configure card / desktop update flow
+      was not re-run for 2.0.0. The 1.2.0 browser result below remains the last
+      full UI smoke; run the isolated profile smoke before treating the 2.0 UI
+      as fully verified.
+
+## Verified (1.2.0)
 
 - [x] Both tarballs install with `dsh plugin --profile smoke add ...`.
 - [x] The profile's `dsh.profile.bundles` contains `dsh-ollama-web` and

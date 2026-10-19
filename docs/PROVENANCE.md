@@ -1,6 +1,61 @@
 # npm provenance verification
 
-Date: 2026-10-19 (1.2.0); 1.1.0 checks were recorded on 2026-10-18.
+Date: 2026-10-19 (2.0.0); 1.2.0 and 1.1.0 checks were recorded earlier.
+
+## 2.0.0
+
+`dsh-ollama-web@2.0.0` was published by GitHub Actions through npm trusted
+publishing (OIDC). No `NPM_TOKEN` is used. This is the first single-package
+release: `dsh-ollama-web-client` is not part of 2.0.0 and remains at 1.2.0 on
+npm.
+
+### Attestations
+
+| Package | Attestation |
+|---|---|
+| `dsh-ollama-web@2.0.0` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@2.0.0> |
+
+It uses SLSA provenance v1. Decoded build information:
+
+```text
+workflow.ref:        refs/tags/v2.0.0
+workflow.repository: https://github.com/explorrrr/dsh-ollama-web
+workflow.path:       .github/workflows/release.yml
+git commit:          4e455172ca443d84c1da8450b4c83d0848dccbe6
+builder:             https://github.com/actions/runner/github-hosted
+invocation:          https://github.com/explorrrr/dsh-ollama-web/actions/runs/39194605928/attempts/1
+```
+
+The tag commit is the same:
+
+```bash
+git rev-parse 'v2.0.0^{commit}'
+# 4e455172ca443d84c1da8450b4c83d0848dccbe6
+```
+
+### Subject digests
+
+| Package | npm tarball SHA-512 | SLSA subject |
+|---|---|---|
+| `dsh-ollama-web@2.0.0` | `ed806d62d2f27d3208b774657060a90fd938e59d136d2ad96ed120e7c58ed441131b4d2ea2bde0a3229c9eeb56f50cfb0e764de80faa4128e79253aeba7703c8` | matches |
+
+npm reports the same digest as
+`sha512-7YBtYtLyfTIIt3RlcGCpD9k45Z0TbSrZbtEg58WO1EETG00uor3goyKcnutW9Qz7DnZN6A+qQSjnklOuuncDyA==`.
+The GitHub Release `v2.0.0` `SHA512SUMS` contains the same hash, computed from
+the npm tarball downloaded by the release workflow. The release workflow
+completed successfully (build and publish jobs both `success`).
+
+### Reproduce
+
+```bash
+npm view dsh-ollama-web@2.0.0 dist.attestations
+npm view dsh-ollama-web@2.0.0 dist.tarball dist.integrity
+
+mkdir -p /tmp/prov-check-200 && cd /tmp/prov-check-200
+curl -fsSL "$(npm view dsh-ollama-web@2.0.0 dist.tarball)" -o dsh-ollama-web-2.0.0.tgz
+shasum -a 512 dsh-ollama-web-2.0.0.tgz
+tar -tzf dsh-ollama-web-2.0.0.tgz | grep -E 'package/(client\.js|dist/index\.js|cordis\.patch\.yml)'
+```
 
 ## 1.2.0
 
