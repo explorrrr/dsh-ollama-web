@@ -1,6 +1,6 @@
 # Smoke results
 
-Date: 2026-10-18
+Date: 2026-10-19 (1.2.0); 1.1.0 checks were recorded on 2026-10-18.
 
 Environment: DSH 0.2.1-rc.2 (commit 332895e), isolated `DSH_HOME` under a
 temporary directory, macOS. The user's desktop profile was not modified.
@@ -77,13 +77,12 @@ The user's desktop profile was not modified.
       Updates section. Check fetched npm, the auto-update switch toggled
       on/off, the version rows and release/provenance links rendered, and no
       client-request error was logged.
-- [ ] Updating from the published 1.1.0 to a later 1.1.x release over the real
-      npm registry. 1.1.0 is the first updater release, so this is the next
-      release's verification.
+- [x] Updating from the published 1.1.0 to 1.2.0 over the real npm registry
+      (see the 1.2.0 section below).
 
-The 1.1.1 artifacts and the local registry were temporary test fixtures. The
-isolated profile was deleted after the smoke; the user's desktop profile was
-untouched.
+The earlier 1.1.1 artifacts and local registry were temporary test fixtures. The
+1.2.0 isolated profile was also removed after this record; the user's desktop
+profile was untouched.
 
 ## 1.1.0 publication
 
@@ -96,8 +95,48 @@ untouched.
       asset-listing step then hit a `tar | grep -q` SIGPIPE under `pipefail`;
       the GitHub Release assets were created from the same tarballs and the
       workflow check was fixed on `main` for later releases.
-- [ ] Updating from the published 1.1.0 to a later 1.1.x over the real npm
-      registry (the next release's verification).
+- [x] Updating from the published 1.1.0 to 1.2.0 over the real npm registry
+      (verified in the 1.2.0 section below).
+
+## 1.2.0 automated and isolated checks
+
+Date: 2026-10-19. DSH 0.2.1-rc.2, isolated `DSH_HOME`, macOS. The user's
+desktop profile was not modified.
+
+- [x] `pnpm verify` passed: typecheck, build, 102 host tests, 20 client tests,
+      version lockstep, dist allowlist and client bundle checks.
+- [x] `node scripts/smoke.mjs` passed.
+- [x] `readMinimumReleaseAge()` returns `0` for the repository profile (no
+      setting) and `60` for the local desktop profile (explicit
+      `minimumReleaseAge: 60`).
+- [x] New host tests cover: unset age with a just-published release installs
+      normally; explicit `60` blocks manual and auto install; explicit `60` with
+      an unknown publish time pauses auto-update but allows manual install;
+      unset age with an unknown publish time allows auto-update.
+- [x] Created an isolated DSH profile from the shipped `web` template (no
+      `minimumReleaseAge` setting), installed the published 1.1.0 host/client,
+      and ran the published 1.1.0 `UpdateService` against the real npm registry
+      with `minReleaseAgeMinutes: 0`. `check` reported `state: "update"` and
+      latest 1.2.0; `install` replaced both installed directories and returned
+      `state: "installed"`, `current: 1.2.0`, `needsRestart: true`.
+- [x] Re-opening the profile with the 1.2.0 service and
+      `hostRunningVersion: "1.2.0"` reported `state: "current"`, cleared
+      `needsRestart`, and removed the hidden backup directories.
+- [x] `dsh --profile smoke --dump-config` after the update still composes the
+      `dsh-ollama-web` and `dsh-ollama-web-client` rows.
+- [x] The published `dsh-ollama-web@1.2.0` tarball contains
+      `DEFAULT_MINIMUM_RELEASE_AGE_MINUTES = 0`, and both published tarballs
+      report version 1.2.0.
+- [x] npm and GitHub Release verification: both packages are `1.2.0`; the
+      GitHub Release `SHA512SUMS` verifies against the downloaded npm tarballs;
+      the SLSA subject digests match. See [PROVENANCE.md](PROVENANCE.md).
+- [x] The release workflow completed successfully (`build` and `publish` jobs
+      both `success`).
+
+The update from 1.1.0 to 1.2.0 used the published 1.1.0 updater, so the smoke
+explicitly set `minReleaseAgeMinutes: 0`; the 1.1.0 default would otherwise
+wait 60 minutes. The new "unset means no wait" behavior is covered by the host
+tests above and applies to updates after 1.2.0 is installed.
 
 ## Not yet verified
 
