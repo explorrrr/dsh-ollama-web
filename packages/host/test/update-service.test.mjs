@@ -118,6 +118,7 @@ test('installs both packages and reports a restart', async () => {
     const state = readJson(join(ctx.dataDir, 'update-state.json'));
     assert.equal(state.needsRestart, true);
     assert.equal(Array.isArray(state.backups), true);
+    assert.equal(existsSync(join(ctx.dataDir, 'update.lock')), false);
     ctx.service.dispose();
   } finally {
     cleanup(root);
@@ -225,6 +226,24 @@ test('setAutoUpdate persists the preference', async () => {
     const disabled = await ctx.service.setAutoUpdate({ enabled: false });
     assert.equal(disabled.autoUpdate, false);
     assert.deepEqual(await readPrefs(ctx.dataDir), { autoUpdate: false });
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('refuses to install while another process holds the profile lock', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({ root });
+    writeJson(join(ctx.dataDir, 'update.lock'), {
+      schemaVersion: 1,
+      token: 'other-process',
+      pid: process.pid,
+      startedAt: new Date().toISOString(),
+    });
+    await assert.rejects(ctx.service.install(), /another update/);
+    assert.equal(readJson(join(ctx.profile.hostDir, 'package.json')).version, '1.0.0');
     ctx.service.dispose();
   } finally {
     cleanup(root);

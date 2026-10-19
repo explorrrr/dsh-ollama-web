@@ -56,6 +56,8 @@ operator is responsible for the destination.
   entries.
 - No npm/pnpm command or lifecycle script runs during an update.
 - Auto-update is opt-in, same-major only, and respects `minimumReleaseAge`.
+- Installs are serialized per profile with a mode-0600 lock; stale locks from
+  dead processes are reclaimed.
 - Linked development installs are never modified.
 - Persisted release metadata is validated on read: versions must parse and match,
   and the release URL must be the canonical GitHub Releases URL.

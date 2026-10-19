@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- Serialize installs per profile with a mode-0600 `update.lock` and reclaim
+  stale locks left by dead or expired processes.
 - Drop persisted update metadata whose release URL is not the canonical
   GitHub Releases URL or whose host/client versions are invalid or differ.
 - Percent-encode Markdown delimiters in search result URLs and remove autolink

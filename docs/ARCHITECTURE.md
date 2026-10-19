@@ -51,6 +51,7 @@ same-origin Connection RPC.
 | `src/update/registry.ts` | Packument parsing, registry fallback, `minimumReleaseAge` |
 | `src/update/tar.ts` | Safe `package/` tar extraction |
 | `src/update/install.ts` | Install detection, staging, SRI, atomic swap/rollback |
+| `src/update/lock.ts` | Profile-wide install lock and stale-lock recovery |
 | `src/update/state.ts` | Atomic prefs/state persistence |
 | `src/update/service.ts` | Check/install/auto-update orchestration |
 | `src/update/rpc.ts` | `/ollama-web-update` dispatch and route registration |
