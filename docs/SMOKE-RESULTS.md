@@ -16,8 +16,18 @@ noted; the full isolated DSH/browser result remains the 1.2.0 run below.
 - [x] Tests cover `engines.dsh` range matching (including prereleases), reading
       `DSH_CLIENT_VERSION` / `DSH_APP_VERSION`, incompatible/unknown status,
       blocking a known-incompatible install, and pausing auto-update.
-- [ ] Published tarball digest, npm provenance and GitHub Release asset are
-      recorded after publication.
+- [x] Published `dsh-ollama-web@2.1.0` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`c4ed60bc5c01cbbd7de9831e26f462b1dda1baeac99cb0a14cbf9812f946f5e86db539ffb96ae16398957dabc6381cb63157252ad7e27d96eda6dea8d8584438`).
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.1.0` with the same
+      digest; workflow ref is `refs/tags/v2.1.0`, path is
+      `.github/workflows/release.yml`, and commit is
+      `57cd1e0e4709f179c577a3c3fcac061b86887460`.
+- [x] npm `latest` points to `2.1.0`; the GitHub Release `v2.1.0` has
+      `dsh-ollama-web-2.1.0.tgz` and `SHA512SUMS` assets with the same digest.
+- [x] The first publish run published the package but failed while npm
+      propagation took about three minutes; re-running the failed `publish`
+      job completed the GitHub Release and asset upload.
 
 ## 2.0.0 single-package checks
 
