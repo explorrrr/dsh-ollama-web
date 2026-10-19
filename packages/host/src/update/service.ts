@@ -1,12 +1,14 @@
 import {
   acquireUpdateLock,
   cleanupStaleUpdateLock,
+  tryAcquireUpdateLock,
 } from './lock.js';
 import {
   cleanupBackups,
   cleanupStaleArtifacts,
   detectInstalls,
   installRelease,
+  recoverInterruptedInstall,
 } from './install.js';
 import { toUpdateError, UpdateFailure } from './errors.js';
 import {
@@ -99,6 +101,17 @@ export class UpdateService {
       ?? await readMinimumReleaseAge(this.options.profile.dir);
     this.prefs = await readPrefs(this.options.dataDir);
     await cleanupStaleUpdateLock(this.options.dataDir, this.now()).catch(() => undefined);
+    let recovered = false;
+    const recoveryLock = await tryAcquireUpdateLock(this.options.dataDir, this.now()).catch(() => undefined);
+    if (recoveryLock !== undefined) {
+      try {
+        recovered = await recoverInterruptedInstall(this.options.profile, this.options.dataDir);
+      } catch (error) {
+        this.log('could not recover an interrupted update', error);
+      } finally {
+        await recoveryLock.release().catch(() => undefined);
+      }
+    }
     this.state = await readState(this.options.dataDir);
     this.installs = detectInstalls(
       this.options.profile,
@@ -107,7 +120,9 @@ export class UpdateService {
       this.options.clientPackageName,
     );
     this.checkedAt = this.state.lastCheckAt ?? null;
-    this.lastError = this.state.lastError ?? null;
+    this.lastError = recovered
+      ? { code: 'install-failed', message: 'a previous update was rolled back after an interruption' }
+      : this.state.lastError ?? null;
     const hostVersion = this.installs.host.version;
     const clientVersion = this.installs.client.version;
     if (
@@ -417,6 +432,7 @@ export class UpdateService {
       const result = await installRelease({
         target,
         profile: this.options.profile,
+        dataDir: this.options.dataDir,
         hostPackageName: this.options.hostPackageName,
         clientPackageName: this.options.clientPackageName,
         hostRunningDir: this.options.hostPackageDir,
