@@ -101,6 +101,7 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 - 更新 tarball 在解包前会校验 npm SHA-512 integrity；拒绝 symlink、路径穿越和过大条目。不执行 npm lifecycle script。
 - 自动更新会在不询问的情况下安装新代码。它是 opt-in，且仅限当前主版本。
 - Client 卡片不向第三方发起外部请求。更新状态和操作仅通过 DSH 的同源 Connection RPC 与 Host 通信。不使用 `innerHTML` / `dangerouslySetInnerHTML`。
+- 发布与自我审查设置：[docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md)。
 - 已发布包带有 npm provenance。验证记录见 [docs/PROVENANCE.md](docs/PROVENANCE.md) / [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)，完整策略见 [SECURITY.md](SECURITY.md) / [docs/SECURITY.md](docs/SECURITY.md)。
 
 ## 支持

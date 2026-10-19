@@ -101,6 +101,7 @@ Host が `web_search` の検索先を提供し、Client が設定カードを提
 - 更新 tarball は npm の SHA-512 integrity と照合し、symlink・path traversal・過大エントリを拒否します。npm lifecycle script は実行しません。
 - 自動更新は確認なしで新しいコードを導入します。opt-in で、同一メジャーに限定されています。
 - Client カードはサードパーティへの外部通信をしません。更新状態の取得と操作だけを、DSH の同一オリジン Connection RPC で Host に問い合わせます。`innerHTML` / `dangerouslySetInnerHTML` は使用しません。
+- リリースとセルフレビューの設定: [docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md)。
 - 公開パッケージは npm provenance 付きです。検証記録は [docs/PROVENANCE.md](docs/PROVENANCE.md) / [docs/SMOKE-RESULTS.md](docs/SMOKE-RESULTS.md)、詳細な方針は [SECURITY.md](SECURITY.md) / [docs/SECURITY.md](docs/SECURITY.md) を参照してください。
 
 ## 支援

@@ -4,8 +4,8 @@
 
 1. **Check for updates** — compare the installed host/client versions with the
    latest npm release.
-2. **Install update** — download, verify and atomically replace both installed
-   packages.
+2. **Install update** — download, verify and replace both installed packages,
+   with rollback on a failed swap and journal recovery after a crash.
 3. **Auto-update** — an opt-in background check every six hours that installs a
    newer release in the same major version.
 
@@ -98,6 +98,9 @@ When enabled:
 - major updates require the explicit **Install update** button;
 - `minimumReleaseAge`, linked installs and unknown release ages stop automatic
   installation;
+- when the publish time is missing or invalid, automatic updates are paused but
+  the explicit **Install update** button remains available; the card reports
+  that automatic updates are paused;
 - the preference is stored per profile in
   `<profile>/data/dsh-ollama-web/update-prefs.json`.
 
