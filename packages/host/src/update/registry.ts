@@ -7,7 +7,7 @@ import type { PublishedPackage, ReleaseTarget } from './types.js';
 
 export const NPM_REGISTRY = 'https://registry.npmjs.org/';
 export const NPMMIRROR_REGISTRY = 'https://registry.npmmirror.com/';
-export const DEFAULT_MINIMUM_RELEASE_AGE_MINUTES = 60;
+export const DEFAULT_MINIMUM_RELEASE_AGE_MINUTES = 0;
 export const RELEASES_URL = 'https://github.com/explorrrr/dsh-ollama-web/releases/tag';
 
 /** True for the canonical GitHub Releases tag URL of this repository. */
@@ -173,7 +173,10 @@ function pickFailure(failures: readonly UpdateFailure[]): UpdateFailure {
   return failures[failures.length - 1] ?? new UpdateFailure('network', 'update registry is unavailable');
 }
 
-/** Read the profile's pnpm minimumReleaseAge (minutes). Unknown or unreadable profiles use 60 minutes. */
+/**
+ * Read the profile's pnpm minimumReleaseAge (minutes). The age wait is opt-in:
+ * a missing, unreadable or invalid setting means 0 minutes (no wait).
+ */
 export async function readMinimumReleaseAge(
   profileDir: string,
   readFileFn: ReadTextFile = readFile,
@@ -182,8 +185,10 @@ export async function readMinimumReleaseAge(
   const match = /^\s*minimumReleaseAge:\s*['"]?(\d+)['"]?\s*(?:#.*)?$/m.exec(text);
   if (match === null) return DEFAULT_MINIMUM_RELEASE_AGE_MINUTES;
   const minutes = Number(match[1]);
-  if (!Number.isFinite(minutes) || minutes < 0) return DEFAULT_MINIMUM_RELEASE_AGE_MINUTES;
-  return Math.trunc(minutes);
+  if (!Number.isSafeInteger(minutes) || minutes < 0) {
+    return DEFAULT_MINIMUM_RELEASE_AGE_MINUTES;
+  }
+  return minutes;
 }
 
 /**

@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-19
+
+### Changed
+
+- `minimumReleaseAge` is opt-in. The updater waits only when the profile
+  explicitly sets a positive integer; an unset, unreadable, invalid or `0`
+  setting means no wait.
+- An unknown publish time no longer pauses auto-update when no age is
+  configured. When an age is configured, auto-update still pauses and the
+  explicit install remains available.
+
 ### Security
 
 - Journal host/client swaps and restore backups if a previous install was

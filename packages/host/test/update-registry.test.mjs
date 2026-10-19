@@ -8,17 +8,20 @@ import {
 } from '../dist/update/registry.js';
 import { REGISTRY } from './update-helpers.mjs';
 
-test('reads minimumReleaseAge from the profile and defaults to 60', async () => {
+test('reads minimumReleaseAge only when explicitly configured', async () => {
   const { makeTempDir, cleanup, writeText } = await import('./update-helpers.mjs');
   const root = makeTempDir();
   try {
     const profileDir = join(root, 'profiles', 'test');
+    assert.equal(DEFAULT_MINIMUM_RELEASE_AGE_MINUTES, 0);
     writeText(join(profileDir, 'pnpm-workspace.yaml'), 'minimumReleaseAge: 15\n');
     assert.equal(await readMinimumReleaseAge(profileDir), 15);
     writeText(join(profileDir, 'pnpm-workspace.yaml'), 'minimumReleaseAge: 0\n');
     assert.equal(await readMinimumReleaseAge(profileDir), 0);
     writeText(join(profileDir, 'pnpm-workspace.yaml'), 'packages: []\n');
     assert.equal(await readMinimumReleaseAge(profileDir), DEFAULT_MINIMUM_RELEASE_AGE_MINUTES);
+    writeText(join(profileDir, 'pnpm-workspace.yaml'), 'minimumReleaseAge: soon\n');
+    assert.equal(await readMinimumReleaseAge(profileDir), 0);
     assert.equal(await readMinimumReleaseAge(join(root, 'missing')), DEFAULT_MINIMUM_RELEASE_AGE_MINUTES);
   } finally {
     cleanup(root);

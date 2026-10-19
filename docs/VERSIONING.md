@@ -26,6 +26,9 @@ Examples from this repository:
 - `1.1.0` — update checks, explicit update, opt-in auto-update and the
   documentation around them. Existing search settings and behavior are
   unchanged.
+- `1.2.0` — `minimumReleaseAge` becomes opt-in: the updater waits only when the
+  profile explicitly sets a positive value. The setting and all other update
+  behavior remain available.
 - `2.0.0` — planned for DSH 0.3 compatibility or another breaking change.
 
 The project treats `0.x` as bootstrap/unstable. From `1.0.0` onward the table

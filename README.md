@@ -25,8 +25,8 @@ The host package provides the `web_search` backend; the client package provides 
 1. Add the packages.
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@1.1.0
-   dsh plugin --profile desktop add dsh-ollama-web-client@1.1.0
+   dsh plugin --profile desktop add dsh-ollama-web@1.2.0
+   dsh plugin --profile desktop add dsh-ollama-web-client@1.2.0
    ```
 
    Replace `desktop` with your profile name if needed. You can also use **Plugins -> Add plugin** twice in the Web UI. npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web) / [dsh-ollama-web-client](https://www.npmjs.com/package/dsh-ollama-web-client)
@@ -46,7 +46,7 @@ The host package provides the `web_search` backend; the client package provides 
 
    `fetchProvider: http` keeps `web_fetch` on DSH's built-in HTTP provider.
 
-1.0.x has no updater. Install the current version once manually as shown above; later 1.1.x releases can update from the card (see the Updates section below).
+1.0.x has no updater. Install the current version once manually as shown above; later 1.2.x releases can update from the card (see the Updates section below).
 
 ## Configure
 
@@ -85,7 +85,7 @@ Ask the model to search, then check that results come from Ollama. The search re
 
 As of 1.1.0, **Plugins -> `dsh-ollama-web` -> Configure** (or the bundle detail page) shows an Updates section. Use **Check for updates** / **Install update**, then restart DSH (quit and reopen the desktop app) to load the new version.
 
-- **Check:** the host reads the npm registry (fallback: npmmirror) and honours the profile's pnpm `minimumReleaseAge` (default 60 minutes when unset). A release that is too new is shown as waiting instead of being installed.
+- **Check:** the host reads the npm registry (fallback: npmmirror) and honours the profile's pnpm `minimumReleaseAge` only when it is explicitly set. Unset, unreadable, invalid or `0` means no age wait. A release newer than a configured age is shown as waiting instead of being installed.
 - **Install:** downloads both tarballs, verifies the npm SHA-512 integrity and the archive, then atomically replaces the installed host/client copies. A failed swap rolls both copies back.
 - **Auto-update (opt-in):** off by default. When enabled, the host checks every 6 hours and installs a newer **same-major** release. Major updates require the explicit button.
 - **Caveats:** a `link:` or external-directory development install is never modified. DSH 0.2.1 has no third-party update API, so the updater replaces installed files directly. The profile's `package.json` and `pnpm-lock.yaml` still record the previous version; reinstall through **Plugins** (or the CLI) if you want those records updated.

@@ -25,8 +25,8 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 1. 添加两个包。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@1.1.0
-   dsh plugin --profile desktop add dsh-ollama-web-client@1.1.0
+   dsh plugin --profile desktop add dsh-ollama-web@1.2.0
+   dsh plugin --profile desktop add dsh-ollama-web-client@1.2.0
    ```
 
    如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加两次。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web) / [dsh-ollama-web-client](https://www.npmjs.com/package/dsh-ollama-web-client)
@@ -46,7 +46,7 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 
    `fetchProvider: http` 表示 `web_fetch` 继续使用 DSH 内置的 HTTP 提供方。
 
-1.0.x 没有更新器。请先按上面的命令手动安装当前版本；之后的 1.1.x 可从卡片更新（详见后文“更新”）。
+1.0.x 没有更新器。请先按上面的命令手动安装当前版本；之后的 1.2.x 可从卡片更新（详见后文“更新”）。
 
 ## 配置
 
@@ -85,7 +85,7 @@ Host 提供 `web_search` 的搜索后端，Client 提供设置卡片。请以相
 
 从 1.1.0 起，**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
 
-- **检查：** Host 读取 npm registry（失败时使用 npmmirror），并遵守 profile 中 pnpm 的 `minimumReleaseAge`（未设置时默认 60 分钟）。过新的版本会显示为等待中，不会自动安装。
+- **检查：** Host 读取 npm registry（失败时使用 npmmirror），仅在 profile **明确设置** pnpm 的 `minimumReleaseAge` 时遵守。未设置、无法读取、无效或 `0` 表示不等待。比配置年龄更新的版本会显示为等待中，不会自动安装。
 - **安装：** 下载 host/client 两个 tarball，校验 npm SHA-512 integrity 和压缩包内容，然后原子替换已安装的两个副本。任一步失败都会回滚两个包。
 - **自动更新（opt-in）：** 默认关闭。启用后每 6 小时检查一次，只自动安装**同一主版本**的新版本。主版本更新需要点击按钮。
 - **注意：** `link:` 或 profile 外目录的开发安装不会被修改。DSH 0.2.1 没有第三方更新 API，因此直接替换已安装文件。profile 的 `package.json` / `pnpm-lock.yaml` 仍记录旧版本；如需同步记录，请通过 **Plugins**（或 CLI）重新安装。

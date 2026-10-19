@@ -48,7 +48,7 @@ same-origin Connection RPC.
 | `src/update/types.ts` | Update status, error codes, stored state |
 | `src/update/semver.ts` | Stable/prerelease comparison |
 | `src/update/http.ts` | Limited JSON/byte fetch for update metadata and tarballs |
-| `src/update/registry.ts` | Packument parsing, registry fallback, `minimumReleaseAge` |
+| `src/update/registry.ts` | Packument parsing, registry fallback, optional `minimumReleaseAge` |
 | `src/update/tar.ts` | Safe `package/` tar extraction |
 | `src/update/install.ts` | Install detection, staging, SRI, swap/rollback, crash recovery |
 | `src/update/lock.ts` | Profile-wide install lock and stale-lock recovery |
@@ -97,7 +97,7 @@ discarded; only the status and a short classification are surfaced.
 | Package/profile missing | `no-install`, `no-profile` |
 | Directory replacement refused | `permission`, `install-failed` |
 | State/prefs write failed | `state-write` |
-| `minimumReleaseAge` not reached | `age-limited` |
+| Configured `minimumReleaseAge` not reached | `age-limited` |
 | Auto-update refused a major version | `major-blocked` |
 | Already current | `no-update` |
 | Another update running | `busy` |

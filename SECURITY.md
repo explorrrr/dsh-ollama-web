@@ -14,6 +14,7 @@ disclosure timeline.
 
 | Version | Supported |
 |---|---|
+| 1.2.x | Yes |
 | 1.1.x | Yes |
 | 1.0.x | Yes (no update feature) |
 | < 1.0 | No |
@@ -64,7 +65,8 @@ make an untrusted endpoint trustworthy.
   entries are rejected.
 - No npm/pnpm command or package lifecycle script is executed.
 - Auto-update is opt-in, default off, limited to the same major version, and
-  respects the profile's pnpm `minimumReleaseAge`.
+  respects a `minimumReleaseAge` explicitly configured in the profile. When the
+  setting is absent or `0`, there is no age wait.
 - Linked development installs are never modified.
 - Installs are serialized per profile with a mode-0600 lock and journaled for
   startup rollback after an interruption.

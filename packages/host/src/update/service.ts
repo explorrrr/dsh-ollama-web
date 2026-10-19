@@ -92,7 +92,7 @@ export class UpdateService {
 
   constructor(options: UpdateServiceOptions) {
     this.options = options;
-    this.minAgeMinutes = options.minReleaseAgeMinutes ?? 60;
+    this.minAgeMinutes = options.minReleaseAgeMinutes ?? 0;
     this.ready = this.init();
   }
 
@@ -169,17 +169,20 @@ export class UpdateService {
   }
 
   private ageInfo(publishedAt: string | null, eligibleAt: string | null): AgeInfo {
+    // Publish times matter only when the profile explicitly configures an age
+    // requirement. Without one, a missing or invalid time must not block an
+    // otherwise valid update.
     if (publishedAt === null) {
-      return { eligibleAt, ageLimited: false, ageUnknown: true };
+      return { eligibleAt, ageLimited: false, ageUnknown: this.minAgeMinutes > 0 };
     }
     const published = Date.parse(publishedAt);
     if (!Number.isFinite(published)) {
-      return { eligibleAt, ageLimited: false, ageUnknown: true };
+      return { eligibleAt, ageLimited: false, ageUnknown: this.minAgeMinutes > 0 };
     }
     const eligible = new Date(published + this.minAgeMinutes * 60_000).toISOString();
     return {
       eligibleAt: eligible,
-      ageLimited: Date.parse(eligible) > this.now(),
+      ageLimited: this.minAgeMinutes > 0 && Date.parse(eligible) > this.now(),
       ageUnknown: false,
     };
   }

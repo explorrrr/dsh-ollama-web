@@ -215,7 +215,12 @@ export function makeRelease({ version, hostTarball, clientTarball, publishedAt =
   return { host, client, target };
 }
 
-export function makeProfile({ root, hostVersion = '1.0.0', clientVersion = '1.0.0' }) {
+export function makeProfile({
+  root,
+  hostVersion = '1.0.0',
+  clientVersion = '1.0.0',
+  minimumReleaseAge = 0,
+}) {
   const profileDir = join(root, 'profiles', 'test');
   const hostDir = join(profileDir, 'node_modules', 'dsh-ollama-web');
   const clientDir = join(profileDir, 'node_modules', 'dsh-ollama-web-client');
@@ -228,7 +233,12 @@ export function makeProfile({ root, hostVersion = '1.0.0', clientVersion = '1.0.
     },
     dsh: { profile: { bundles: ['dsh-ollama-web', 'dsh-ollama-web-client'] } },
   });
-  writeText(join(profileDir, 'pnpm-workspace.yaml'), 'minimumReleaseAge: 0\n');
+  writeText(
+    join(profileDir, 'pnpm-workspace.yaml'),
+    minimumReleaseAge === undefined
+      ? 'packages:\n  - .\n'
+      : `minimumReleaseAge: ${minimumReleaseAge}\n`,
+  );
   writeJson(join(hostDir, 'package.json'), {
     name: 'dsh-ollama-web',
     version: hostVersion,
