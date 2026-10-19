@@ -21,7 +21,7 @@ The owner may self-merge after those steps. This is a deliberate availability
 choice, not an independent review. The residual risk is a missed self-review or
 a compromised GitHub/npm account.
 
-## Target repository settings
+## Applied repository settings (2026-10-19)
 
 | Area | Setting | Target |
 |---|---|---|
@@ -32,13 +32,28 @@ a compromised GitHub/npm account.
 | Tags | Ruleset `release-tags` | Target `refs/tags/v*`; restrict creation, update and deletion; owner bypass for self-tagging |
 | `npm` Environment | Deployment policy | Custom tag policy `v*`; wait timer 5 minutes; no required reviewers; admins cannot bypass |
 | Actions | Repository permissions | Require SHA pinning; allow GitHub-owned actions plus `pnpm/action-setup@*`; default workflow token read-only |
-| Secret scanning | Repository security | Secret scanning + push protection on; non-provider patterns and validity checks on |
+| Secret scanning | Repository security | Secret scanning + push protection on. `secret_scanning_non_provider_patterns` and `secret_scanning_validity_checks` remain disabled: the API accepted the PATCH but GitHub continues to report them disabled for this repository. Revisit through the Security settings UI or an eligible account feature. |
 | npm | Trusted publishing | Publisher limited to `release.yml` + `npm` Environment; no `NPM_TOKEN`; 2FA/passkeys on the npm account and GitHub account |
 
 `enforce_admins` and the `main-protection` ruleset prevent direct pushes to
 `main` while still allowing the owner to open, self-review and squash-merge a
 PR after checks. The tag ruleset owner bypass is required so the same owner can
 create the release tag.
+
+Applied IDs and values:
+
+- `main-protection` ruleset: `25364992`; `release-tags` ruleset: `25364998`.
+- `main` required checks: `test (22)`, `test (24)`, `analyze`, `review`;
+  `strict: true`; `enforce_admins: true`; no required approvals.
+- `npm` Environment: `v*` tag policy, 5-minute wait timer, no reviewers,
+  `can_admins_bypass: false`.
+- Actions: `selected` allowlist with GitHub-owned actions plus
+  `pnpm/action-setup@*`; `sha_pinning_required: true`.
+
+Verification: PR #18 was opened before the ruleset was applied, the required
+checks passed, and the owner squash-merged it without an approving review. A
+second documentation-only PR after the settings change re-verifies that the
+Actions allowlist and required checks still work.
 
 ## Applying the settings
 
@@ -71,7 +86,8 @@ this and refuses to publish otherwise.
 
 ## Rollback
 
-- Delete the ruleset by ID with `gh api -X DELETE`.
+- Delete the `main-protection` (`25364992`) and `release-tags` (`25364998`)
+  rulesets by ID with `gh api -X DELETE`.
 - Restore branch protection from the backed-up JSON with `gh api -X PUT`.
 - Restore the Environment, Actions and secret-scanning values from the backup.
 - If a required check name is wrong, remove that check temporarily, fix the
