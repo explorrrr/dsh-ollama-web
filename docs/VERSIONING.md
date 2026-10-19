@@ -26,6 +26,9 @@ Examples from this repository:
 - `2.0.0` — single-package release: the former `dsh-ollama-web-client` is merged
   into `dsh-ollama-web`, the update status shape is single-version, and update
   state moves to schema 2.
+- `2.1.0` — the updater checks the running DSH version against each release's
+  `engines.dsh`, and the settings card's support button gains the inline Buy Me
+  a Coffee logo.
 - `3.0.0` — planned for DSH 0.3 compatibility or another breaking change.
 
 The project treats `0.x` as bootstrap/unstable. From `1.0.0` onward the table
@@ -76,7 +79,7 @@ of the 2.0 release workflow.
 
 | DSH | Plugin |
 |---|---|
-| 0.2.1-rc.2 | 2.0.x |
+| 0.2.1-rc.2 | 2.1.x |
 | 0.3.x | 3.0 (planned) |
 
 The update feature uses DSH's `connection` RPC and the plugin manager's
@@ -84,9 +87,17 @@ The update feature uses DSH's `connection` RPC and the plugin manager's
 search plugin still loads; the update section reports that update checks are
 unavailable.
 
+Keep `engines.dsh` in `packages/host/package.json` and the published manifest
+as the authoritative compatibility range. The updater reads that range from the
+npm packument, requires a positive match for automatic installs and blocks
+manual installs on a known mismatch, so a release that changes the supported
+DSH line must update the range, this table, the README requirements and the
+tested matrix together. The updater does not fall back to an older compatible
+release; it reports the latest release as incompatible instead.
+
 ## Upgrading from 1.x
 
 1.x published two packages and the updater only installs releases in the current
 major. 2.0.0 is therefore a manual migration: remove `dsh-ollama-web-client`,
-then install `dsh-ollama-web@2.0.0`. See
+then install `dsh-ollama-web@2.1.0`. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

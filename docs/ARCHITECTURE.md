@@ -25,6 +25,7 @@ clicked and adds no external network call to the plugin.
   -> Host RPC (Web: connection.rpc.handle; desktop: /api exact fetch routes)
   -> UpdateService
        -> npm registry / npmmirror packument for dsh-ollama-web
+       -> running DSH version + release engines.dsh compatibility gate
        -> SHA-512 SRI check -> safe tar extraction -> staging
        -> atomic rename of the installed package dir (+ rollback)
        -> <profile>/data/dsh-ollama-web/update-state.json
@@ -46,8 +47,9 @@ the same-origin Connection RPC.
 | `src/credentials.ts` | (part of `config.ts`) literal -> credentials -> launch env |
 | `src/sanitize.ts` | URL scheme, Markdown-safe URL/title/metadata sanitization |
 | `src/errors.ts` | `WebError` helpers |
-| `src/update/types.ts` | Update status, error codes, stored state |
-| `src/update/semver.ts` | Stable/prerelease comparison |
+| `src/update/types.ts` | Update status, compatibility result, error codes, stored state |
+| `src/update/semver.ts` | Stable/prerelease comparison and `engines.dsh` range matching |
+| `src/update/dsh.ts` | Read the running DSH version from the host environment |
 | `src/update/http.ts` | Limited JSON/byte fetch for update metadata and tarballs |
 | `src/update/registry.ts` | Packument parsing, registry fallback, optional `minimumReleaseAge` |
 | `src/update/tar.ts` | Safe `package/` tar extraction |
@@ -107,6 +109,7 @@ discarded; only the status and a short classification are surfaced.
 | Directory replacement refused | `permission`, `install-failed` |
 | State/prefs write failed | `state-write` |
 | Configured `minimumReleaseAge` not reached | `age-limited` |
+| Release `engines.dsh` excludes the running DSH | `incompatible-dsh` |
 | Auto-update refused a major version | `major-blocked` |
 | Already current | `no-update` |
 | Another update running | `busy` |

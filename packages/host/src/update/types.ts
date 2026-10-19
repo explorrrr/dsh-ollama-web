@@ -22,6 +22,7 @@ export type UpdateErrorCode =
   | 'state-write'
   | 'age-limited'
   | 'major-blocked'
+  | 'incompatible-dsh'
   | 'no-update'
   | 'invalid-payload'
   | 'unknown';
@@ -39,6 +40,8 @@ export interface PublishedPackage {
   readonly integrity: string;
   readonly publishedAt: string | null;
   readonly provenance: boolean;
+  /** The release's `engines.dsh` range, or null when it declares none. */
+  readonly dshRange: string | null;
 }
 
 /** A release from the single package this plugin publishes. */
@@ -56,6 +59,7 @@ export type UpdateState =
   | 'current'
   | 'update'
   | 'major'
+  | 'incompatible'
   | 'age-limited'
   | 'ahead'
   | 'installed'
@@ -64,6 +68,15 @@ export type UpdateState =
   | 'unknown';
 
 export type UpdatePhase = 'idle' | 'checking' | 'installing' | 'saving';
+
+/** Whether the latest release's `engines.dsh` accepts the running DSH. */
+export interface DshCompatibility {
+  /** The running DSH version, or null when the host could not determine it. */
+  readonly dsh: string | null;
+  /** The latest release's `engines.dsh` range, or null when absent. */
+  readonly range: string | null;
+  readonly state: 'compatible' | 'incompatible' | 'unknown';
+}
 
 export interface UpdateStatus {
   readonly available: boolean;
@@ -76,7 +89,9 @@ export interface UpdateStatus {
     readonly eligibleAt: string | null;
     readonly releaseUrl: string;
     readonly provenance: boolean;
+    readonly dshRange: string | null;
   } | null;
+  readonly compatibility: DshCompatibility;
   readonly state: UpdateState;
   readonly phase: UpdatePhase;
   readonly checkedAt: string | null;
@@ -103,6 +118,7 @@ export interface StoredLatest {
   readonly eligibleAt: string | null;
   readonly releaseUrl: string;
   readonly provenance: boolean;
+  readonly dshRange: string | null;
 }
 
 export interface StoredInstalled {

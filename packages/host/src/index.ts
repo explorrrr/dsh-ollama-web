@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { Config, snapshot } from './config.js';
 import { OllamaSearchProvider } from './provider.js';
 import { detectPackageInstall, profileFromBaseUrl, readPackageVersion } from './update/install.js';
+import { readDshVersion } from './update/dsh.js';
 import { createUpdateDispatch, registerFetchRoutes, registerRpcChannel } from './update/rpc.js';
 import { UpdateService } from './update/service.js';
 import { LEGACY_CLIENT_PACKAGE } from './update/types.js';
@@ -58,6 +59,7 @@ function startUpdateService(ctx: PluginContext): void {
     packageName: 'dsh-ollama-web',
     packageDir,
     runningVersion,
+    dshVersion: readDshVersion(),
     dataDir: join(profile.dir, 'data', 'dsh-ollama-web'),
     ...(ctx.logger === undefined
       ? {}

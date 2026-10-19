@@ -142,6 +142,7 @@ export function makePackument({
   integrity,
   publishedAt = '2026-10-01T00:00:00.000Z',
   provenance = true,
+  dshRange = '>=0.2.1-rc.1 <0.3.0',
 }) {
   return {
     name,
@@ -150,6 +151,7 @@ export function makePackument({
       [version]: {
         name,
         version,
+        ...(dshRange === null ? {} : { engines: { dsh: dshRange } }),
         dist: {
           tarball,
           integrity,
@@ -176,13 +178,20 @@ export function makeRegistryResponder({ pkg, tarballs = {}, calls = [] }) {
   };
 }
 
-export function makeRelease({ version, tarball, publishedAt = '2026-10-01T00:00:00.000Z', registry = REGISTRY }) {
+export function makeRelease({
+  version,
+  tarball,
+  publishedAt = '2026-10-01T00:00:00.000Z',
+  registry = REGISTRY,
+  dshRange = '>=0.2.1-rc.1 <0.3.0',
+}) {
   const pkg = makePackument({
     name: PACKAGE_NAME,
     version,
     tarball: `${registry}${PACKAGE_NAME}/-/${PACKAGE_NAME}-${version}.tgz`,
     integrity: sha512Integrity(tarball),
     publishedAt,
+    dshRange,
   });
   const target = {
     pkg: {
@@ -192,6 +201,7 @@ export function makeRelease({ version, tarball, publishedAt = '2026-10-01T00:00:
       integrity: pkg.versions[version].dist.integrity,
       publishedAt,
       provenance: true,
+      dshRange: dshRange === null ? null : dshRange,
     },
     version,
     publishedAt,

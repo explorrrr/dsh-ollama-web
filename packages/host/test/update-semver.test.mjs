@@ -4,6 +4,7 @@ import {
   compareVersions,
   parseVersion,
   sameMajor,
+  satisfiesRange,
 } from '../dist/update/semver.js';
 
 test('parseVersion accepts stable and prerelease versions', () => {
@@ -37,4 +38,33 @@ test('sameMajor compares only the major field', () => {
   assert.equal(sameMajor('1.9.9', '1.0.0'), true);
   assert.equal(sameMajor('2.0.0', '1.9.9'), false);
   assert.equal(sameMajor('bad', '1.0.0'), false);
+});
+
+test('satisfiesRange handles engine ranges and prereleases', () => {
+  const range = '>=0.2.1-rc.1 <0.3.0';
+  assert.equal(satisfiesRange('0.2.1-rc.2', range), true);
+  assert.equal(satisfiesRange('0.2.1', range), true);
+  assert.equal(satisfiesRange('0.2.2', range), true);
+  assert.equal(satisfiesRange('0.1.9', range), false);
+  assert.equal(satisfiesRange('0.3.0-rc.1', range), false);
+  assert.equal(satisfiesRange('0.3.0', range), false);
+  assert.equal(satisfiesRange('0.2.1-rc.0', range), false);
+});
+
+test('satisfiesRange supports caret, tilde, exact and alternatives', () => {
+  assert.equal(satisfiesRange('1.2.3', '^1.2.0'), true);
+  assert.equal(satisfiesRange('1.9.9', '^1.2.0'), true);
+  assert.equal(satisfiesRange('2.0.0', '^1.2.0'), false);
+  assert.equal(satisfiesRange('0.2.1-rc.2', '^0.2.1-rc.1'), true);
+  assert.equal(satisfiesRange('0.3.0-rc.1', '^0.2.1-rc.1'), false);
+  assert.equal(satisfiesRange('1.2.9', '~1.2.3'), true);
+  assert.equal(satisfiesRange('1.3.0', '~1.2.3'), false);
+  assert.equal(satisfiesRange('1.2.3', '1.2.3'), true);
+  assert.equal(satisfiesRange('1.2.4', '1.2.3'), false);
+  assert.equal(satisfiesRange('1.2.3', '*'), true);
+  assert.equal(satisfiesRange('1.2.3-rc.1', '*'), false);
+  assert.equal(satisfiesRange('2.5.0', '>=1.0.0 <2.0.0 || >=3.0.0'), false);
+  assert.equal(satisfiesRange('3.1.0', '>=1.0.0 <2.0.0 || >=3.0.0'), true);
+  assert.equal(satisfiesRange('1.2.3', 'not a range'), undefined);
+  assert.equal(satisfiesRange('bad', '>=1.0.0'), undefined);
 });

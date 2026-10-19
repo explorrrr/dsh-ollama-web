@@ -125,6 +125,7 @@ test('state defaults, round-trips, and ignores malformed or unknown schemas', as
         eligibleAt: '2026-10-01T01:00:00.000Z',
         releaseUrl: 'https://github.com/explorrrr/dsh-ollama-web/releases/tag/v2.0.0',
         provenance: true,
+        dshRange: '>=0.2.1-rc.1 <0.3.0',
       },
       installed: { version: '2.0.0' },
       needsRestart: true,

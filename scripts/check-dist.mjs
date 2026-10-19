@@ -17,6 +17,7 @@ const required = [
   'dist/index.js',
   'dist/index.d.ts',
   'dist/update/service.js',
+  'dist/update/dsh.js',
   'dist/update/install.js',
   'dist/update/lock.js',
   'dist/update/registry.js',

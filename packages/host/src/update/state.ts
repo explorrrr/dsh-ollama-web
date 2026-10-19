@@ -137,6 +137,7 @@ const ERROR_CODES: Record<UpdateError['code'], true> = {
   'state-write': true,
   'age-limited': true,
   'major-blocked': true,
+  'incompatible-dsh': true,
   'no-update': true,
   'invalid-payload': true,
   unknown: true,
@@ -157,6 +158,9 @@ function normalizeLatest(value: unknown): StoredUpdateState['latest'] {
     eligibleAt: typeof value.eligibleAt === 'string' ? value.eligibleAt : null,
     releaseUrl: value.releaseUrl,
     provenance: value.provenance,
+    dshRange: typeof value.dshRange === 'string' && value.dshRange.length <= 200
+      ? value.dshRange
+      : null,
   };
 }
 

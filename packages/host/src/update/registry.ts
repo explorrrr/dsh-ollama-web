@@ -30,6 +30,7 @@ export function isAllowedReleaseUrl(value: string): boolean {
 
 const METADATA_MAX_BYTES = 256 * 1024;
 const METADATA_TIMEOUT_MS = 10_000;
+const MAX_ENGINE_RANGE_CHARS = 200;
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
 export type ReadTextFile = (path: string, encoding: 'utf8') => Promise<string>;
@@ -130,6 +131,12 @@ function parsePackument(name: string, registry: URL, value: unknown, allowInsecu
   const publishedAt = typeof published === 'string' && Number.isFinite(Date.parse(published))
     ? new Date(published).toISOString()
     : null;
+  const engines = manifest.engines;
+  const declaredDshRange = isRecord(engines) ? engines.dsh : undefined;
+  const trimmedRange = typeof declaredDshRange === 'string' ? declaredDshRange.trim() : '';
+  const dshRange = trimmedRange.length > 0 && trimmedRange.length <= MAX_ENGINE_RANGE_CHARS
+    ? trimmedRange
+    : null;
   return {
     name,
     version: latest,
@@ -137,6 +144,7 @@ function parsePackument(name: string, registry: URL, value: unknown, allowInsecu
     integrity,
     publishedAt,
     provenance: isRecord(dist.attestations),
+    dshRange,
   };
 }
 

@@ -45,6 +45,25 @@ A check caches its result for one hour. **Check for updates** always performs a
 fresh check. Opening the card only reads the cached host state; it does not
 contact the registry.
 
+## DSH compatibility
+
+Each release declares the DSH versions it supports in `engines.dsh` (for
+example `>=0.2.1-rc.1 <0.3.0`). The host reads that range from the packument
+and compares it with the running DSH version from `DSH_CLIENT_VERSION`
+(desktop) or `DSH_APP_VERSION` (other deployments).
+
+- **Compatible** — the release may be installed manually or by auto-update.
+- **Incompatible** — the card shows **this release does not support the
+  running DSH version**, does not offer Install, and auto-update skips it.
+- **Unknown** — the release has no `engines.dsh`, the range cannot be parsed,
+  or the host cannot determine the DSH version. Auto-update pauses; the explicit
+  Install button remains available for a deliberate manual update.
+
+The updater evaluates only the npm `latest` release. It does not search older
+releases for a compatible fallback. If the latest release is incompatible,
+update DSH first or install a compatible version through the CLI. The tested
+DSH matrix remains in [COMPATIBILITY.md](COMPATIBILITY.md).
+
 ## Installing
 
 **Install update** first re-checks the registry, then:
@@ -97,10 +116,16 @@ When enabled:
 
 - the first pass runs shortly after startup (60 seconds plus jitter) and the
   service then checks every six hours while the host is running;
-- only a newer **same-major** release is installed automatically;
+- only a newer **same-major** release whose `engines.dsh` accepts the running
+  DSH version is installed automatically;
 - major updates require the explicit **Install update** button;
 - an explicitly configured `minimumReleaseAge` and linked installs stop
   automatic installation;
+- if the running DSH version cannot be determined, or the release has no usable
+  `engines.dsh`, automatic updates pause; the card explains why and the explicit
+  **Install update** button remains available for a manual update;
+- a release known to exclude the running DSH is shown as incompatible and is
+  not installed by either path;
 - when an age is configured and the publish time is missing or invalid,
   automatic updates are paused but the explicit **Install update** button remains
   available; the card reports that automatic updates are paused. When no age is
@@ -131,7 +156,7 @@ Manual commands for a non-desktop profile:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web
-dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 ```
 
 The desktop profile is managed by the Electron app; use **Plugins** there.
@@ -139,11 +164,11 @@ The desktop profile is managed by the Electron app; use **Plugins** there.
 ## Upgrading from 1.x
 
 2.0.0 merges the former `dsh-ollama-web-client` package into
-`dsh-ollama-web`. Remove the old package before installing 2.0.0:
+`dsh-ollama-web`. Remove the old package before installing 2.1.0:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 ```
 
 The 1.x updater reads packuments for both old packages and only installs
@@ -162,7 +187,7 @@ when it detects the legacy package.
 be installed manually. Current releases install the single package:
 
 ```bash
-dsh plugin --profile desktop add dsh-ollama-web@2.0.0
+dsh plugin --profile desktop add dsh-ollama-web@2.1.0
 ```
 
 After that, later 2.0.x releases can be installed from the card or by
@@ -214,6 +239,7 @@ reload DSH for development changes.
 | `install-failed` | A swap failed and was rolled back |
 | `state-write` | Update state/preferences could not be stored |
 | `age-limited` | The release is newer than the configured `minimumReleaseAge` |
+| `incompatible-dsh` | The release's `engines.dsh` excludes the running DSH version |
 | `major-blocked` | Auto-update refused a major version |
 | `no-update` | Nothing newer is available |
 | `busy` | Another update operation is running |

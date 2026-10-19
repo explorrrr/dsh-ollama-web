@@ -25,7 +25,7 @@
 1. 添加包。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.0.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.1.0
    ```
 
    如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -47,14 +47,14 @@
 
 ### 从 1.x 迁移
 
-2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.0.0 前请先删除旧包：
+2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.1.0 前请先删除旧包：
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.1.0
 ```
 
-1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.0.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
+1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.1.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
 
 ## 配置
 
@@ -91,11 +91,12 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.0.0
 
 ## 更新
 
-从 2.0.0 起，**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
+从 2.1.0 起，**Plugins → `dsh-ollama-web` → Configure**（或 bundle 详情页）会显示更新区域。使用 **检查更新** / **安装更新**，安装后重启 DSH（桌面版请退出并重新打开应用）。
 
 - **检查：** Host 读取 npm registry（失败时使用 npmmirror），仅在 profile **明确设置** pnpm 的 `minimumReleaseAge` 时遵守。未设置、无法读取、无效或 `0` 表示不等待。比配置年龄更新的版本会显示为等待中，不会自动安装。
+- **兼容性：** 更新器会将目标版本的 `engines.dsh` 与当前运行的 DSH 版本（`DSH_CLIENT_VERSION` 或 `DSH_APP_VERSION`）进行比较。明确不兼容的版本会被阻止；无法确认兼容性时会暂停自动更新，但仍可使用手动安装按钮。
 - **安装：** 下载一个 tarball，校验 npm SHA-512 integrity 和压缩包内容，然后原子替换已安装的包。任一步失败都会回滚到原副本。
-- **自动更新（opt-in）：** 默认关闭。启用后每 6 小时检查一次，只自动安装**同一主版本**的新版本。主版本更新需要点击按钮。
+- **自动更新（opt-in）：** 默认关闭。启用后每 6 小时检查一次，只自动安装支持当前 DSH 的**同一主版本**新版本。主版本更新需要点击按钮。
 - **注意：** `link:` 或 profile 外目录的开发安装不会被修改。DSH 0.2.1 没有第三方更新 API，因此直接替换已安装文件。profile 的 `package.json` / `pnpm-lock.yaml` 仍记录旧版本；如需同步记录，请通过 **Plugins**（或 CLI）重新安装。
 
 详见 [docs/UPDATES.md](docs/UPDATES.md)。

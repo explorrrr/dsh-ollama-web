@@ -177,6 +177,12 @@ const BASE_STATUS = {
     eligibleAt: '2026-10-01T01:00:00.000Z',
     releaseUrl: 'https://github.com/explorrrr/dsh-ollama-web/releases/tag/v1.1.0',
     provenance: true,
+    dshRange: '>=0.2.1-rc.1 <0.3.0',
+  },
+  compatibility: {
+    dsh: '0.2.1-rc.2',
+    range: '>=0.2.1-rc.1 <0.3.0',
+    state: 'compatible',
   },
   state: 'update',
   phase: 'idle',
@@ -338,7 +344,17 @@ test('page view renders the support block with the donation link', () => {
   assert.equal(link.props.href, 'https://buymeacoffee.com/explorrrr');
   assert.equal(link.props.target, '_blank');
   assert.equal(link.props.rel, 'noopener noreferrer');
-  assert.equal(link.props.children[0], 'supportLink');
+  const [logo, label] = link.props.children;
+  assert.equal(logo.type, 'svg');
+  assert.equal(logo.props.className, 'dsh-ollama-web-support-logo');
+  assert.equal(logo.props.viewBox, '0 0 35 50');
+  assert.equal(logo.props['aria-hidden'], 'true');
+  assert.equal(logo.props.focusable, 'false');
+  assert.equal(logo.props.children.length, 1);
+  assert.equal(logo.props.children[0].type, 'path');
+  assert.equal(logo.props.children[0].props.fill, '#0d0c22');
+  assert.ok(logo.props.children[0].props.d.startsWith('M34.1896'));
+  assert.equal(label, 'supportLink');
 });
 
 function makeDocument() {
@@ -489,6 +505,49 @@ test('update section shows an available update and triggers check/install/auto R
   await toggle.props.onChange(true);
   await flush();
   assert.ok(fake.calls.some((call) => call.method === 'setAutoUpdate' && call.payload.enabled === true));
+});
+
+test('update section blocks an incompatible release and shows the DSH range', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection({
+    ...BASE_STATUS,
+    state: 'incompatible',
+    latest: { ...BASE_STATUS.latest, dshRange: '>=0.2.1-rc.1 <0.3.0' },
+    compatibility: {
+      dsh: '0.3.0-rc.1',
+      range: '>=0.2.1-rc.1 <0.3.0',
+      state: 'incompatible',
+    },
+  });
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  assert.match(flatText(statusLine(tree)), /updateIncompatible/);
+  assert.match(flatText(tree), /updateDshVersion/);
+  assert.match(flatText(tree), /0\.3\.0-rc\.1/);
+  assert.match(flatText(tree), /updateDshRequired/);
+  assert.equal(findButton(tree, 'updateInstall'), undefined);
+});
+
+test('update section notes unverified compatibility but allows a manual install', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection({
+    ...BASE_STATUS,
+    compatibility: {
+      dsh: null,
+      range: '>=0.2.1-rc.1 <0.3.0',
+      state: 'unknown',
+    },
+  });
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  assert.match(flatText(statusLine(tree)), /updateCompatibilityUnknown/);
+  assert.ok(findButton(tree, 'updateInstall'));
 });
 
 test('update section ignores unsafe release URLs', async () => {

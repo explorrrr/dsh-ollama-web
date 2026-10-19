@@ -12,6 +12,19 @@ provider on `ctx.web` and talks only to `https://ollama.com/api/web_search` by
 default. The same package serves `client.js` as the `ollama-web` row's browser
 half.
 
+## Compatibility
+
+| DSH | Plugin |
+|---|---|
+| 0.2.1-rc.2 (tested) | 2.1.x |
+| 0.3.x | 3.0 (planned) |
+
+The package declares `engines.dsh` `>=0.2.1-rc.1 <0.3.0` and the same range for
+its `@deepseek-ai/dsh-web` peer dependency. The updater compares this range with
+the running DSH version before installing. See the repository
+[docs/COMPATIBILITY.md](https://github.com/explorrrr/dsh-ollama-web/blob/main/docs/COMPATIBILITY.md)
+for the tested matrix and the automatic update guard.
+
 ## Updates
 
 The package also owns the `/ollama-web-update` RPC used by the Configure card

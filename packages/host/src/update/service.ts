@@ -17,9 +17,11 @@ import {
   checkRelease,
   readMinimumReleaseAge,
 } from './registry.js';
-import { compareVersions, sameMajor } from './semver.js';
+import { compareVersions, parseVersion, sameMajor, satisfiesRange } from './semver.js';
+import { readDshVersion } from './dsh.js';
 import { readPrefs, readState, writePrefs, writeState } from './state.js';
 import type {
+  DshCompatibility,
   PackageInstall,
   ReleaseTarget,
   StoredUpdateState,
@@ -44,6 +46,8 @@ export interface UpdateServiceOptions {
   readonly packageName: string;
   readonly packageDir: string;
   readonly runningVersion: string;
+  /** The running DSH release; omit to read it from the host environment. */
+  readonly dshVersion?: string | null;
   readonly dataDir: string;
   readonly fetchImpl?: typeof fetch;
   readonly now?: () => number;
@@ -68,12 +72,20 @@ interface LatestView {
   readonly eligibleAt: string | null;
   readonly releaseUrl: string;
   readonly provenance: boolean;
+  readonly dshRange: string | null;
+}
+
+function normalizeDshVersion(value: string | null | undefined): string | null {
+  if (value === undefined || value === null) return null;
+  const parsed = parseVersion(value);
+  return parsed === undefined ? null : parsed.raw;
 }
 
 export class UpdateService {
   private readonly options: UpdateServiceOptions;
   private readonly abort = new AbortController();
   private readonly ready: Promise<void>;
+  private readonly dshVersion: string | null;
   private prefs: UpdatePrefs = { autoUpdate: false };
   private state: StoredUpdateState = { schemaVersion: 2 };
   private installs: PackageInstall | null = null;
@@ -90,6 +102,9 @@ export class UpdateService {
 
   constructor(options: UpdateServiceOptions) {
     this.options = options;
+    this.dshVersion = options.dshVersion === undefined
+      ? readDshVersion()
+      : normalizeDshVersion(options.dshVersion);
     this.minAgeMinutes = options.minReleaseAgeMinutes ?? 0;
     this.ready = this.init();
   }
@@ -190,6 +205,7 @@ export class UpdateService {
       eligibleAt: age.eligibleAt,
       releaseUrl: target.releaseUrl,
       provenance: target.provenance,
+      dshRange: target.pkg.dshRange,
     };
   }
 
@@ -203,11 +219,25 @@ export class UpdateService {
       eligibleAt: age.eligibleAt,
       releaseUrl: latest.releaseUrl,
       provenance: latest.provenance,
+      dshRange: latest.dshRange,
     };
   }
 
   private latestView(): LatestView | null {
     return this.latestTarget === null ? this.latestFromState() : this.latestFromTarget(this.latestTarget);
+  }
+
+  private compatibilityOf(latest: LatestView | null): DshCompatibility {
+    const range = latest === null ? null : latest.dshRange;
+    if (latest === null || this.dshVersion === null || range === null) {
+      return { dsh: this.dshVersion, range, state: 'unknown' };
+    }
+    const matched = satisfiesRange(this.dshVersion, range);
+    return {
+      dsh: this.dshVersion,
+      range,
+      state: matched === true ? 'compatible' : matched === false ? 'incompatible' : 'unknown',
+    };
   }
 
   private stateOf(
@@ -221,11 +251,10 @@ export class UpdateService {
     if (latest === null) return 'unknown';
     const comparison = compareVersions(latest.version, install.version);
     if (comparison < 0) return 'ahead';
+    if (comparison === 0) return 'current';
+    if (this.compatibilityOf(latest).state === 'incompatible') return 'incompatible';
     if (age.ageLimited) return 'age-limited';
-    if (comparison > 0) {
-      return sameMajor(latest.version, install.version) ? 'update' : 'major';
-    }
-    return 'current';
+    return sameMajor(latest.version, install.version) ? 'update' : 'major';
   }
 
   private buildStatus(): UpdateStatus {
@@ -237,6 +266,7 @@ export class UpdateService {
         running: this.options.runningVersion,
         current: null,
         latest: null,
+        compatibility: { dsh: this.dshVersion, range: null, state: 'unknown' },
         state: 'unavailable',
         phase: this.phase,
         checkedAt: this.checkedAt,
@@ -250,6 +280,7 @@ export class UpdateService {
       };
     }
     const latest = this.latestView();
+    const compatibility = this.compatibilityOf(latest);
     const age = latest === null
       ? { eligibleAt: null, ageLimited: false, ageUnknown: false }
       : this.ageInfo(latest.publishedAt, latest.eligibleAt);
@@ -266,6 +297,7 @@ export class UpdateService {
       running: this.options.runningVersion,
       current: install.version,
       latest,
+      compatibility,
       state: this.stateOf(install, latest, age),
       phase: this.phase,
       checkedAt: this.checkedAt,
@@ -337,6 +369,7 @@ export class UpdateService {
         eligibleAt: target.eligibleAt,
         releaseUrl: target.releaseUrl,
         provenance: target.provenance,
+        dshRange: target.pkg.dshRange,
       };
       delete this.state.lastError;
       await this.persistState();
@@ -387,9 +420,6 @@ export class UpdateService {
     const target = this.latestTarget;
     if (target === null) throw new UpdateFailure('no-update', 'no release is available');
     const age = this.ageInfo(target.publishedAt, target.eligibleAt);
-    if (age.ageLimited) {
-      throw new UpdateFailure('age-limited', 'the release is newer than the profile minimumReleaseAge');
-    }
     const current = install.version;
     if (current === null) throw new UpdateFailure('no-install', 'the package has no readable version');
     const comparison = compareVersions(target.version, current);
@@ -398,6 +428,17 @@ export class UpdateService {
     }
     if (comparison === 0 && this.state.needsRestart !== true) {
       throw new UpdateFailure('no-update', 'the installed version is already current');
+    }
+    // An explicit manual install may proceed when compatibility is unknown,
+    // but never when the release declares that it excludes this DSH.
+    if (this.compatibilityOf(this.latestFromTarget(target)).state === 'incompatible') {
+      throw new UpdateFailure(
+        'incompatible-dsh',
+        'the latest release does not support the running DSH version',
+      );
+    }
+    if (age.ageLimited) {
+      throw new UpdateFailure('age-limited', 'the release is newer than the profile minimumReleaseAge');
     }
     if (!sameMajor(target.version, current) && !allowMajor) {
       throw new UpdateFailure('major-blocked', 'major updates require an explicit confirmation');
@@ -511,6 +552,7 @@ export class UpdateService {
     if (age.ageLimited || age.ageUnknown) return;
     if (!sameMajor(target.version, install.version)) return;
     if (compareVersions(target.version, install.version) <= 0) return;
+    if (this.compatibilityOf(this.latestFromTarget(target)).state !== 'compatible') return;
     try {
       await this.install({ allowMajor: false });
     } catch (error) {
