@@ -146,6 +146,7 @@ jobs:
           tar -tzf "dist/dsh-ollama-web-$VERSION.tgz" > "$HOST_LIST"
           grep -qx 'package/dist/update/service.js' "$HOST_LIST"
           grep -qx 'package/dist/update/install.js' "$HOST_LIST"
+          grep -qx 'package/dist/fetch-provider.js' "$HOST_LIST"
           grep -qx 'package/client.js' "$HOST_LIST"
           tar -xOzf "dist/dsh-ollama-web-$VERSION.tgz" package/client.js > "$CLIENT_JS"
           grep -q 'ollama-web-update' "$CLIENT_JS"

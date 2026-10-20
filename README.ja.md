@@ -2,14 +2,15 @@
 
 [English](README.md) | 日本語 | [中文](README.zh.md)
 
-Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）の `web_search` に接続するプラグインです。host と Web UI の設定カードを1つの npm パッケージで提供します。検索バックエンドとして DeepSeek の API キー・provider・フォールバックは使わず、`web_fetch` は DSH 内蔵の HTTP provider（SSRF 対策済み）のままです。
+Ollama Cloud の Web 検索と、任意の Web 取得を [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）に接続するプラグインです。host と Web UI の設定カードを1つの npm パッケージで提供します。検索は Ollama を使い、`web_fetch` は明示的に有効化しない限り DSH 内蔵の HTTP provider（SSRF 対策済み）のままです。
 
 [![Buy Me a Coffee で支援](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/explorrrr)
 
 - 検索先は既定で `https://ollama.com/api/web_search`
+- 取得先は既定で `https://ollama.com/api/web_fetch`（opt-in、既定 OFF）
 - API キーは設定カード（write-only）または `OLLAMA_API_KEY`
 - 更新チェック / 更新インストール / opt-in 自動更新に対応
-- `web_fetch` は DSH 内蔵 HTTP のまま。Ollama fetch は 2.x 対象外
+- 既定の `web_fetch` は API キー不要の DSH HTTP provider のまま
 
 ## 必要環境
 
@@ -20,12 +21,12 @@ Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai
 
 ## インストール
 
-1つのパッケージが `web_search` の検索先と設定カードの両方を提供します。1回だけインストールしてください。
+1つのパッケージが `web_search` の検索先、任意の取得 provider、設定カードを提供します。1回だけインストールしてください。
 
 1. パッケージを追加します。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.3.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.4.0
    ```
 
    `desktop` 以外のプロファイルでは `desktop` を置き換えてください。Web UI の **Plugins → Add plugin** から追加しても構いません。npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -45,16 +46,35 @@ Ollama Cloud の Web 検索を [DeepSeek Harness](https://github.com/deepseek-ai
 
    `fetchProvider: http` は `web_fetch` に DSH 内蔵の HTTP provider を使う指定です。
 
+### 任意の Ollama 取得 provider
+
+`web_fetch` に Ollama を使うには、provider の有効化と pin の**両方**が必要です。
+
+```yaml
+- id: web
+  config:
+    searchProvider: ollama
+    fetchProvider: ollama
+
+- id: ollama-web
+  config:
+    enableFetchProvider: true
+```
+
+`web` は config 全体を置換するため、`fetchProvider` を変えるときも `searchProvider: ollama` を残してください。`enableFetchProvider: true` だけでは HTTP と Ollama の2 provider が使える状態になり `WEB_PROVIDER_AMBIGUOUS`、`fetchProvider: ollama` だけでは provider が無効で `WEB_PROVIDER_CONFIGURED_UNAVAILABLE` になります。設定カードからも有効化できますが、`web.fetchProvider: ollama` の pin は profile patch に必要です。
+
+Ollama は対象ページの HTTP status や最終 redirect URL を返しません。成功時はリクエスト URL と `HTTP 200` を DSH に返し、title・本文・links をテキストに畳みます。対象 status の正確さや DSH の local SSRF 境界が必要な場合は `fetchProvider: http` を維持してください。
+
 ### 1.x からの移行
 
-2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.3.0 を入れる前に旧パッケージを削除してください。
+2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.4.0 を入れる前に旧パッケージを削除してください。
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.4.0
 ```
 
-1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.3.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
+1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.4.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
 
 ## 設定
 
@@ -74,6 +94,10 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
 | `maxQueryChars` | `2048` | 1〜8192文字 |
 | `searchTimeoutMs` | `30000` | 1000〜120000 ms |
 | `maxResponseBytes` | `2097152` | 65536〜10485760 bytes |
+| `fetchPath` | `/api/web_fetch` | baseURLのパス配下・同一originの絶対パス |
+| `fetchTimeoutMs` | `30000` | 1000〜120000 ms |
+| `fetchMaxChars` | `100000` | 1〜200000文字 |
+| `enableFetchProvider` | `false` | live boolean。`web.fetchProvider: ollama` と併用 |
 | `apiKey` | 未設定 | secret。カードか `OLLAMA_API_KEY` 推奨 |
 
 `apiKeyEnv` は `OLLAMA_*` の環境変数名のみ受け付けます。それ以外の環境変数や資格情報参照はリクエスト前に拒否されます。
@@ -81,6 +105,8 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
 ## 使い方
 
 モデルに検索させ、結果が Ollama 経由で返ることを確認します。検索リクエストの本文はクエリと `max_results` だけで、API キーは `Authorization: Bearer` ヘッダーに載ります。既定の宛先は `https://ollama.com/api/web_search` です。
+
+任意の取得 provider を有効化・pin すると、`web_fetch` は `{ "url": "..." }` だけを `https://ollama.com/api/web_fetch` に送ります。Ollama は `title`・本文 `content`・`links` を返し、このプラグインがそれらをテキストに畳んで `fetchMaxChars` で制限します。Ollama は対象ページの status や最終 redirect URL を返さないため、結果の URL はリクエスト URL、成功時の status は常に `200` です。
 
 ### 設定カードが表示されない場合
 
@@ -105,8 +131,9 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
 
 - Host プラグインは sandbox 外の in-process で動作します。導入前にコードを確認し、バージョンを固定してください。
 - 検索は HTTPS 限定で、リダイレクトを拒否し、レスポンス / クエリ / snippet に上限を設けます。結果 URL は `http(s)` のみです。
-- クエリや API キーをログに残さず、テレメトリや独自セッションイベントもありません。
-- 検索は既定で `ollama.com` にのみ接続します。更新は、明示操作時、自動更新が有効な時、または最後の成功確認から5分以上経って更新画面を開いた時だけ npm registry（失敗時は npmmirror）に接続し、送るのはパッケージ名だけです。`baseURL` を変えると、キーとクエリの送信先を自分で選ぶことになります。
+- 任意の取得 provider は、取得対象 URL を Ollama に送ります。取得は Ollama が行うため、DSH HTTP の local DNS pinning / SSRF 防御は提供しません。non-http(s)、URL 内の資格情報、明らかな local/private 宛先は拒否しますが、URL 自体は Ollama に開示されます。内部 URL や secret を含む URL には使わないでください。
+- クエリ・URL・API キーをログに残さず、テレメトリや独自セッションイベントもありません。
+- 検索と任意の取得は既定で `ollama.com` にのみ接続します。更新は、明示操作時、自動更新が有効な時、または最後の成功確認から5分以上経って更新画面を開いた時だけ npm registry（失敗時は npmmirror）に接続し、送るのはパッケージ名だけです。`baseURL` を変えると、キー・クエリ・取得 URL の送信先を自分で選ぶことになります。
 - 更新 tarball は npm の SHA-512 integrity と照合し、symlink・path traversal・過大エントリを拒否します。npm lifecycle script は実行しません。
 - 自動更新は確認なしで新しいコードを導入します。opt-in で、同一メジャーに限定されています。
 - Client カードはサードパーティへの外部通信をしません。更新状態の取得と操作だけを、DSH の同一オリジン Connection RPC で Host に問い合わせます。`innerHTML` / `dangerouslySetInnerHTML` は使用しません。
@@ -128,7 +155,7 @@ pnpm verify
 
 `pnpm verify` は typecheck / build / test / check をまとめて実行します。個別に実行する場合は `pnpm typecheck`、`pnpm build`、`pnpm test`、`pnpm check` を使ってください。
 
-Host テストは mock `fetch`、e2e は `OLLAMA_API_KEY` がある時だけ実行します。Client テストは VM 上でブラウザ bundle を読み、React/primitives を偽装します。
+Host テストは mock `fetch`、検索・取得の e2e は `OLLAMA_API_KEY` がある時だけ実行します。Client テストは VM 上でブラウザ bundle を読み、React/primitives を偽装します。
 
 - コントリビュート: [CONTRIBUTING.md](CONTRIBUTING.md)
 - 設計: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)

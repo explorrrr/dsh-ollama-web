@@ -1,10 +1,22 @@
 const CONTROL_CHARS = /[\u0000-\u001F\u007F]+/g;
+const BLOCK_CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const WHITESPACE = /\s+/g;
 const MARKDOWN_URL_CHARS = /[()[\]<>\\|]/g;
 
 /** Collapse control characters/whitespace and cap a model-visible string. */
 export function sanitizeInline(value: string, max: number): string {
   return value.replace(CONTROL_CHARS, ' ').replace(WHITESPACE, ' ').trim().slice(0, max);
+}
+
+/**
+ * Sanitize a multi-line block while preserving Markdown line breaks and tabs.
+ * CRLF is normalized to LF and other C0 controls/NUL are removed.
+ */
+export function sanitizeBlock(value: string, max: number): string {
+  return value
+    .replace(/\r\n?/g, '\n')
+    .replace(BLOCK_CONTROL_CHARS, '')
+    .slice(0, max);
 }
 
 /**

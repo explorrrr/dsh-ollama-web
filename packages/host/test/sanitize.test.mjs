@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isHttpUrl,
+  sanitizeBlock,
   sanitizeMetadata,
   sanitizeSourceUrl,
   sanitizeTitle,
@@ -35,4 +36,10 @@ test('short metadata strips Markdown delimiters', () => {
   const value = sanitizeMetadata('2026-01-01)([x](https://evil.example)', 64);
   assert.doesNotMatch(value, /[[\]()<>\\]/);
   assert.match(value, /^2026-01-01/);
+});
+
+test('block text preserves Markdown line breaks and strips controls', () => {
+  const value = sanitizeBlock('a\u0000b\r\nc\td\u000B', 100);
+  assert.equal(value, 'ab\nc\td');
+  assert.equal(sanitizeBlock('abcdefghij', 5), 'abcde');
 });

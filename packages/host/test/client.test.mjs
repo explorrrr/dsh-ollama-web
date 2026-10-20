@@ -277,7 +277,7 @@ test('summary view is the localized description', () => {
   assert.equal(rowRegistration(calls).component({ view: 'summary' }), 'description');
 });
 
-test('page view renders eight value fields, the secret field, support, and updates', () => {
+test('page view renders the value fields, fetch toggle, secret field, support, and updates', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
   const { ctx, calls } = mockContext(fakeConnection().connection);
@@ -296,10 +296,14 @@ test('page view renders eight value fields, the secret field, support, and updat
   assert.equal(tree.props.state.available, true);
   assert.equal(tree.props.state.writable, true);
   const fields = tree.props.children[0];
-  assert.equal(fields.length, 9);
+  assert.equal(fields.length, 13);
   assert.equal(fields.at(-1).type, 'SettingsSecretField');
   assert.equal(fields.at(-1).props.text, '');
   assert.ok(fields.some((field) => field.props.id.endsWith('snippetMax')));
+  const fetchToggle = fields.find((field) => field.props.className === 'dsh-ollama-web-fetch-toggle');
+  assert.ok(fetchToggle);
+  assert.equal(fetchToggle.props.children[0].props.children[0].type, 'Switch');
+  assert.equal(fetchToggle.props.children[0].props.children[0].props.checked, false);
   assert.equal(tree.props.children[1].props.className, 'dsh-ollama-web-support');
   assert.equal(typeof tree.props.children[2].type, 'function');
   assert.equal(tree.props.children[2].props.view, 'card');
@@ -315,7 +319,19 @@ test('all locale dictionaries expose the same keys and support copy', () => {
   assert.deepEqual(Object.keys(dictionaries.ja).sort(), keys);
   assert.deepEqual(Object.keys(dictionaries.zh).sort(), keys);
   for (const locale of ['en', 'ja', 'zh']) {
-    for (const key of ['supportTitle', 'supportBody', 'supportLink', 'updateTitle', 'updateAutoWarning']) {
+    for (const key of [
+      'supportTitle',
+      'supportBody',
+      'supportLink',
+      'updateTitle',
+      'updateAutoWarning',
+      'enableFetchProvider',
+      'enableFetchProviderHint',
+      'enableFetchProviderWarning',
+      'fetchPath',
+      'fetchTimeoutMs',
+      'fetchMaxChars',
+    ]) {
       assert.equal(typeof dictionaries[locale][key], 'string');
       assert.ok(dictionaries[locale][key].length > 0);
     }
@@ -388,16 +404,18 @@ function makeDocument() {
   return { document, appended, styles };
 }
 
-test('both stylesheets are injected once', () => {
+test('all stylesheets are injected once', () => {
   const first = makeDocument();
   loadClient(makeReact(), first.document);
-  assert.equal(first.appended.length, 2);
+  assert.equal(first.appended.length, 3);
   assert.equal(first.styles.get('dsh-ollama-web/SupportSection.css').tag, 'style');
   assert.equal(first.styles.get('dsh-ollama-web/UpdateSection.css').tag, 'style');
+  assert.equal(first.styles.get('dsh-ollama-web/FetchToggle.css').tag, 'style');
   assert.match(first.styles.get('dsh-ollama-web/SupportSection.css').textContent, /\.dsh-ollama-web-support/);
   assert.match(first.styles.get('dsh-ollama-web/UpdateSection.css').textContent, /\.dsh-ollama-web-updates/);
+  assert.match(first.styles.get('dsh-ollama-web/FetchToggle.css').textContent, /\.dsh-ollama-web-fetch-toggle/);
   loadClient(makeReact(), first.document);
-  assert.equal(first.appended.length, 2);
+  assert.equal(first.appended.length, 3);
 });
 
 test('editing a numeric field and saving sends a revision-fenced operation', async () => {
@@ -433,6 +451,46 @@ test('editing a numeric field and saving sends a revision-fenced operation', asy
   assert.deepEqual(
     JSON.parse(JSON.stringify(mutations[0].ops)),
     [{ op: 'set', path: ['snippetMax'], value: 1500 }],
+  );
+
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  assert.equal(tree.props.state.dirty, false);
+});
+
+test('toggling the fetch provider saves a boolean operation', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const { ctx, calls } = mockContext(fakeConnection().connection);
+  exports.apply(ctx);
+  const mutations = [];
+  const form = {
+    state: {
+      status: 'ready',
+      writable: true,
+      value: { enableFetchProvider: false },
+      revision: 4,
+    },
+    mutate: async (ops, revision) => {
+      mutations.push({ ops, revision });
+      return true;
+    },
+  };
+
+  let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  let fields = tree.props.children[0];
+  let toggle = fields.find((field) => field.props.className === 'dsh-ollama-web-fetch-toggle');
+  assert.ok(toggle);
+  toggle.props.children[0].props.children[0].props.onChange(true);
+
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  assert.equal(tree.props.state.dirty, true);
+  await tree.props.onSave();
+
+  assert.equal(mutations.length, 1);
+  assert.equal(mutations[0].revision, 4);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(mutations[0].ops)),
+    [{ op: 'set', path: ['enableFetchProvider'], value: true }],
   );
 
   tree = react.render(rowRegistration(calls).component, { view: 'page', form });

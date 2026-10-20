@@ -9,6 +9,9 @@ test('config schema exposes the documented keys', () => {
     'apiKeyEnv',
     'baseURL',
     'enableFetchProvider',
+    'fetchMaxChars',
+    'fetchPath',
+    'fetchTimeoutMs',
     'maxQueryChars',
     'maxResponseBytes',
     'maxResults',
@@ -18,16 +21,21 @@ test('config schema exposes the documented keys', () => {
   ]);
 });
 
-test('defaults resolve to the Ollama search endpoint', () => {
+test('defaults resolve to the Ollama search and fetch endpoints', () => {
   const { ctx } = makeCtx();
   const options = snapshot(ctx, makeConfig());
   assert.equal(options.configError, undefined);
+  assert.equal(options.fetchConfigError, undefined);
   assert.equal(options.endpoint, 'https://ollama.com/api/web_search');
+  assert.equal(options.fetchEndpoint, 'https://ollama.com/api/web_fetch');
   assert.equal(options.maxResults, 5);
   assert.equal(options.snippetMax, 2000);
   assert.equal(options.maxQueryChars, 2048);
   assert.equal(options.searchTimeoutMs, 30000);
   assert.equal(options.maxResponseBytes, 2097152);
+  assert.equal(options.fetchTimeoutMs, 30000);
+  assert.equal(options.fetchMaxChars, 100000);
+  assert.equal(options.fetchEnabled, false);
 });
 
 test('baseURL path prefixes are preserved', () => {
@@ -73,6 +81,30 @@ test('searchPath cannot escape the baseURL path prefix', () => {
   );
 });
 
+test('fetchPath uses the same origin and path-prefix rules', () => {
+  const base = 'https://proxy.example/ollama';
+  assert.equal(
+    buildEndpoint(base, '/api/web_fetch', 'fetchPath'),
+    'https://proxy.example/ollama/api/web_fetch',
+  );
+  for (const path of ['/../x', '/%2e%2e/admin', '//evil.example/x', 'api/web_fetch']) {
+    assert.throws(() => buildEndpoint(base, path, 'fetchPath'), /fetchPath/, path);
+  }
+});
+
+test('search and fetch path errors are isolated', () => {
+  const { ctx } = makeCtx();
+  const badSearch = snapshot(ctx, makeConfig({ searchPath: '/../secret' }));
+  assert.match(badSearch.configError, /searchPath/);
+  assert.equal(badSearch.fetchConfigError, undefined);
+  assert.ok(badSearch.fetchEndpoint);
+
+  const badFetch = snapshot(ctx, makeConfig({ fetchPath: '/%2e%2e/secret' }));
+  assert.equal(badFetch.configError, undefined);
+  assert.match(badFetch.fetchConfigError, /fetchPath/);
+  assert.ok(badFetch.endpoint);
+});
+
 test('numeric settings are clamped to safe bounds', () => {
   const { ctx } = makeCtx();
   const options = snapshot(ctx, makeConfig({
@@ -81,12 +113,16 @@ test('numeric settings are clamped to safe bounds', () => {
     searchTimeoutMs: 0,
     maxResponseBytes: 1,
     maxQueryChars: 1_000_000,
+    fetchTimeoutMs: 0,
+    fetchMaxChars: 1_000_000,
   }));
   assert.equal(options.maxResults, 10);
   assert.equal(options.snippetMax, 10000);
   assert.equal(options.searchTimeoutMs, 1000);
   assert.equal(options.maxResponseBytes, 65536);
   assert.equal(options.maxQueryChars, 8192);
+  assert.equal(options.fetchTimeoutMs, 1000);
+  assert.equal(options.fetchMaxChars, 200000);
 });
 
 test('apiKeyEnv accepts only OLLAMA_ environment names', () => {
@@ -96,6 +132,7 @@ test('apiKeyEnv accepts only OLLAMA_ environment names', () => {
   for (const value of ['not a ref', 'GITHUB_TOKEN', 'AWS_SECRET_ACCESS_KEY']) {
     const options = snapshot(ctx, makeConfig({ apiKeyEnv: value }));
     assert.match(options.configError, /OLLAMA_/);
+    assert.match(options.fetchConfigError, /OLLAMA_/);
     assert.equal(makeProvider({ apiKeyEnv: value }).available(), false);
   }
 });
@@ -121,5 +158,6 @@ test('an invalid baseURL becomes a config error and makes the provider unavailab
   const { ctx } = makeCtx();
   const options = snapshot(ctx, makeConfig({ baseURL: 'http://ollama.com' }));
   assert.match(options.configError, /https/);
+  assert.match(options.fetchConfigError, /https/);
   assert.equal(makeProvider({ baseURL: 'http://ollama.com' }).available(), false);
 });

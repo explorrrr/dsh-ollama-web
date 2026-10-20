@@ -2,14 +2,15 @@
 
 English | [日本語](README.ja.md) | [中文](README.zh.md)
 
-Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH), with a Web UI settings card. One npm package provides both the host backend and the browser card. It replaces only the `web_search` backend: no DeepSeek API key, no DeepSeek provider, no fallback. `web_fetch` stays on DSH's built-in HTTP provider, which already has SSRF guards.
+Ollama Cloud web search and optional web fetch provider for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH), with a Web UI settings card. One npm package provides both the host backend and the browser card. Search uses Ollama; `web_fetch` stays on DSH's built-in HTTP provider unless you explicitly enable the optional Ollama fetch provider.
 
 [![Support via Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/explorrrr)
 
 - Search endpoint defaults to `https://ollama.com/api/web_search`
+- Optional fetch endpoint defaults to `https://ollama.com/api/web_fetch`; off by default
 - Configure the API key in the card (write-only) or via `OLLAMA_API_KEY`
 - Update checks, install, and opt-in auto-update are included
-- Ollama `web_fetch` is not part of 2.x
+- Default `web_fetch` remains the credential-free DSH HTTP provider
 
 ## Requirements
 
@@ -20,12 +21,12 @@ Ollama Cloud web search provider for [DeepSeek Harness](https://github.com/deeps
 
 ## Install
 
-One package provides the `web_search` backend and the settings card. Install it once.
+One package provides the `web_search` backend, the optional fetch provider and the settings card. Install it once.
 
 1. Add the package.
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.3.0
+   dsh plugin --profile desktop add dsh-ollama-web@2.4.0
    ```
 
    Replace `desktop` with your profile name if needed. You can also use **Plugins -> Add plugin** in the Web UI. npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -45,16 +46,35 @@ One package provides the `web_search` backend and the settings card. Install it 
 
    `fetchProvider: http` keeps `web_fetch` on DSH's built-in HTTP provider.
 
+### Optional Ollama fetch provider
+
+To use Ollama for `web_fetch`, enable the provider **and** pin it. Both entries are required:
+
+```yaml
+- id: web
+  config:
+    searchProvider: ollama
+    fetchProvider: ollama
+
+- id: ollama-web
+  config:
+    enableFetchProvider: true
+```
+
+`web` replaces its whole config, so keep `searchProvider: ollama` when you change `fetchProvider`. With only `enableFetchProvider: true`, `web_fetch` reports `WEB_PROVIDER_AMBIGUOUS` because both the HTTP and Ollama fetch providers are usable. With only `fetchProvider: ollama`, it reports `WEB_PROVIDER_CONFIGURED_UNAVAILABLE` because the Ollama provider is disabled. You can also enable the provider from the settings card, but the `web.fetchProvider: ollama` pin still belongs in the profile patch.
+
+Ollama does not expose the target page's HTTP status or final redirect URL. A successful Ollama fetch is reported to DSH as `HTTP 200` for the requested URL; title, main content and links are folded into the text result. Keep `fetchProvider: http` when target status fidelity or DSH's local SSRF boundary matters.
+
 ### Upgrading from 1.x
 
-2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.3.0:
+2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.4.0:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.3.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.4.0
 ```
 
-The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.3.0`. Leaving the old client installed can register the settings card twice and is not supported.
+The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.4.0`. Leaving the old client installed can register the settings card twice and is not supported.
 
 ## Configure
 
@@ -74,6 +94,10 @@ Enter it in the settings card (**Plugins -> `dsh-ollama-web` -> `ollama-web` -> 
 | `maxQueryChars` | `2048` | 1-8192 characters |
 | `searchTimeoutMs` | `30000` | 1000-120000 ms |
 | `maxResponseBytes` | `2097152` | 65536-10485760 bytes |
+| `fetchPath` | `/api/web_fetch` | Absolute path under the baseURL path, same origin |
+| `fetchTimeoutMs` | `30000` | 1000-120000 ms |
+| `fetchMaxChars` | `100000` | 1-200000 characters |
+| `enableFetchProvider` | `false` | Live boolean; requires `web.fetchProvider: ollama` |
 | `apiKey` | unset | Secret; prefer the card or `OLLAMA_API_KEY` |
 
 `apiKeyEnv` accepts only `OLLAMA_*` names. Other environment variables and credential references are rejected before a request is made.
@@ -81,6 +105,8 @@ Enter it in the settings card (**Plugins -> `dsh-ollama-web` -> `ollama-web` -> 
 ## Usage
 
 Ask the model to search, then check that results come from Ollama. The search request body contains only the query and `max_results`; the API key is sent in the `Authorization: Bearer` header. The default endpoint is `https://ollama.com/api/web_search`.
+
+When the optional fetch provider is enabled and pinned, `web_fetch` sends only `{ "url": "..." }` to `https://ollama.com/api/web_fetch` with the same Bearer key. Ollama returns `title`, main-content `content` and `links`; this plugin folds them into a text result and caps it at `fetchMaxChars`. The request URL is returned as the result URL and the status is always `200` on success, because Ollama does not expose the target status or final redirect URL.
 
 ### If the settings card does not appear
 
@@ -105,8 +131,9 @@ See [docs/UPDATES.md](docs/UPDATES.md) for details.
 
 - Host plugins run in-process, outside the workspace sandbox. Review plugins before installing and pin versions.
 - Search is HTTPS-only, refuses redirects, caps response/query/snippet sizes, and allows only `http(s)` result URLs.
-- No query or API key logging, no telemetry, no custom session events.
-- Search contacts only `ollama.com` by default. Updates contact the npm registry (fallback: npmmirror) only on explicit action, while auto-update is enabled, or when the update screen opens after five minutes without a successful check, and send only the package name. Changing `baseURL` changes where the key and queries go.
+- The optional fetch provider sends the requested URL to Ollama. Ollama performs the fetch, so this provider does not provide DSH HTTP's local DNS-pinning/SSRF boundary. It rejects non-http(s) URLs, embedded credentials and obvious local/private destinations, but URLs are still disclosed to Ollama; do not use it for internal or secret-bearing URLs.
+- No query, URL or API key logging, no telemetry, no custom session events.
+- Search and optional fetch contact only `ollama.com` by default. Updates contact the npm registry (fallback: npmmirror) only on explicit action, while auto-update is enabled, or when the update screen opens after five minutes without a successful check, and send only the package name. Changing `baseURL` changes where the key, queries and fetch URLs go.
 - Update tarballs are checked against the npm SHA-512 integrity; symlinks, traversal and oversized entries are rejected. No npm lifecycle script runs.
 - Auto-update installs new code without a prompt. It is opt-in and limited to the current major version.
 - The client card makes no third-party external request. It reads update state and performs update actions only through DSH's same-origin Connection RPC to the host. It does not use `innerHTML` / `dangerouslySetInnerHTML`.
@@ -128,7 +155,7 @@ pnpm verify
 
 `pnpm verify` runs typecheck, build, test and check. To run them individually, use `pnpm typecheck`, `pnpm build`, `pnpm test` and `pnpm check`.
 
-The host tests use mocked `fetch`; e2e tests are opt-in with `OLLAMA_API_KEY`. The client tests load the browser bundle in a VM with fake React/primitives.
+The host tests use mocked `fetch`; search and fetch e2e tests are opt-in with `OLLAMA_API_KEY`. The client tests load the browser bundle in a VM with fake React/primitives.
 
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)

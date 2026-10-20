@@ -6,9 +6,16 @@
 [model tool call]
   -> dsh-tool-web (external-content notice, result caps)
   -> ctx.web.search()
-  -> dsh-ollama-web host provider
+  -> dsh-ollama-web search provider
   -> HTTPS POST https://ollama.com/api/web_search
   -> map {title,url,content} to {title,url,snippet}
+
+[optional model tool call]
+  -> dsh-tool-web
+  -> ctx.web.fetch()
+  -> dsh-ollama-web fetch provider (only when enabled and pinned)
+  -> HTTPS POST https://ollama.com/api/web_fetch
+  -> map {title,content,links} to WebFetchResult (text, synthetic status 200)
 ```
 
 The browser half (`client.js`) ships in the same npm package and never talks to
@@ -33,8 +40,8 @@ network call to the plugin.
   -> UpdateStatus
 ```
 
-The update service never reads the Ollama API key, search query or session
-state. The client bundle never makes an external network request; it only uses
+The update service never reads the Ollama API key, search query, fetch URL or
+session state. The client bundle never makes an external network request; it only uses
 the same-origin Connection RPC.
 
 ## Package modules
@@ -42,11 +49,12 @@ the same-origin Connection RPC.
 | Module | Role |
 |---|---|
 | `src/index.ts` | Plugin shape: `name`, `inject`, `Config`, `apply`; update service and RPC registration |
-| `src/config.ts` | Schema, defaults, endpoint validation, key resolution |
+| `src/config.ts` | Schema, defaults, endpoint validation, key resolution, search/fetch error isolation |
 | `src/provider.ts` | `OllamaSearchProvider` and response mapping |
-| `src/http.ts` | POST, deadline, redirect refusal, byte cap, status mapping |
+| `src/fetch-provider.ts` | `OllamaFetchProvider`, fetch URL policy, response mapping |
+| `src/http.ts` | POST, deadline, redirect refusal, byte cap, status/error mapping |
 | `src/credentials.ts` | (part of `config.ts`) literal -> credentials -> launch env |
-| `src/sanitize.ts` | URL scheme, Markdown-safe URL/title/metadata sanitization |
+| `src/sanitize.ts` | URL scheme, Markdown-safe URL/title/metadata and multi-line block sanitization |
 | `src/errors.ts` | `WebError` helpers |
 | `src/update/types.ts` | Update status, compatibility result, error codes, stored state |
 | `src/update/semver.ts` | Stable/prerelease comparison and `engines.dsh` range matching |
@@ -66,12 +74,14 @@ the same-origin Connection RPC.
 `client.js` registers `window.__ModuleLoader__.load({ id: 'dsh-ollama-web' })`.
 DSH attaches the browser half to the Loader row whose specifier is the bare
 package name (`ollama-web` -> `dsh-ollama-web`). The bundle registers the
-`plugins.row.config` card keyed `dsh-ollama-web#ollama-web` and the
-`plugins.detail.section` update section.
+`plugins.row.config` card keyed `dsh-ollama-web#ollama-web`, the
+`plugins.detail.section` update/support sections, and a live fetch-provider
+toggle with its own static stylesheet.
 
 ## IDs
 
-- Provider id: `ollama`
+- Search provider id: `ollama`
+- Fetch provider id: `ollama` (separate DSH fetch registry)
 - Host loader row: `ollama-web`
 - Config namespace: `ollama-web`
 - Client card key: `dsh-ollama-web#ollama-web`
@@ -81,20 +91,25 @@ package name (`ollama-web` -> `dsh-ollama-web`). The bundle registers the
 
 ## Error taxonomy
 
-| Situation | Code |
-|---|---|
-| No API key | `WEB_PROVIDER_CREDENTIAL_MISSING` |
-| Caller abort | `WEB_ABORTED` |
-| Timeout | `WEB_PROVIDER_ERROR` |
-| 401/403 | `WEB_PROVIDER_ERROR` (check key) |
-| 429 | `WEB_PROVIDER_ERROR` (rate limited) |
-| 5xx | `WEB_PROVIDER_ERROR` |
-| Redirect | `WEB_PROVIDER_ERROR` (refused) |
-| Oversized body | `WEB_PROVIDER_ERROR` |
-| Invalid JSON/shape | `WEB_PROVIDER_ERROR` |
+| Situation | Search code | Fetch code |
+|---|---|---|
+| No API key | `WEB_PROVIDER_CREDENTIAL_MISSING` | `WEB_PROVIDER_CREDENTIAL_MISSING` |
+| Caller abort | `WEB_ABORTED` | `WEB_ABORTED` |
+| Timeout | `WEB_PROVIDER_ERROR` | `WEB_FETCH_TIMEOUT` |
+| Invalid URL | — | `WEB_INVALID_URL` |
+| Credentials/private target | — | `WEB_BLOCKED_URL` |
+| 401/403 | `WEB_PROVIDER_ERROR` (check key) | `WEB_PROVIDER_ERROR` (check key) |
+| 429 | `WEB_PROVIDER_ERROR` (rate limited) | `WEB_PROVIDER_ERROR` (rate limited) |
+| 5xx | `WEB_PROVIDER_ERROR` | `WEB_PROVIDER_ERROR` |
+| Redirect | `WEB_PROVIDER_ERROR` (refused) | `WEB_REDIRECT_BLOCKED` |
+| Oversized body | `WEB_PROVIDER_ERROR` | `WEB_FETCH_TOO_LARGE` |
+| Invalid JSON/shape | `WEB_PROVIDER_ERROR` | `WEB_PROVIDER_ERROR` |
+| Disabled/unconfigured provider | — | `WEB_PROVIDER_UNAVAILABLE` / `WEB_PROVIDER_CONFIGURED_UNAVAILABLE` |
 
-Messages never include the API key or query. Upstream error bodies are
-discarded; only the status and a short classification are surfaced.
+Messages never include the API key, query or fetch URL. Upstream error bodies
+are discarded; only the status and a short classification are surfaced. The
+fetch provider reports a successful Ollama call as `statusCode: 200` because
+Ollama does not expose the target page's status or final URL.
 
 ## Update error taxonomy
 

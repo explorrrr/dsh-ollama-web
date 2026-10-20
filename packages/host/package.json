@@ -1,7 +1,7 @@
 {
   "name": "dsh-ollama-web",
-  "version": "2.3.0",
-  "description": "Ollama Cloud web search provider for DeepSeek Harness, with a Web UI settings card and update checks and installs",
+  "version": "2.4.0",
+  "description": "Ollama Cloud web search and optional web fetch provider for DeepSeek Harness, with a Web UI settings card and update checks and installs",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

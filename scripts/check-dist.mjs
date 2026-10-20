@@ -16,6 +16,7 @@ for (const script of ['preinstall', 'install', 'postinstall', 'prepare']) {
 const required = [
   'dist/index.js',
   'dist/index.d.ts',
+  'dist/fetch-provider.js',
   'dist/update/service.js',
   'dist/update/dsh.js',
   'dist/update/install.js',
