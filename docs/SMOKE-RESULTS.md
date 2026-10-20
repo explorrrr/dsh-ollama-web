@@ -1,10 +1,58 @@
 # Smoke results
 
-Date: 2026-10-19 (2.3.0); 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks were
-recorded earlier.
+Date: 2026-10-20 (2.4.0); 2.3.0, 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks
+were recorded earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The 2.3.0 checks are package-level unless
+Environment: DSH 0.2.1-rc.2, macOS. The 2.4.0 checks are package-level unless
 noted; the full isolated DSH/browser result remains the 1.2.0 run below.
+
+## 2.4.0 optional Ollama fetch checks (local)
+
+- [x] `pnpm install --frozen-lockfile --ignore-scripts` passed.
+- [x] `pnpm verify` passed: typecheck, build, 165 tests, `check-versions`,
+      `check-dist`, `check-client` and release-notes extraction.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `node scripts/smoke.mjs` passed: search provider plus optional fetch
+      provider registration, with `available() === false` when disabled and
+      `true` when enabled.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/fetch-provider.js`,
+      `dist/index.js`, `dist/update/dsh.js`, `cordis.patch.yml` and
+      `package.json` at 2.4.0 (66 files).
+- [x] Tests cover fetch request/mapping, synthetic status 200, title/links
+      folding, content/newline sanitization, link cap/filtering, char/byte caps,
+      timeout, abort, redirect, HTTP statuses, invalid JSON, missing key,
+      credentials/launch-env resolution, invalid/private URLs, live availability,
+      disabled-provider rejection, missing fetch seam, provider ambiguity and
+      default search regression.
+- [x] `pnpm --filter dsh-ollama-web test:e2e` skipped the live search and fetch
+      tests because `OLLAMA_API_KEY` was not exported; the literal key in the
+      desktop profile was not read.
+- [x] Isolated `DSH_HOME=/tmp/dsh-ollama-fetch-smoke` install of the packed
+      2.4.0 tarball succeeded. `--dump-config` composed
+      `web.searchProvider: ollama`, `web.fetchProvider: ollama`,
+      `enableFetchProvider: true`, `fetchPath: /api/web_fetch`, and the
+      `ollama-web` row.
+- [x] The isolated Web server served the combined plugin bundle containing
+      `enableFetchProvider`, `fetchPath`, `FetchToggle.css`,
+      `Use Ollama for web fetch` and the `dsh-ollama-web#ollama-web` row key.
+- [ ] Full browser Configure-card smoke was not run; client VM tests cover the
+      new fetch fields/toggle and the served bundle was checked separately.
+      This follows the package-level 2.3.0 smoke.
+- [x] Published `dsh-ollama-web@2.4.0` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`570b647b25846b0382a6b307c4224c2c626aae8a3d7ba1bad2b572eb50f8a9e55908479dc6f31ae04d09b12a7c1a39f579eb4b8aeeb098f0a7223760240c2a6d`).
+- [x] Published package contains `client.js`, `dist/fetch-provider.js`,
+      `dist/index.js`, `dist/update/service.js` and `cordis.patch.yml`.
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.4.0` with the same
+      digest; workflow ref is `refs/tags/v2.4.0`, path is
+      `.github/workflows/release.yml`, and commit is
+      `a08b429550c76a321952de7b0f34be18091c6eb9`.
+- [x] npm `latest` points to `2.4.0`; the GitHub Release `v2.4.0` has
+      `dsh-ollama-web-2.4.0.tgz` and `SHA512SUMS` assets with the same digest.
+- [x] The first publish job published the package and then failed while npm
+      propagation exceeded the workflow's 24-attempt download loop. Rerunning
+      the failed `publish` job skipped the existing version and completed the
+      GitHub Release.
 
 ## 2.3.0 update-on-open checks (local)
 
@@ -250,8 +298,9 @@ tests above and applies to updates after 1.2.0 is installed.
 
 ## Not yet verified
 
-- [ ] A live Ollama `/api/web_search` call with a real `OLLAMA_API_KEY`
-      (`pnpm --filter dsh-ollama-web test:e2e`).
+- [ ] Live Ollama `/api/web_search` and `/api/web_fetch` calls with a real
+      `OLLAMA_API_KEY` (`pnpm --filter dsh-ollama-web test:e2e`). The 2.4.0 run
+      skipped both because the key was not exported.
 - [ ] macOS/Windows desktop browser matrix; only the host/API and bundle
       serving paths were exercised here.
 

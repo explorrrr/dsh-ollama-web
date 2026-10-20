@@ -1,7 +1,65 @@
 # npm provenance verification
 
-Date: 2026-10-19 (2.3.0); 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks were
-recorded earlier.
+Date: 2026-10-20 (2.4.0); 2.3.0, 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks
+were recorded earlier.
+
+## 2.4.0
+
+`dsh-ollama-web@2.4.0` was published by GitHub Actions through npm trusted
+publishing (OIDC). No `NPM_TOKEN` is used.
+
+### Attestations
+
+| Package | Attestation |
+|---|---|
+| `dsh-ollama-web@2.4.0` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@2.4.0> |
+
+It uses SLSA provenance v1. Decoded build information:
+
+```text
+workflow.ref:        refs/tags/v2.4.0
+workflow.repository: https://github.com/explorrrr/dsh-ollama-web
+workflow.path:       .github/workflows/release.yml
+git commit:          a08b429550c76a321952de7b0f34be18091c6eb9
+builder:             https://github.com/actions/runner/github-hosted
+invocation:          https://github.com/explorrrr/dsh-ollama-web/actions/runs/39398934651/attempts/1
+```
+
+The tag commit is the same:
+
+```bash
+git rev-parse 'v2.4.0^{commit}'
+# a08b429550c76a321952de7b0f34be18091c6eb9
+```
+
+### Subject digests
+
+| Package | npm tarball SHA-512 | SLSA subject |
+|---|---|---|
+| `dsh-ollama-web@2.4.0` | `570b647b25846b0382a6b307c4224c2c626aae8a3d7ba1bad2b572eb50f8a9e55908479dc6f31ae04d09b12a7c1a39f579eb4b8aeeb098f0a7223760240c2a6d` | matches |
+
+npm reports the same digest as
+`sha512-VwtkeyWEawOCprMHxCJMLGJqroo9e6G60rVy61D4qeVZCEedxvMa4E0JsSp8Gjn1eetLiu6wmPCnIjdgJAwqbQ==`.
+The GitHub Release `v2.4.0` `SHA512SUMS` contains the same hash, computed from
+the npm tarball downloaded by the release workflow. npm `latest` points to
+`2.4.0`; the registry publish time is `2026-10-20T09:20:02.730Z`.
+
+The first publish job published the package and then failed while waiting for
+npm propagation (24 attempts, about two minutes). The failed `publish` job was
+rerun; it skipped the existing version, downloaded the tarball and completed the
+GitHub Release. The Release was published at `2026-10-20T09:27:44Z`.
+
+### Reproduce
+
+```bash
+npm view dsh-ollama-web@2.4.0 dist.attestations
+npm view dsh-ollama-web@2.4.0 dist.tarball dist.integrity
+
+mkdir -p /tmp/prov-check-240 && cd /tmp/prov-check-240
+curl -fsSL "$(npm view dsh-ollama-web@2.4.0 dist.tarball)" -o dsh-ollama-web-2.4.0.tgz
+shasum -a 512 dsh-ollama-web-2.4.0.tgz
+tar -tzf dsh-ollama-web-2.4.0.tgz | grep -E 'package/(client\.js|dist/fetch-provider\.js|dist/index\.js|dist/update/dsh\.js|cordis\.patch\.yml)'
+```
 
 ## 2.3.0
 
