@@ -5,8 +5,9 @@
 `dsh-ollama-web` is a DSH host plugin. It runs in the Node.js main process and
 is not confined by the workspace sandbox. It can read the user's files,
 credentials and sessions if it is malicious or compromised. The reviewed code
-only reads the configured `OLLAMA_*` API-key reference and the search query, but
-users should still treat installing/updating this plugin as a trust decision.
+only reads the configured `OLLAMA_*` API-key reference, the search query and,
+when the optional fetch provider is enabled, the requested URL, but users should
+still treat installing/updating this plugin as a trust decision.
 
 The client bundle ships in the same npm package and runs in the Web GUI origin.
 Its bundle is intentionally small: no external `fetch`, no storage, no HTML
@@ -15,9 +16,9 @@ sinks (`innerHTML` / `dangerouslySetInnerHTML`), no `postMessage`, no
 `plugins.detail.section` entries, calls `form.mutate`, asks the host's update
 service through DSH's same-origin `connection.rpc` when the user invokes an
 update action or the update screen opens with a check older than five minutes,
-and injects two static `<style>` elements for the support and update sections.
-The donation link is a plain HTTPS anchor; the cards send nothing until the user
-clicks it.
+and injects three static `<style>` elements for the support, update and fetch
+toggle sections. The donation link is a plain HTTPS anchor; the cards send
+nothing until the user clicks it.
 
 ## Data flow
 
@@ -25,25 +26,37 @@ clicks it.
 |---|---|---|
 | API key | `Authorization: Bearer` header | Only to the configured HTTPS endpoint |
 | Query, `max_results` | `/api/web_search` | No session/user identifiers |
-| Response results | Local model context | Stored by DSH as a tool result |
+| Fetch URL | `/api/web_fetch` | Only when the optional Ollama fetch provider is enabled and pinned |
+| Response results / fetched text | Local model context | Stored by DSH as a tool result |
 | Settings | DSH host settings/credentials | Key is write-only |
 | Update package name, metadata, tarballs | npm registry / npmmirror | Only on Check/Install, auto-update, or an update-screen open after five minutes |
 | Update state/preferences | `<profile>/data/dsh-ollama-web/` | No secrets; mode 0o600 |
 
-Default search endpoint: `https://ollama.com`. Changing `baseURL` changes where
-the key and queries go; HTTPS is enforced, redirects are refused, but the
-operator is responsible for the destination.
+Default search and fetch endpoint host: `https://ollama.com`. Changing
+`baseURL` changes where the key, queries and fetch URLs go; HTTPS is enforced,
+redirects are refused, but the operator is responsible for the destination.
+When the optional fetch provider is enabled, Ollama performs the request from
+its own network, so the URL is disclosed to Ollama and DSH's local
+DNS-pinning/SSRF boundary does not apply.
 
 ## Controls
 
 - HTTPS-only search endpoint, no userinfo/query/fragment.
 - `apiKeyEnv` must match `^OLLAMA_[A-Za-z0-9_]+$`; other environment or
   credential references are rejected before a request is made.
-- Same-origin path validation that also keeps `searchPath` under the
-  `baseURL` path prefix. Literal and percent-encoded `..`, `?`, `#`,
+- Same-origin path validation that also keeps `searchPath` and `fetchPath`
+  under the `baseURL` path prefix. Literal and percent-encoded `..`, `?`, `#`,
   backslashes and protocol-relative paths are rejected.
-- `redirect: "error"`.
-- Response byte cap, query cap, snippet cap and result cap.
+- `redirect: "error"` for the Ollama API request.
+- Response byte cap, query cap, snippet cap, result cap and fetch content cap.
+- Optional fetch URLs must be `http(s)`, at most 2048 characters, credential-free
+  and not an obvious local/private hostname or IP literal, including known
+  loopback wildcard DNS suffixes. This is a best-effort disclosure guard, not a
+  DNS-level SSRF boundary.
+- Fetched links are restricted to `http(s)` and Markdown-safe encoded; fetched
+  content is control-character cleaned and capped.
+- A successful Ollama fetch reports status `200` and the requested URL because
+  Ollama does not expose the target status or final redirect URL.
 - `http(s)`-only result URLs; username/password URLs dropped, and Markdown
   delimiters in URLs are percent-encoded.
 - Titles and short metadata have Markdown/autolink delimiters removed so a
@@ -86,5 +99,13 @@ operator is responsible for the destination.
 - The updater replaces installed files directly. The profile's
   `package.json` / `pnpm-lock.yaml` still record the previous version and a later
   pnpm operation can reinstall it; see [UPDATES.md](UPDATES.md).
-- `web_fetch` stays on DSH's local HTTP provider in 2.x; an Ollama fetch provider
-  is deferred because its status-code semantics do not match the DSH contract.
+- The optional Ollama fetch provider discloses the requested URL to Ollama and
+  cannot provide DSH HTTP's local DNS-pinning/SSRF guarantees. Its local/private
+  hostname block is best-effort; a DNS name that resolves to a private address
+  is not detected because Ollama performs the resolution and request.
+- Ollama does not expose the target HTTP status or final redirect URL. A
+  successful fetch is presented as `HTTP 200` for the requested URL, so target
+  status semantics are lossy. Use `fetchProvider: http` when status fidelity
+  matters.
+- Fetched content is external and untrusted; the DSH tool's notice does not
+  eliminate prompt injection.

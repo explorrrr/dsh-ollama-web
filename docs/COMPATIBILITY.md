@@ -4,13 +4,27 @@
 
 | DSH | Node | Plugin |
 |---|---|---|
-| 0.2.1-rc.2 | 22.x, 24.x | 2.3.x |
+| 0.2.1-rc.2 | 22.x, 24.x | 2.4.x |
 
 The host peer range is `@deepseek-ai/dsh-web >=0.2.1-rc.1 <0.3.0`. The package's
 client bundle depends on the `plugins.row.config` / `configForms` contract, the
 `plugins.detail.section` slot, the official
 `@deepseek-ai/dsh-client-ui-primitives` module, and the shell's `connection`
 service. The bundle is served from the same package as the host provider.
+
+## Fetch provider requirements
+
+The optional fetch provider uses DSH's `registerFetchProvider` seam and returns
+the `WebFetchResult` shape (`url`, `statusCode`, `body`, `truncated`). It is
+registered unconditionally when the seam exists; `available()` follows the live
+`enableFetchProvider` setting. Users must also pin `web.fetchProvider: ollama`
+because the default composition already mounts the HTTP fetch provider.
+
+Ollama's `/api/web_fetch` response is `{ title, content, links }` and has no
+target HTTP status or final URL. The provider reports `statusCode: 200` for a
+successful Ollama response and the requested URL. This is a documented lossy
+mapping; `fetchProvider: http` remains the correct choice when target status
+fidelity or DSH's local SSRF boundary is required.
 
 ## Automatic compatibility guard
 
@@ -48,7 +62,7 @@ or `DSH_APP_VERSION` (other deployments), and the target release's
 
 1.x shipped `dsh-ollama-web-client` as a separate package. 2.0.0 merges it into
 `dsh-ollama-web` and changes the update RPC status shape. Remove the old client
-package before installing 2.3.0; leaving it installed can register the settings
+package before installing 2.4.0; leaving it installed can register the settings
 card twice and is not supported. The 1.x updater only installs releases in the
 current major, so 2.0.0 is a manual upgrade. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

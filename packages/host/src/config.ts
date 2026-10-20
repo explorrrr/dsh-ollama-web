@@ -18,6 +18,9 @@ export const DEFAULTS = {
   maxQueryChars: 2048,
   searchTimeoutMs: 30000,
   maxResponseBytes: 2097152,
+  fetchPath: '/api/web_fetch',
+  fetchTimeoutMs: 30000,
+  fetchMaxChars: 100000,
 } as const;
 
 export const Config = Schema.object({
@@ -30,7 +33,10 @@ export const Config = Schema.object({
   maxQueryChars: Schema.number().step(1).min(1).default(DEFAULTS.maxQueryChars).volatile(),
   searchTimeoutMs: Schema.number().step(1).min(1).default(DEFAULTS.searchTimeoutMs).volatile(),
   maxResponseBytes: Schema.number().step(1).min(1).default(DEFAULTS.maxResponseBytes).volatile(),
-  enableFetchProvider: Schema.boolean().default(false),
+  fetchPath: Schema.string().default(DEFAULTS.fetchPath).volatile(),
+  fetchTimeoutMs: Schema.number().step(1).min(1).default(DEFAULTS.fetchTimeoutMs).volatile(),
+  fetchMaxChars: Schema.number().step(1).min(1).default(DEFAULTS.fetchMaxChars).volatile(),
+  enableFetchProvider: Schema.boolean().default(false).volatile(),
 });
 
 export interface ResolvedOptions {
@@ -42,8 +48,13 @@ export interface ResolvedOptions {
   readonly maxQueryChars: number;
   readonly searchTimeoutMs: number;
   readonly maxResponseBytes: number;
+  readonly fetchEndpoint: string | undefined;
+  readonly fetchTimeoutMs: number;
+  readonly fetchMaxChars: number;
+  readonly fetchEnabled: boolean;
   readonly configError: string | undefined;
-  resolveApiKey(): Promise<string>;
+  readonly fetchConfigError: string | undefined;
+  resolveApiKey(operation?: string): Promise<string>;
 }
 
 function clampInt(value: unknown, min: number, max: number, fallback: number): number {
@@ -57,23 +68,23 @@ function readLiteralKey(value: unknown): string | undefined {
 }
 
 /** Reject literal and percent-encoded traversal before URL normalization. */
-function assertPlainSearchPath(rawPath: string): void {
+function assertPlainPath(rawPath: string, fieldName: string): void {
   let current = rawPath;
   for (let depth = 0; depth < 5; depth += 1) {
-    assertNoTraversal(current);
+    assertNoTraversal(current, fieldName);
     let decoded: string;
     try {
       decoded = decodeURIComponent(current);
     } catch {
-      throw new Error('searchPath must be a plain path');
+      throw new Error(`${fieldName} must be a plain path`);
     }
     if (decoded === current) return;
     current = decoded;
   }
-  assertNoTraversal(current);
+  assertNoTraversal(current, fieldName);
 }
 
-function assertNoTraversal(path: string): void {
+function assertNoTraversal(path: string, fieldName: string): void {
   if (
     path.includes('..')
     || path.includes('?')
@@ -81,15 +92,15 @@ function assertNoTraversal(path: string): void {
     || path.includes('\\')
     || path.startsWith('//')
   ) {
-    throw new Error('searchPath must be a plain path');
+    throw new Error(`${fieldName} must be a plain path`);
   }
 }
 
 /**
- * Build and validate the request endpoint. `baseURL` may carry a path prefix
+ * Build and validate a request endpoint. `baseURL` may carry a path prefix
  * (for a reverse proxy), but it must stay on its own HTTPS origin.
  */
-export function buildEndpoint(rawBaseURL: string, rawPath: string): string {
+export function buildEndpoint(rawBaseURL: string, rawPath: string, fieldName = 'searchPath'): string {
   let base: URL;
   try {
     base = new URL(rawBaseURL);
@@ -108,17 +119,17 @@ export function buildEndpoint(rawBaseURL: string, rawPath: string): string {
 
   const path = rawPath.trim();
   if (!path.startsWith('/')) {
-    throw new Error('searchPath must start with /');
+    throw new Error(`${fieldName} must start with /`);
   }
-  assertPlainSearchPath(path);
+  assertPlainPath(path, fieldName);
 
   const basePath = base.pathname.replace(/\/+$/, '');
   const endpoint = new URL(`${basePath}${path}`, base.origin);
   if (endpoint.origin !== base.origin) {
-    throw new Error('searchPath must stay on the baseURL origin');
+    throw new Error(`${fieldName} must stay on the baseURL origin`);
   }
   if (basePath !== '' && endpoint.pathname !== basePath && !endpoint.pathname.startsWith(`${basePath}/`)) {
-    throw new Error('searchPath must stay under the baseURL path');
+    throw new Error(`${fieldName} must stay under the baseURL path`);
   }
   return endpoint.toString();
 }
@@ -134,21 +145,33 @@ export function snapshot(ctx: PluginContext, config: ConfigRefs): ResolvedOption
   const maxQueryChars = clampInt(config.maxQueryChars.get(), 1, 8192, DEFAULTS.maxQueryChars);
   const searchTimeoutMs = clampInt(config.searchTimeoutMs.get(), 1_000, 120_000, DEFAULTS.searchTimeoutMs);
   const maxResponseBytes = clampInt(config.maxResponseBytes.get(), 65_536, 10_485_760, DEFAULTS.maxResponseBytes);
+  const fetchPath = config.fetchPath.get() ?? DEFAULTS.fetchPath;
+  const fetchTimeoutMs = clampInt(config.fetchTimeoutMs.get(), 1_000, 120_000, DEFAULTS.fetchTimeoutMs);
+  const fetchMaxChars = clampInt(config.fetchMaxChars.get(), 1, 200_000, DEFAULTS.fetchMaxChars);
+  const fetchEnabled = config.enableFetchProvider.get() === true;
 
-  let configError: string | undefined;
+  let commonError: string | undefined;
   if (!API_KEY_ENV_PATTERN.test(apiKeyEnv)) {
-    configError = 'apiKeyEnv must be an OLLAMA_ environment variable name';
+    commonError = 'apiKeyEnv must be an OLLAMA_ environment variable name';
   }
   if (apiKey !== undefined && /[\r\n]/.test(apiKey)) {
-    configError = 'apiKey must not contain CR or LF';
+    commonError = 'apiKey must not contain CR or LF';
   }
 
+  let configError = commonError;
+  let fetchConfigError = commonError;
   let endpoint: string | undefined;
-  if (configError === undefined) {
+  let fetchEndpoint: string | undefined;
+  if (commonError === undefined) {
     try {
       endpoint = buildEndpoint(baseURL, searchPath);
     } catch (error) {
       configError = error instanceof Error ? error.message : 'invalid Ollama endpoint configuration';
+    }
+    try {
+      fetchEndpoint = buildEndpoint(baseURL, fetchPath, 'fetchPath');
+    } catch (error) {
+      fetchConfigError = error instanceof Error ? error.message : 'invalid Ollama fetch endpoint configuration';
     }
   }
 
@@ -161,8 +184,13 @@ export function snapshot(ctx: PluginContext, config: ConfigRefs): ResolvedOption
     maxQueryChars,
     searchTimeoutMs,
     maxResponseBytes,
+    fetchEndpoint,
+    fetchTimeoutMs,
+    fetchMaxChars,
+    fetchEnabled,
     configError,
-    resolveApiKey: () => resolveApiKey(ctx, apiKey, apiKeyEnv),
+    fetchConfigError,
+    resolveApiKey: (operation?: string) => resolveApiKey(ctx, apiKey, apiKeyEnv, operation),
   };
 }
 
@@ -170,6 +198,7 @@ async function resolveApiKey(
   ctx: PluginContext,
   literal: string | undefined,
   reference: string,
+  operation = 'web search',
 ): Promise<string> {
   if (literal !== undefined && literal.length > 0) return literal;
 
@@ -179,7 +208,7 @@ async function resolveApiKey(
     try {
       hit = await credentials.resolve(reference);
     } catch (error) {
-      throw providerError(`Ollama web search credential resolution failed for "${reference}"`, error);
+      throw providerError(`Ollama web credential resolution failed for "${reference}"`, error);
     }
     if (hit?.value !== undefined && hit.value.length > 0) return hit.value;
   }
@@ -191,5 +220,5 @@ async function resolveApiKey(
   const fromEnv = process.env[reference];
   if (fromEnv !== undefined && fromEnv.length > 0) return fromEnv;
 
-  throw missingCredentialError(reference);
+  throw missingCredentialError(reference, operation);
 }

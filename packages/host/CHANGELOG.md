@@ -6,6 +6,38 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-20
+
+### Added
+
+- An opt-in `OllamaFetchProvider` for `/api/web_fetch`, registered on DSH's
+  fetch seam with the live `enableFetchProvider` setting.
+- `fetchPath`, `fetchTimeoutMs` and `fetchMaxChars` config fields, plus a live
+  fetch toggle and fetch fields in the settings card.
+- URL validation, content/link sanitization and fetch-specific error codes
+  (`WEB_FETCH_TIMEOUT`, `WEB_FETCH_TOO_LARGE`, `WEB_REDIRECT_BLOCKED`,
+  `WEB_INVALID_URL`, `WEB_BLOCKED_URL`).
+
+### Changed
+
+- The default `web_fetch` remains DSH's HTTP provider. The Ollama provider is
+  selected only with `enableFetchProvider: true` and
+  `web.fetchProvider: ollama`.
+- `buildEndpoint()` is generalized to validate `fetchPath` with the same origin
+  and base-path rules as `searchPath`.
+
+### Security
+
+- The provider rejects non-http(s), credential-bearing, oversized and obvious
+  local/private URLs before sending them to Ollama.
+- Fetch results are capped and errors omit the API key, URL and upstream body.
+- Ollama's target status/final URL are unavailable; successful results use a
+  synthetic HTTP 200.
+
+### Notes
+
+- No new runtime dependency or lifecycle script.
+
 ## [2.3.0] - 2026-10-19
 
 ### Added

@@ -1,4 +1,7 @@
 import type {
+  WebFetchProvider,
+  WebFetchRequest,
+  WebFetchResult,
   WebSearchProvider,
   WebSearchRequest,
   WebSearchResult,
@@ -6,6 +9,9 @@ import type {
 } from '@deepseek-ai/dsh-web';
 
 export type {
+  WebFetchProvider,
+  WebFetchRequest,
+  WebFetchResult,
   WebSearchProvider,
   WebSearchRequest,
   WebSearchResult,
@@ -28,7 +34,10 @@ export interface ConfigRefs {
   maxQueryChars: Volatile<number>;
   searchTimeoutMs: Volatile<number>;
   maxResponseBytes: Volatile<number>;
-  enableFetchProvider: boolean;
+  fetchPath: Volatile<string>;
+  fetchTimeoutMs: Volatile<number>;
+  fetchMaxChars: Volatile<number>;
+  enableFetchProvider: Volatile<boolean>;
 }
 
 export interface CredentialsLike {
@@ -53,6 +62,7 @@ export interface InjectScope {
 export interface PluginContext {
   web: {
     registerSearchProvider(provider: WebSearchProvider): unknown;
+    registerFetchProvider?(provider: WebFetchProvider): unknown;
   };
   get(name: string): unknown;
   readonly baseUrl?: string;
@@ -70,4 +80,10 @@ export interface OllamaSearchResult {
 
 export interface OllamaSearchResponse {
   results?: unknown;
+}
+
+export interface OllamaFetchResponse {
+  title?: unknown;
+  content?: unknown;
+  links?: unknown;
 }

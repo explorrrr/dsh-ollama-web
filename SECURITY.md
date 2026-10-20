@@ -14,6 +14,10 @@ disclosure timeline.
 
 | Version | Supported |
 |---|---|
+| 2.4.x | Yes |
+| 2.3.x | Yes |
+| 2.2.x | Yes |
+| 2.1.x | Yes |
 | 2.0.x | Yes |
 | 1.2.x | Yes |
 | 1.1.x | Yes |
@@ -43,6 +47,12 @@ For search, the host contacts only `https://ollama.com` by default:
 - `POST /api/web_search` with `{ query, max_results }`.
 - The configured API key is sent only in the `Authorization: Bearer` header.
 
+When the optional Ollama fetch provider is enabled and pinned, it additionally
+sends the requested URL to `POST /api/web_fetch` with the same Bearer key. The
+request is executed by Ollama, so the URL is disclosed to Ollama and DSH's local
+DNS-pinning/SSRF boundary does not apply. The provider rejects non-http(s) URLs,
+URLs with credentials and obvious local/private hosts, but this is best-effort.
+
 For updates, the host contacts the npm registry (primary) or npmmirror
 (fallback) only when the user checks/installs, while auto-update is enabled, or
 when the update screen opens after five minutes without a successful check:
@@ -50,13 +60,14 @@ when the update screen opens after five minutes without a successful check:
 - the package name `dsh-ollama-web`;
 - the package metadata and tarballs returned by the registry.
 
-No API key, search query, session ID, user ID, conversation text or filesystem
-data is sent. Search queries and results are stored by DSH as ordinary tool
+No API key, search query, fetch URL, session ID, user ID, conversation text or
+filesystem data is sent except to the configured Ollama endpoint as described
+above. Queries, fetch URLs and results are stored by DSH as ordinary tool
 results in the session log.
 
 If `baseURL` is changed, the operator chooses a different destination for the
-key and queries. The plugin enforces HTTPS and refuses redirects, but it cannot
-make an untrusted endpoint trustworthy.
+key, queries and fetch URLs. The plugin enforces HTTPS and refuses redirects,
+but it cannot make an untrusted endpoint trustworthy.
 
 ## Update security
 
@@ -84,7 +95,7 @@ make an untrusted endpoint trustworthy.
 
 - Prefer `OLLAMA_API_KEY` or the credentials service over a literal `apiKey`.
 - `apiKeyEnv` only accepts `OLLAMA_*` names; unrelated environment variables
-  cannot be selected as the search credential.
+  cannot be selected as the search/fetch credential.
 - The Web UI card is write-only: a saved key is never read back or displayed.
 - Keys are not logged and are not included in provider error messages.
 - Use a dedicated key and monitor Ollama usage/balance. Rotate the key if it is
@@ -92,7 +103,18 @@ make an untrusted endpoint trustworthy.
 
 ## Fetch policy
 
-Version 2.x does not implement Ollama `/api/web_fetch`. `web_fetch` remains on
-DSH's built-in HTTP provider, which applies URL validation, public-address
-checks, DNS pinning and response caps. Do not enable an Ollama fetch provider
-unless you have reviewed its SSRF and status-code semantics.
+`web_fetch` remains on DSH's built-in HTTP provider by default. The optional
+Ollama `/api/web_fetch` provider is opt-in and requires both
+`enableFetchProvider: true` and `web.fetchProvider: ollama`.
+
+Ollama performs the fetch from its own network. The provider therefore does not
+provide DSH HTTP's public-address checks, DNS pinning or same-origin redirect
+policy, and the target URL is disclosed to Ollama. It does reject non-http(s)
+URLs, URLs with embedded credentials and obvious local/private hostnames or IP
+literals (including known loopback wildcard DNS suffixes), but that block is
+best-effort and does not resolve DNS.
+
+Ollama also does not expose the target HTTP status or final redirect URL. A
+successful fetch is reported to DSH as `HTTP 200` for the requested URL. This is
+a lossy mapping; use `fetchProvider: http` when target status fidelity or the
+local SSRF boundary matters.

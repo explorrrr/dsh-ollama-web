@@ -39,6 +39,7 @@ window.__ModuleLoader__.load({
     ]);
     const SUPPORT_STYLE_ID = 'dsh-ollama-web/SupportSection.css';
     const UPDATE_STYLE_ID = 'dsh-ollama-web/UpdateSection.css';
+    const FETCH_STYLE_ID = 'dsh-ollama-web/FetchToggle.css';
     const SUPPORT_CSS = [
       '.dsh-ollama-web-support{display:flex;flex-direction:column;gap:6px;margin:12px 0 0;padding:12px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2)}',
       '.dsh-ollama-web-support-title{margin:0;font-size:13px;font-weight:500;line-height:1.5;color:var(--dsw-alias-label-primary)}',
@@ -69,6 +70,12 @@ window.__ModuleLoader__.load({
       '.dsh-ollama-web-updates-link:hover,.dsh-ollama-web-updates-link:focus-visible{text-decoration:underline}',
       '.dsh-ollama-web-updates-link:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px;border-radius:2px}',
     ].join('');
+    const FETCH_CSS = [
+      '.dsh-ollama-web-fetch-toggle{display:flex;flex-direction:column;gap:6px;margin:4px 0 0;padding:12px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2)}',
+      '.dsh-ollama-web-fetch-toggle-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;line-height:1.5;color:var(--dsw-alias-label-primary)}',
+      '.dsh-ollama-web-fetch-toggle-hint{margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-tertiary)}',
+      '.dsh-ollama-web-fetch-toggle-warning{margin:0;padding:8px 10px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.5}',
+    ].join('');
 
 
     const FIELDS = [
@@ -80,6 +87,9 @@ window.__ModuleLoader__.load({
       { name: 'maxQueryChars', kind: 'number' },
       { name: 'searchTimeoutMs', kind: 'number' },
       { name: 'maxResponseBytes', kind: 'number' },
+      { name: 'fetchPath', kind: 'text' },
+      { name: 'fetchTimeoutMs', kind: 'number' },
+      { name: 'fetchMaxChars', kind: 'number' },
     ];
 
     const NUMERIC_RANGES = {
@@ -88,11 +98,13 @@ window.__ModuleLoader__.load({
       maxQueryChars: [1, 8192],
       searchTimeoutMs: [1000, 120000],
       maxResponseBytes: [65536, 10485760],
+      fetchTimeoutMs: [1000, 120000],
+      fetchMaxChars: [1, 200000],
     };
 
     const en = {
-      title: 'Ollama web search',
-      description: 'Ollama Cloud search provider. Fetch stays on the built-in HTTP provider.',
+      title: 'Ollama web search and fetch',
+      description: 'Ollama Cloud search provider, with an optional Ollama fetch provider. Fetch stays on the built-in HTTP provider by default.',
       supportTitle: 'Support this plugin',
       supportBody: 'If dsh-ollama-web saves you time, you can buy me a coffee. Donations are optional.',
       supportLink: 'Buy me a coffee',
@@ -115,6 +127,15 @@ window.__ModuleLoader__.load({
       searchTimeoutMsHint: 'Deadline for one search request. Integer 1000-120000.',
       maxResponseBytes: 'Response cap (bytes)',
       maxResponseBytesHint: 'Maximum response body size. Integer 65536-10485760.',
+      fetchPath: 'Fetch path',
+      fetchPathHint: 'Absolute path under the endpoint path prefix. Default /api/web_fetch.',
+      fetchTimeoutMs: 'Fetch timeout (ms)',
+      fetchTimeoutMsHint: 'Deadline for one fetch request. Integer 1000-120000.',
+      fetchMaxChars: 'Fetch content cap (chars)',
+      fetchMaxCharsHint: 'Maximum text returned from one fetch. Integer 1-200000.',
+      enableFetchProvider: 'Use Ollama for web fetch',
+      enableFetchProviderHint: 'Registers an Ollama fetch provider. Also pin web.fetchProvider to ollama in the profile patch.',
+      enableFetchProviderWarning: 'Both this switch and web.fetchProvider: ollama are required. Without the pin, web_fetch reports WEB_PROVIDER_AMBIGUOUS; without this switch, the pinned provider is unavailable.',
       updateTitle: 'Updates',
       updateDescription: 'The host checks npm for a newer release. The card makes no external request.',
       updateCurrent: 'Current',
@@ -170,8 +191,8 @@ window.__ModuleLoader__.load({
     };
 
     const ja = {
-      title: 'Ollama Web検索',
-      description: 'Ollama Cloudの検索providerです。取得はDSH内蔵のHTTP providerを使います。',
+      title: 'Ollama Web検索・取得',
+      description: 'Ollama Cloudの検索providerです。任意でOllamaの取得providerも使えます。既定の取得はDSH内蔵HTTP providerです。',
       supportTitle: 'このプラグインを支援',
       supportBody: 'dsh-ollama-web が役に立ったら、コーヒーをおごって開発を応援できます。寄付は任意です。',
       supportLink: 'コーヒーをおごる',
@@ -194,6 +215,15 @@ window.__ModuleLoader__.load({
       searchTimeoutMsHint: '1回の検索の締切。1000〜120000の整数。',
       maxResponseBytes: 'レスポンス上限（バイト）',
       maxResponseBytesHint: 'レスポンス本文の最大サイズ。65536〜10485760の整数。',
+      fetchPath: '取得パス',
+      fetchPathHint: 'エンドポイントのパス配下に置く絶対パス。既定は /api/web_fetch。',
+      fetchTimeoutMs: '取得タイムアウト（ms）',
+      fetchTimeoutMsHint: '1回の取得の締切。1000〜120000の整数。',
+      fetchMaxChars: '取得本文の上限（文字）',
+      fetchMaxCharsHint: '1回の取得で返す本文の最大文字数。1〜200000の整数。',
+      enableFetchProvider: 'Web取得にOllamaを使う',
+      enableFetchProviderHint: 'Ollamaの取得providerを登録します。プロファイルpatchで web.fetchProvider を ollama に固定してください。',
+      enableFetchProviderWarning: 'このスイッチと web.fetchProvider: ollama の両方が必要です。pinがないと web_fetch は WEB_PROVIDER_AMBIGUOUS、スイッチがないとpin先のproviderがunavailableになります。',
       updateTitle: 'アップデート',
       updateDescription: 'Hostがnpmの最新リリースを確認します。カード自体は外部通信しません。',
       updateCurrent: '現在',
@@ -249,8 +279,8 @@ window.__ModuleLoader__.load({
     };
 
     const zh = {
-      title: 'Ollama 网页搜索',
-      description: 'Ollama Cloud 搜索提供方。抓取仍使用内置 HTTP 提供方。',
+      title: 'Ollama 网页搜索与抓取',
+      description: 'Ollama Cloud 搜索提供方，可选 Ollama 抓取提供方。默认抓取仍使用内置 HTTP 提供方。',
       supportTitle: '支持这个插件',
       supportBody: '如果 dsh-ollama-web 为你节省了时间，可以请我喝杯咖啡。捐赠完全自愿，不会解锁额外功能。',
       supportLink: '请我喝杯咖啡',
@@ -273,6 +303,15 @@ window.__ModuleLoader__.load({
       searchTimeoutMsHint: '单次搜索请求的截止时间。1000〜120000 的整数。',
       maxResponseBytes: '响应上限（字节）',
       maxResponseBytesHint: '响应正文的最大大小。65536〜10485760 的整数。',
+      fetchPath: '抓取路径',
+      fetchPathHint: '位于端点路径前缀下的绝对路径。默认 /api/web_fetch。',
+      fetchTimeoutMs: '抓取超时（毫秒）',
+      fetchTimeoutMsHint: '单次抓取请求的截止时间。1000〜120000 的整数。',
+      fetchMaxChars: '抓取正文上限（字符）',
+      fetchMaxCharsHint: '单次抓取返回正文的最大字符数。1〜200000 的整数。',
+      enableFetchProvider: '使用 Ollama 抓取网页',
+      enableFetchProviderHint: '注册 Ollama 抓取提供方。还需在 profile patch 中将 web.fetchProvider 固定为 ollama。',
+      enableFetchProviderWarning: '此开关与 web.fetchProvider: ollama 必须同时设置。缺少 pin 时 web_fetch 会报 WEB_PROVIDER_AMBIGUOUS；缺少开关时 pin 的提供方不可用。',
       updateTitle: '更新',
       updateDescription: '由 Host 检查 npm 上的最新版本；此卡片本身不发起外部请求。',
       updateCurrent: '当前',
@@ -341,6 +380,7 @@ window.__ModuleLoader__.load({
 
     ensureStyle(SUPPORT_STYLE_ID, SUPPORT_CSS);
     ensureStyle(UPDATE_STYLE_ID, UPDATE_CSS);
+    ensureStyle(FETCH_STYLE_ID, FETCH_CSS);
 
     function formatValue(value, kind) {
       if (kind === 'number') return typeof value === 'number' ? String(value) : '';
@@ -368,6 +408,14 @@ window.__ModuleLoader__.load({
         const op = parseDraft(staged[field.name], field.kind, field.name);
         if (op !== undefined) ops.push(op);
       });
+      if (staged.enableFetchProvider !== undefined
+        && staged.enableFetchProvider !== (current.enableFetchProvider === true)) {
+        ops.push({
+          op: 'set',
+          path: ['enableFetchProvider'],
+          value: staged.enableFetchProvider === true,
+        });
+      }
       if (staged.apiKey !== undefined && staged.apiKey !== '') {
         ops.push({ op: 'set', path: ['apiKey'], value: String(staged.apiKey) });
       }
@@ -379,6 +427,10 @@ window.__ModuleLoader__.load({
         if (staged[field.name] !== undefined && staged[field.name] !== formatValue(current[field.name], field.kind)) {
           return true;
         }
+      }
+      if (staged.enableFetchProvider !== undefined
+        && staged.enableFetchProvider !== (current.enableFetchProvider === true)) {
+        return true;
       }
       return staged.apiKey !== undefined && staged.apiKey !== '';
     }
@@ -920,6 +972,9 @@ window.__ModuleLoader__.load({
         const invalid = invalidFields(staged);
         const dirty = isDirty(staged, value);
         const keyDraft = staged.apiKey;
+        const fetchEnabled = value.enableFetchProvider === true;
+        const fetchDraft = staged.enableFetchProvider;
+        const fetchChecked = fetchDraft === undefined ? fetchEnabled : fetchDraft === true;
 
         const onSave = () => {
           if (!form || !writable || saving || invalid.length > 0) return;
@@ -987,6 +1042,38 @@ window.__ModuleLoader__.load({
             },
           });
         });
+
+        fields.push(react.createElement('div', {
+          key: 'enableFetchProvider',
+          className: 'dsh-ollama-web-fetch-toggle',
+        },
+          react.createElement('div', {
+            key: 'fetch-row',
+            className: 'dsh-ollama-web-fetch-toggle-row',
+          },
+            react.createElement(primitives.Switch, {
+              checked: fetchChecked,
+              label: t('enableFetchProvider'),
+              disabled: !writable,
+              onChange: (next) => {
+                setStaged((prev) => {
+                  const copy = Object.assign({}, prev);
+                  copy.enableFetchProvider = next === true;
+                  return copy;
+                });
+              },
+            }),
+            react.createElement('span', null, t('enableFetchProvider')),
+          ),
+          react.createElement('p', {
+            key: 'fetch-hint',
+            className: 'dsh-ollama-web-fetch-toggle-hint',
+          }, t('enableFetchProviderHint')),
+          fetchChecked ? react.createElement('p', {
+            key: 'fetch-warning',
+            className: 'dsh-ollama-web-fetch-toggle-warning',
+          }, t('enableFetchProviderWarning')) : null,
+        ));
 
         fields.push(react.createElement(primitives.SettingsSecretField, {
           key: 'apiKey',
@@ -1066,6 +1153,7 @@ window.__ModuleLoader__.load({
     exports.UPDATE_CHANNEL = UPDATE_CHANNEL;
     exports.PACKAGE_NAME = PACKAGE_NAME;
     exports.UPDATE_STYLE_ID = UPDATE_STYLE_ID;
+    exports.FETCH_STYLE_ID = FETCH_STYLE_ID;
     exports.UpdateRpcError = UpdateRpcError;
     exports.callUpdateRpc = callUpdateRpc;
     exports.autoCheckDue = autoCheckDue;

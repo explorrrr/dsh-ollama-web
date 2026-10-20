@@ -16,12 +16,15 @@ function config(overrides = {}) {
     maxQueryChars: 2048,
     searchTimeoutMs: 30000,
     maxResponseBytes: 2097152,
+    fetchPath: '/api/web_fetch',
+    fetchTimeoutMs: 30000,
+    fetchMaxChars: 100000,
     enableFetchProvider: false,
     ...overrides,
   };
   const out = {};
   for (const [key, value] of Object.entries(values)) {
-    out[key] = key === 'enableFetchProvider' ? value : { get: () => value };
+    out[key] = { get: () => value };
   }
   return out;
 }
@@ -38,4 +41,20 @@ test('real Ollama /api/web_search returns citeable sources', { skip, timeout: 60
   for (const source of result.sources) {
     assert.match(source.url, /^https?:\/\//);
   }
+});
+
+test('real Ollama /api/web_fetch returns text content', { skip, timeout: 60000 }, async () => {
+  const fetchProviders = [];
+  const ctx = {
+    web: {
+      registerSearchProvider: () => {},
+      registerFetchProvider: (provider) => fetchProviders.push(provider),
+    },
+    get: () => undefined,
+  };
+  apply(ctx, config({ enableFetchProvider: true }));
+  const result = await fetchProviders[0].fetch({ url: 'https://example.com/' });
+  assert.equal(result.statusCode, 200);
+  assert.equal(result.body.kind, 'text');
+  assert.ok(result.body.content.length > 0);
 });

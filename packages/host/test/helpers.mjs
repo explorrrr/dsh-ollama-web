@@ -10,6 +10,9 @@ const DEFAULTS = {
   maxQueryChars: 2048,
   searchTimeoutMs: 30000,
   maxResponseBytes: 2097152,
+  fetchPath: '/api/web_fetch',
+  fetchTimeoutMs: 30000,
+  fetchMaxChars: 100000,
   enableFetchProvider: false,
 };
 
@@ -18,21 +21,29 @@ export function makeConfig(overrides = {}) {
   const values = { ...DEFAULTS, ...overrides };
   const config = {};
   for (const [key, value] of Object.entries(values)) {
-    config[key] = key === 'enableFetchProvider' ? value : { get: () => value };
+    config[key] = { get: () => value };
   }
   return config;
 }
 
 /** Minimal Cordis-like context with the services this plugin touches. */
-export function makeCtx({ env = {}, credentials, agents } = {}) {
+export function makeCtx({ env = {}, credentials, agents, fetchSeam = true } = {}) {
   const providers = [];
-  const ctx = {
-    web: {
-      registerSearchProvider(provider) {
-        providers.push(provider);
-        return () => {};
-      },
+  const fetchProviders = [];
+  const web = {
+    registerSearchProvider(provider) {
+      providers.push(provider);
+      return () => {};
     },
+  };
+  if (fetchSeam) {
+    web.registerFetchProvider = (provider) => {
+      fetchProviders.push(provider);
+      return () => {};
+    };
+  }
+  const ctx = {
+    web,
     get(name) {
       if (name === 'launchEnvironment') {
         return {
@@ -46,13 +57,19 @@ export function makeCtx({ env = {}, credentials, agents } = {}) {
       return undefined;
     },
   };
-  return { ctx, providers };
+  return { ctx, providers, fetchProviders };
 }
 
 export function makeProvider(overrides = {}) {
   const { ctx, providers } = makeCtx();
   apply(ctx, makeConfig(overrides));
   return providers[0];
+}
+
+export function makeFetchProvider(overrides = {}) {
+  const { ctx, fetchProviders } = makeCtx();
+  apply(ctx, makeConfig({ enableFetchProvider: true, ...overrides }));
+  return fetchProviders[0];
 }
 
 export function jsonResponse(body, status = 200, headers = {}) {

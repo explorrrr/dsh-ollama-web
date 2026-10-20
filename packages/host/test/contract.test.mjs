@@ -52,6 +52,7 @@ test('client fields match the host config keys', () => {
     .sort();
   const clientKeys = Array.from(client.FIELDS, (field) => field.name).sort();
   assert.deepEqual(clientKeys, hostKeys);
+  assert.equal(client.FIELDS.some((field) => field.name === 'enableFetchProvider'), false);
 });
 
 test('client pure helpers build the expected settings operations', () => {
@@ -68,6 +69,10 @@ test('client pure helpers build the expected settings operations', () => {
   assert.deepEqual(plain(client.buildOps({ apiKey: 'secret' }, {})), [
     { op: 'set', path: ['apiKey'], value: 'secret' },
   ]);
+  assert.deepEqual(plain(client.buildOps({ enableFetchProvider: true }, { enableFetchProvider: false })), [
+    { op: 'set', path: ['enableFetchProvider'], value: true },
+  ]);
   assert.equal(client.isDirty({ baseURL: 'https://ollama.com' }, { baseURL: 'https://ollama.com' }), false);
+  assert.equal(client.isDirty({ enableFetchProvider: true }, { enableFetchProvider: false }), true);
   assert.deepEqual(Array.from(client.invalidFields({ snippetMax: 'x' })), ['snippetMax']);
 });

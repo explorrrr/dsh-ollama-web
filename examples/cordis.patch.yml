@@ -9,10 +9,17 @@
         snippetMax: 2000
         searchTimeoutMs: 30000
         maxResponseBytes: 2097152
+        fetchPath: /api/web_fetch
+        fetchTimeoutMs: 30000
+        fetchMaxChars: 100000
+        # Set to true together with the fetchProvider: ollama pin below.
+        enableFetchProvider: false
 
 - id: web
   config:
     searchProvider: ollama
+    # Keep http for the credential-free DSH fetch provider (default), or change
+    # to ollama and set enableFetchProvider: true above.
     fetchProvider: http
 
 # Only if the built-in DeepSeek search provider is mounted.

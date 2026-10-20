@@ -1,22 +1,25 @@
 # dsh-ollama-web
 
-Ollama Cloud web search provider for DeepSeek Harness, including the Web UI
-settings and update card. One npm package ships both the host plugin and its
-browser bundle.
+Ollama Cloud web search and optional web fetch provider for DeepSeek Harness,
+including the Web UI settings and update card. One npm package ships both the
+host plugin and its browser bundle.
 
 [日本語 README](https://github.com/explorrrr/dsh-ollama-web/blob/main/README.ja.md) | [中文 README](https://github.com/explorrrr/dsh-ollama-web/blob/main/README.zh.md)
 
 See the repository [README](../../README.md) for install, configuration,
 security notes and compatibility. This package registers the `ollama` search
-provider on `ctx.web` and talks only to `https://ollama.com/api/web_search` by
-default. The same package serves `client.js` as the `ollama-web` row's browser
-half.
+provider on `ctx.web` and talks to `https://ollama.com/api/web_search` by
+default. It can also register an `ollama` fetch provider for
+`https://ollama.com/api/web_fetch`; this is opt-in via
+`enableFetchProvider: true` plus `web.fetchProvider: ollama`, and the default
+`web_fetch` remains DSH's credential-free HTTP provider. The same package
+serves `client.js` as the `ollama-web` row's browser half.
 
 ## Compatibility
 
 | DSH | Plugin |
 |---|---|
-| 0.2.1-rc.2 (tested) | 2.3.x |
+| 0.2.1-rc.2 (tested) | 2.4.x |
 | 0.3.x | 3.0 (planned) |
 
 The package declares `engines.dsh` `>=0.2.1-rc.1 <0.3.0` and the same range for
@@ -24,6 +27,15 @@ its `@deepseek-ai/dsh-web` peer dependency. The updater compares this range with
 the running DSH version before installing. See the repository
 [docs/COMPATIBILITY.md](https://github.com/explorrrr/dsh-ollama-web/blob/main/docs/COMPATIBILITY.md)
 for the tested matrix and the automatic update guard.
+
+## Optional fetch provider
+
+Set `enableFetchProvider: true` and pin `web.fetchProvider: ollama` in the
+profile patch. The provider sends `{ url }` to `/api/web_fetch`, folds
+`title`/`content`/`links` into a text result, and caps the text at
+`fetchMaxChars`. Ollama does not expose the target HTTP status or final URL, so
+a successful fetch is reported as HTTP 200 for the requested URL. Keep
+`fetchProvider: http` when those semantics or DSH's local SSRF boundary matter.
 
 ## Updates
 

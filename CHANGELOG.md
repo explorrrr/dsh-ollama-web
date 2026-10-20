@@ -6,6 +6,47 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-20
+
+### Added
+
+- An opt-in Ollama `/api/web_fetch` provider. It registers on DSH's fetch seam,
+  follows the live `enableFetchProvider` setting, and is selected only when the
+  profile pins `web.fetchProvider: ollama`.
+- `fetchPath`, `fetchTimeoutMs` and `fetchMaxChars` settings, plus a live
+  **Use Ollama for web fetch** toggle in the settings card.
+- The fetch provider maps Ollama's `title`, main-content `content` and `links`
+  into a text result, caps the result, and sanitizes links and control
+  characters.
+- Fetch URL validation rejects non-http(s) URLs, embedded credentials, oversized
+  URLs and obvious local/private hostnames or IP literals.
+
+### Changed
+
+- The default `web_fetch` remains DSH's credential-free HTTP provider. Enabling
+  Ollama fetch requires both the plugin switch and `web.fetchProvider: ollama`.
+- The settings card now shows the fetch settings and a warning when the Ollama
+  fetch switch is on but the required provider pin is missing.
+- The client bundle injects a third static stylesheet for the fetch toggle.
+
+### Security
+
+- Ollama fetches from its own network, so the optional provider discloses the
+  requested URL to Ollama and cannot provide DSH HTTP's DNS-pinning/SSRF
+  boundary. The local/private host block is best-effort and not DNS-level.
+- Ollama does not expose the target HTTP status or final redirect URL. A
+  successful fetch is reported as HTTP 200 for the requested URL; this is a
+  documented lossy mapping.
+- Fetch errors do not include the API key, URL or upstream response body.
+  Response-byte, timeout, content and link caps are enforced.
+
+### Notes
+
+- `fetchProvider: http` remains the recommended default when target status
+  fidelity, local SSRF protection or credential-free fetch matters.
+- This is a backward-compatible minor release; no new runtime dependency or
+  lifecycle script is added.
+
 ## [2.3.0] - 2026-10-19
 
 ### Added
