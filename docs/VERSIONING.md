@@ -61,7 +61,9 @@ above applies.
    dependencies, stages the package directory, and only the `npm` Environment
    job receives `id-token: write` and `contents: write`. It publishes the package
    with provenance and attaches the npm tarball plus `SHA512SUMS` to the GitHub
-   Release.
+   Release. The Release body contains only the matching `CHANGELOG.md` section,
+   extracted by `scripts/release-notes.mjs`, and an existing Release is updated
+   to that body when the workflow reruns.
 6. Verify the npm version, integrity and attestations, then record the evidence
    in `docs/PROVENANCE.md` and `docs/SMOKE-RESULTS.md`.
 

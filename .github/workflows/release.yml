@@ -151,7 +151,7 @@ jobs:
           grep -q 'ollama-web-update' "$CLIENT_JS"
           grep -q 'plugins.detail.section' "$CLIENT_JS"
           grep -q "id: 'dsh-ollama-web'" "$CLIENT_JS"
-      - name: Ensure GitHub Release exists
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -159,8 +159,12 @@ jobs:
           VERSION=$(node -p "require('./stage/package/package.json').version")
           PRERELEASE=""
           if [[ "$VERSION" == *-* ]]; then PRERELEASE="--prerelease"; fi
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" $PRERELEASE --notes-file CHANGELOG.md
+          node scripts/release-notes.mjs "$VERSION" > release-notes.md
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" $PRERELEASE --notes-file release-notes.md
+          fi
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

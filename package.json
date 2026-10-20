@@ -6,7 +6,7 @@
     "build": "pnpm --filter dsh-ollama-web build",
     "typecheck": "pnpm --filter dsh-ollama-web typecheck",
     "test": "pnpm --filter dsh-ollama-web test",
-    "check": "node scripts/check-versions.mjs && node scripts/check-dist.mjs && node scripts/check-client.mjs",
+    "check": "node scripts/check-versions.mjs && node scripts/check-dist.mjs && node scripts/check-client.mjs && node scripts/check-release-notes.mjs",
     "verify": "pnpm typecheck && pnpm build && pnpm test && pnpm check"
   }
 }
