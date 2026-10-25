@@ -157,7 +157,7 @@ Manual commands for a non-desktop profile:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web
-dsh plugin --profile <profile> add dsh-ollama-web@2.4.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 ```
 
 The desktop profile is managed by the Electron app; use **Plugins** there.
@@ -165,11 +165,11 @@ The desktop profile is managed by the Electron app; use **Plugins** there.
 ## Upgrading from 1.x
 
 2.0.0 merges the former `dsh-ollama-web-client` package into
-`dsh-ollama-web`. Remove the old package before installing 2.4.0:
+`dsh-ollama-web`. Remove the old package before installing 2.4.1:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.4.0
+dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 ```
 
 The 1.x updater reads packuments for both old packages and only installs
@@ -188,7 +188,7 @@ when it detects the legacy package.
 be installed manually. Current releases install the single package:
 
 ```bash
-dsh plugin --profile desktop add dsh-ollama-web@2.4.0
+dsh plugin --profile desktop add dsh-ollama-web@2.4.1
 ```
 
 After that, later 2.0.x releases can be installed from the card or by
