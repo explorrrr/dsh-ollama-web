@@ -1,10 +1,39 @@
 # Smoke results
 
-Date: 2026-10-20 (2.4.0); 2.3.0, 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks
-were recorded earlier.
+Date: 2026-10-25 (2.4.1); 2.4.0, 2.3.0, 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0
+checks were recorded earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The 2.4.0 checks are package-level unless
-noted; the full isolated DSH/browser result remains the 1.2.0 run below.
+Environment: DSH 0.2.1-rc.2, macOS. The 2.4.1 and 2.4.0 checks are package-level
+unless noted; the full isolated DSH/browser result remains the 1.2.0 run below.
+
+## 2.4.1 CI-only patch checks (local)
+
+- [x] `pnpm verify` passed: typecheck, build, 165 tests, `check-versions`,
+      `check-dist`, `check-client` and release-notes extraction.
+- [x] `node scripts/smoke.mjs` passed: search provider plus optional fetch
+      provider registration.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/fetch-provider.js`,
+      `dist/index.js`, `dist/update/service.js`, `cordis.patch.yml` and
+      `package.json` at 2.4.1 (66 files, the same set as 2.4.0).
+- [x] npm `latest` points to `2.4.1`; the GitHub Release `v2.4.1` has
+      `dsh-ollama-web-2.4.1.tgz` and `SHA512SUMS` assets.
+- [x] Published `dsh-ollama-web@2.4.1` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`d7e94076a3a768a756d6cbfa1732b694019551ea2ea078bb9b31f53aea0377a21294f4a0c4c5c42caafb67ccaedc4ad1f87db1f45794c6d2e920c8494c29e3a1`).
+- [x] Published package contains `client.js`, `dist/fetch-provider.js`,
+      `dist/index.js`, `dist/update/service.js` and `cordis.patch.yml`.
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.4.1` with the same
+      digest; workflow ref is `refs/tags/v2.4.1`, path is
+      `.github/workflows/release.yml`, and commit is
+      `8ffb1e988a5198ca584225c99e16fa87f807511f`.
+- [x] The tag-triggered release with the updated actions completed in one
+      `publish` pass: `actions/upload-artifact` 7.0.2 and
+      `actions/download-artifact` 8.0.2 performed the build/publish hand-off,
+      including the v8 digest check.
+- [ ] The packaged DSH/browser smoke was not rerun; the package files are
+      unchanged from 2.4.0 apart from the `package.json` version, so the 2.4.0
+      results apply.
 
 ## 2.4.0 optional Ollama fetch checks (local)
 
