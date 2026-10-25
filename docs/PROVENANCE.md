@@ -1,7 +1,66 @@
 # npm provenance verification
 
-Date: 2026-10-20 (2.4.0); 2.3.0, 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks
-were recorded earlier.
+Date: 2026-10-25 (2.4.1); 2.4.0, 2.3.0, 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0
+checks were recorded earlier.
+
+## 2.4.1
+
+`dsh-ollama-web@2.4.1` was published by GitHub Actions through npm trusted
+publishing (OIDC). No `NPM_TOKEN` is used.
+
+### Attestations
+
+| Package | Attestation |
+|---|---|
+| `dsh-ollama-web@2.4.1` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@2.4.1> |
+
+It uses SLSA provenance v1. Decoded build information:
+
+```text
+workflow.ref:        refs/tags/v2.4.1
+workflow.repository: https://github.com/explorrrr/dsh-ollama-web
+workflow.path:       .github/workflows/release.yml
+git commit:          8ffb1e988a5198ca584225c99e16fa87f807511f
+builder:             https://github.com/actions/runner/github-hosted
+invocation:          https://github.com/explorrrr/dsh-ollama-web/actions/runs/40184282183/attempts/1
+```
+
+The tag commit is the same:
+
+```bash
+git rev-parse 'v2.4.1^{commit}'
+# 8ffb1e988a5198ca584225c99e16fa87f807511f
+```
+
+### Subject digests
+
+| Package | npm tarball SHA-512 | SLSA subject |
+|---|---|---|
+| `dsh-ollama-web@2.4.1` | `d7e94076a3a768a756d6cbfa1732b694019551ea2ea078bb9b31f53aea0377a21294f4a0c4c5c42caafb67ccaedc4ad1f87db1f45794c6d2e920c8494c29e3a1` | matches |
+
+npm reports the same digest as
+`sha512-1+lAdqOnaKdW1sv6FzK2lAGVUeouoHi7mzH1OuoDd6ISlPSgxMXELKr7Z8yu3ErR+H2x9FeUxtLpIMhJTCnjoQ==`.
+The GitHub Release `v2.4.1` `SHA512SUMS` contains the same hash, computed from
+the npm tarball downloaded by the release workflow. npm `latest` points to
+`2.4.1`; the registry publish time is `2026-10-25T10:25:58.504Z`.
+
+The release ran in a single `publish` job pass. The updated
+`actions/upload-artifact` 7.0.2 and `actions/download-artifact` 8.0.2 completed
+the staged-tarball hand-off (including the v8 digest check), the npm tarball
+download completed on the first attempt, and the GitHub Release was published
+at `2026-10-25T10:26:13Z`.
+
+### Reproduce
+
+```bash
+npm view dsh-ollama-web@2.4.1 dist.attestations
+npm view dsh-ollama-web@2.4.1 dist.tarball dist.integrity
+
+mkdir -p /tmp/prov-check-241 && cd /tmp/prov-check-241
+curl -fsSL "$(npm view dsh-ollama-web@2.4.1 dist.tarball)" -o dsh-ollama-web-2.4.1.tgz
+shasum -a 512 dsh-ollama-web-2.4.1.tgz
+tar -tzf dsh-ollama-web-2.4.1.tgz | grep -E 'package/(client\.js|dist/fetch-provider\.js|dist/index\.js|dist/update/dsh\.js|cordis\.patch\.yml)'
+```
 
 ## 2.4.0
 
