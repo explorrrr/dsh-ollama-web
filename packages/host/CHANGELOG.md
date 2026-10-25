@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-10-25
+
+### Changed
+
+- CI only: the release workflow uses `actions/upload-artifact` 7.0.2 and
+  `actions/download-artifact` 8.0.2 (Node.js 24, digest-verified downloads),
+  and CodeQL uses `github/codeql-action` 4.39.1.
+
+### Notes
+
+- No change to the published package files or behavior.
+
 ## [2.4.0] - 2026-10-20
 
 ### Added

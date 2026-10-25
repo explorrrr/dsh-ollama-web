@@ -35,6 +35,8 @@ Examples from this repository:
 - `2.4.0` — optional Ollama `/api/web_fetch` provider, live
   `enableFetchProvider` toggle, fetch path/timeout/content settings, and the
   documented synthetic-200 tradeoff.
+- `2.4.1` — CI-only patch: GitHub Actions update to the Node.js 24 artifact
+  actions and the CodeQL action.
 - `3.0.0` — planned for DSH 0.3 compatibility or another breaking change.
 
 The project treats `0.x` as bootstrap/unstable. From `1.0.0` onward the table
@@ -107,5 +109,5 @@ release; it reports the latest release as incompatible instead.
 
 1.x published two packages and the updater only installs releases in the current
 major. 2.0.0 is therefore a manual migration: remove `dsh-ollama-web-client`,
-then install `dsh-ollama-web@2.4.0`. See
+then install `dsh-ollama-web@2.4.1`. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

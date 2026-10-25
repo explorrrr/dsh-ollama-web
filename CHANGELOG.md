@@ -6,6 +6,24 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-10-25
+
+### Changed
+
+- Updated the GitHub Actions used by the workflows: the release workflow now
+  uses `actions/upload-artifact` 7.0.2 and `actions/download-artifact` 8.0.2,
+  and CodeQL uses `github/codeql-action` 4.39.1.
+- The artifact actions run on Node.js 24, and `actions/download-artifact` 8
+  verifies artifact digests on download, which now guards the hand-off between
+  the build and publish jobs.
+
+### Notes
+
+- No runtime, API or packaging changes. The published package differs from
+  2.4.0 only in its version; this is a CI-only patch release.
+- The release workflow is only exercised on a tag push, so the first real run
+  of the updated actions is the `v2.4.1` release itself.
+
 ## [2.4.0] - 2026-10-20
 
 ### Added
