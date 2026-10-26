@@ -73,6 +73,13 @@ DNS-pinning/SSRF boundary does not apply.
   rejects traversal, symlinks, hardlinks, devices, duplicates and oversized
   entries.
 - No npm/pnpm command or lifecycle script runs during an update.
+- After a successful swap, the updater may rewrite only the exact
+  `dsh-ollama-web` dependency value in the profile `package.json` when it
+  matched the previously installed version. The write is atomic and limited to
+  the 0600 profile manifest; other fields are preserved.
+- The profile `pnpm-lock.yaml` is not rewritten. A stale lock is reported in the
+  update status, card and host log; a normal `pnpm install` resolves the new
+  version, while `--frozen-lockfile` fails instead of silently reverting.
 - Auto-update is opt-in, same-major only, and respects an explicitly configured
   `minimumReleaseAge`. When the setting is absent or `0`, there is no age wait.
 - Installs are serialized per profile with a mode-0600 lock; stale locks from
@@ -96,9 +103,10 @@ DNS-pinning/SSRF boundary does not apply.
   Provenance is published but the updater does not verify Sigstore itself.
 - Auto-update installs new code without a prompt. It is opt-in and limited to
   the same major version; users who need review should leave it off.
-- The updater replaces installed files directly. The profile's
-  `package.json` / `pnpm-lock.yaml` still record the previous version and a later
-  pnpm operation can reinstall it; see [UPDATES.md](UPDATES.md).
+- The updater replaces installed files directly. It may rewrite the exact
+  `dsh-ollama-web` dependency value in `package.json`, but it does not rewrite
+  `pnpm-lock.yaml`; a stale lock is reported and a later pnpm operation can
+  otherwise restore the recorded version. See [UPDATES.md](UPDATES.md).
 - The optional Ollama fetch provider discloses the requested URL to Ollama and
   cannot provide DSH HTTP's local DNS-pinning/SSRF guarantees. Its local/private
   hostname block is best-effort; a DNS name that resolves to a private address

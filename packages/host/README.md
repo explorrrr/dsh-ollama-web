@@ -58,8 +58,10 @@ card. Environment overrides (`DSH_WEB_SEARCH_PROVIDER` /
 The package also owns the `/ollama-web-update` RPC used by the Configure card
 and the bundle detail section. On request (or while auto-update is enabled) it
 reads the npm registry / npmmirror, verifies the release SHA-512 integrity,
-safely extracts and atomically replaces the installed package. It never sends
-the Ollama API key, queries or session data. See
+safely extracts and atomically replaces the installed package. After a
+successful swap it rewrites an exact profile `package.json` pin and reports a
+stale `pnpm-lock.yaml` in the card and host log; it never runs pnpm. It never
+sends the Ollama API key, queries or session data. See
 [docs/UPDATES.md](../../docs/UPDATES.md).
 
 ## Support

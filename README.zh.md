@@ -147,9 +147,10 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 
 - **检查：** Host 读取 npm registry（失败时使用 npmmirror），仅在 profile **明确设置** pnpm 的 `minimumReleaseAge` 时遵守。未设置、无法读取、无效或 `0` 表示不等待。比配置年龄更新的版本会显示为等待中，不会自动安装。
 - **兼容性：** 更新器会将目标版本的 `engines.dsh` 与当前运行的 DSH 版本（`DSH_CLIENT_VERSION` 或 `DSH_APP_VERSION`）进行比较。明确不兼容的版本会被阻止；无法确认兼容性时会暂停自动更新，但仍可使用手动安装按钮。
-- **安装：** 下载一个 tarball，校验 npm SHA-512 integrity 和压缩包内容，然后原子替换已安装的包。任一步失败都会回滚到原副本。
+- **安装：** 下载一个 tarball，校验 npm SHA-512 integrity 和压缩包内容，然后原子替换已安装的包。任一步失败都会回滚到原副本。成功后，如果 profile 的 `package.json` 使用精确固定，会将其改写为新版本。
 - **自动更新（opt-in）：** 默认关闭。启用后每 6 小时检查一次，只自动安装支持当前 DSH 的**同一主版本**新版本。主版本更新需要点击按钮。
-- **注意：** `link:` 或 profile 外目录的开发安装不会被修改。DSH 0.2.1 没有第三方更新 API，因此直接替换已安装文件。profile 的 `package.json` / `pnpm-lock.yaml` 仍记录旧版本；如需同步记录，请通过 **Plugins**（或 CLI）重新安装。
+- **profile 记录：** 更新器不会运行 pnpm，也不会改写 `pnpm-lock.yaml`。如果 lockfile 仍记录旧版本，卡片和 Host 日志会警告。请在 profile 中运行 `pnpm install --lockfile-only`，或通过 **Plugins** 重新安装。在此之前，普通 `pnpm install` 会解析新版本，而 `--frozen-lockfile` 会失败，不会静默安装旧版本。
+- **注意：** `link:` 或 profile 外目录的开发安装不会被修改。DSH 0.2.1 没有第三方更新 API，因此直接替换已安装文件。
 
 详见 [docs/UPDATES.md](docs/UPDATES.md)。
 
@@ -161,6 +162,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 - 不记录查询、URL 或 API 密钥，无遥测，无自定义会话事件。
 - 搜索与可选抓取默认只连接 `ollama.com`。更新仅在明确操作、启用自动更新时，或上次成功检查超过5分钟后打开更新页面时连接 npm registry（失败时使用 npmmirror），且只发送包名。更改 `baseURL` 后，密钥、查询和抓取 URL 的发送目的地由你自行选择。
 - 更新 tarball 在解包前会校验 npm SHA-512 integrity；拒绝 symlink、路径穿越和过大条目。不执行 npm lifecycle script。
+- 自我更新成功时，更新器可能只改写 profile `package.json` 中 `dsh-ollama-web` 的精确固定值。它不会运行 npm/pnpm，也不会改写 `pnpm-lock.yaml`。
 - 自动更新会在不询问的情况下安装新代码。它是 opt-in，且仅限当前主版本。
 - Client 卡片不向第三方发起外部请求。更新状态和操作仅通过 DSH 的同源 Connection RPC 与 Host 通信。不使用 `innerHTML` / `dangerouslySetInnerHTML`。
 - 发布与自我审查设置：[docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md)。

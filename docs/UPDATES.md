@@ -80,7 +80,10 @@ DSH matrix remains in [COMPATIBILITY.md](COMPATIBILITY.md).
 5. copies the installed `node_modules` into the staged copy and checks that the
    new manifest's dependencies still resolve;
 6. renames each installed directory to a hidden backup and moves the staged
-   directory into place. If any target fails, every earlier target is restored.
+   directory into place. If any target fails, every earlier target is restored;
+7. after a successful swap, rewrites the profile `package.json` dependency when
+   it is an exact version equal to the previously installed version, then reads
+   the `pnpm-lock.yaml` importer and reports any stale lock.
 
 A failed check, download, verification or swap leaves the installed version in
 place. A journal written before the swap lets the next host start roll back an
@@ -145,13 +148,39 @@ DSH 0.2.1 has no update API for third-party bundles. The updater therefore
 replaces the installed package directory directly rather than running the
 Profile Manager's remove/install flow.
 
-Consequences:
+After a successful swap:
 
 - the running and on-disk package version changes immediately;
-- the profile's `package.json` and `pnpm-lock.yaml` still record the previous
-  version;
-- a later pnpm operation may reinstall the recorded version. To make the profile
-  records match, reinstall the package through **Plugins** or the CLI.
+- when the profile `package.json` records an exact version equal to the
+  previously installed version, the updater atomically rewrites that one
+  dependency value to the new version. Other manifest fields are preserved.
+- a range, `file:` / `link:` specifier or missing dependency is left unchanged
+  and reported;
+- `pnpm-lock.yaml` is **not** rewritten. The updater reads the pnpm v9 importer
+  and reports a stale lock instead of editing it by hand. This keeps the
+  existing guarantee that the updater never runs pnpm or a lifecycle script.
+- `UpdateStatus.records` carries `declaredSpecifier`, `declaredVersion`,
+  `lockedVersion`, `mismatch` and `message`. The update card shows a warning
+  with the recorded and installed versions, and the host writes the same
+  diagnostic to its log.
+
+A later normal `pnpm install` resolves the new exact version and refreshes the
+lockfile. `pnpm install --frozen-lockfile` fails with an outdated-lockfile error
+instead of silently installing the old version. To refresh the records
+explicitly:
+
+```bash
+cd ~/.dsh/profiles/<profile>
+pnpm install --lockfile-only
+```
+
+If the manifest uses a range and was left unchanged, reinstall the exact version
+through **Plugins** or the CLI so the lockfile and manifest match the running
+copy.
+
+The manifest write uses the updater's per-profile update lock, not the Profile
+Manager's pnpm lock. Do not run a concurrent package operation while an update
+is being applied.
 
 Manual commands for a non-desktop profile:
 

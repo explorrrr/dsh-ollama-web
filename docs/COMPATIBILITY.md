@@ -62,6 +62,12 @@ or `DSH_APP_VERSION` (other deployments), and the target release's
 - The updater relies on DSH 0.2.1's profile layout (`profiles/<name>/node_modules`)
   and on `ctx.baseUrl` pointing at the profile directory. If the profile cannot
   be resolved, the host skips the update service and search continues to work.
+- After a successful package swap, the updater rewrites the profile
+  `package.json` dependency only when it is an exact version equal to the
+  previously installed version. It does not run pnpm and does not rewrite
+  `pnpm-lock.yaml`; a stale lock is reported in `UpdateStatus.records`, the
+  update card, and the host log. A later normal `pnpm install` resolves the new
+  version, while `--frozen-lockfile` fails instead of silently reverting.
 
 ## Upgrading from 1.x
 

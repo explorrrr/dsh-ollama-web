@@ -234,6 +234,13 @@ const BASE_STATUS = {
   ageLimited: false,
   ageUnknown: false,
   staleProcess: false,
+  records: {
+    declaredSpecifier: '1.0.0',
+    declaredVersion: '1.0.0',
+    lockedVersion: '1.0.0',
+    mismatch: false,
+    message: null,
+  },
 };
 
 function fakeConnection(status = BASE_STATUS, overrides = {}) {
@@ -383,6 +390,8 @@ test('all locale dictionaries expose the same keys and support copy', () => {
       'providerFetchUnselected',
       'providerFetchAmbiguous',
       'providerWebUnavailable',
+      'updateRecordWarning',
+      'updateRecordHint',
       'fetchPath',
       'fetchTimeoutMs',
       'fetchMaxChars',
@@ -1054,6 +1063,51 @@ test('update section renders the canonical release URL', async () => {
     (node) => node.type === 'a' && flatText(node.props.children).includes('updateReleaseNotes'),
   );
   assert.equal(releaseLink.props.href, BASE_STATUS.latest.releaseUrl);
+});
+
+test('update section warns when the profile records are stale', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection({
+    ...BASE_STATUS,
+    current: '1.1.0',
+    records: {
+      declaredSpecifier: '1.0.0',
+      declaredVersion: '1.0.0',
+      lockedVersion: '1.0.0',
+      mismatch: true,
+      message: 'package.json records 1.0.0 and pnpm-lock.yaml records 1.0.0, but 1.1.0 is installed.',
+    },
+  });
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  assert.match(flatText(tree), /updateRecordWarning/);
+  assert.match(flatText(tree), /updateRecordHint/);
+  assert.match(flatText(tree), /updateRecordDeclared/);
+  assert.match(flatText(tree), /updateRecordLocked/);
+  assert.match(flatText(tree), /1\.0\.0/);
+});
+
+test('update section reports unreadable profile records', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const fake = fakeConnection({
+    ...BASE_STATUS,
+    records: {
+      declaredSpecifier: null,
+      declaredVersion: null,
+      lockedVersion: null,
+      mismatch: false,
+      message: 'The profile package.json could not be read.',
+    },
+  });
+  const Section = makeSection(exports, react, fake.connection);
+  react.render(Section, { t: (key) => key, view: 'card' });
+  await flush();
+  const tree = react.render(Section, { t: (key) => key, view: 'card' });
+  assert.match(flatText(tree), /updateRecordUnreadable/);
 });
 
 test('update section renders a restart notice for an installed update', async () => {

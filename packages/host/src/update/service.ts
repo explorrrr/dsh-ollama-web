@@ -17,12 +17,14 @@ import {
   checkRelease,
   readMinimumReleaseAge,
 } from './registry.js';
+import { readProfileRecords, reconcileProfileRecords } from './records.js';
 import { compareVersions, parseVersion, sameMajor, satisfiesRange } from './semver.js';
 import { readDshVersion } from './dsh.js';
 import { readPrefs, readState, writePrefs, writeState } from './state.js';
 import type {
   DshCompatibility,
   PackageInstall,
+  ProfileRecordState,
   ReleaseTarget,
   StoredUpdateState,
   UpdateError,
@@ -79,6 +81,16 @@ function normalizeDshVersion(value: string | null | undefined): string | null {
   if (value === undefined || value === null) return null;
   const parsed = parseVersion(value);
   return parsed === undefined ? null : parsed.raw;
+}
+
+function neutralRecords(message: string | null = null): ProfileRecordState {
+  return {
+    declaredSpecifier: null,
+    declaredVersion: null,
+    lockedVersion: null,
+    mismatch: false,
+    message,
+  };
 }
 
 export class UpdateService {
@@ -150,6 +162,14 @@ export class UpdateService {
       }
       delete this.state.backups;
       await this.persistState();
+    }
+    if (!this.installs.linked) {
+      const records = readProfileRecords(
+        this.options.profile.dir,
+        this.options.packageName,
+        this.installs.version,
+      );
+      if (records.message !== null) this.log(`ollama-web: ${records.message}`);
     }
     await cleanupStaleArtifacts(
       this.options.profile,
@@ -277,6 +297,7 @@ export class UpdateService {
         ageLimited: false,
         ageUnknown: false,
         staleProcess: false,
+        records: neutralRecords(),
       };
     }
     const latest = this.latestView();
@@ -291,6 +312,13 @@ export class UpdateService {
         at: this.state.installedAt ?? null,
         needsRestart: this.state.needsRestart === true,
       };
+    const records = install.linked
+      ? neutralRecords()
+      : readProfileRecords(
+        this.options.profile.dir,
+        this.options.packageName,
+        install.version,
+      );
     return {
       available: true,
       profile: { name: this.options.profile.name, restartKind: this.options.profile.restartKind },
@@ -308,6 +336,7 @@ export class UpdateService {
       ageLimited: age.ageLimited,
       ageUnknown: age.ageUnknown,
       staleProcess: install.version !== null && this.options.runningVersion !== install.version,
+      records,
     };
   }
 
@@ -460,6 +489,17 @@ export class UpdateService {
         this.options.packageName,
         [this.options.packageDir],
       );
+      try {
+        const records = await reconcileProfileRecords({
+          profile: this.options.profile,
+          packageName: this.options.packageName,
+          previousVersion: current,
+          installedVersion: result.version,
+        });
+        if (records.warning !== null) this.log(`ollama-web: ${records.warning}`);
+      } catch (error) {
+        this.log('ollama-web: could not reconcile the profile records', error);
+      }
       install = this.installs;
       this.checkedAt = new Date(this.now()).toISOString();
       this.state.lastCheckAt = this.checkedAt;
