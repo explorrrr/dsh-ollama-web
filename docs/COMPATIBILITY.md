@@ -4,7 +4,7 @@
 
 | DSH | Node | Plugin |
 |---|---|---|
-| 0.2.1-rc.2 | 22.x, 24.x | 2.4.x |
+| 0.2.1-rc.2 | 22.x, 24.x | 2.5.x |
 
 The host peer range is `@deepseek-ai/dsh-web >=0.2.1-rc.1 <0.3.0`. The package's
 client bundle depends on the `plugins.row.config` / `configForms` contract, the
@@ -73,7 +73,7 @@ or `DSH_APP_VERSION` (other deployments), and the target release's
 
 1.x shipped `dsh-ollama-web-client` as a separate package. 2.0.0 merges it into
 `dsh-ollama-web` and changes the update RPC status shape. Remove the old client
-package before installing 2.4.1; leaving it installed can register the settings
+package before installing 2.5.0; leaving it installed can register the settings
 card twice and is not supported. The 1.x updater only installs releases in the
 current major, so 2.0.0 is a manual upgrade. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

@@ -26,7 +26,7 @@ One package provides the `web_search` backend, the optional fetch provider and t
 1. Add the package.
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.4.1
+   dsh plugin --profile desktop add dsh-ollama-web@2.5.0
    ```
 
    Replace `desktop` with your profile name if needed. You can also use **Plugins -> Add plugin** in the Web UI. npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -104,14 +104,14 @@ Ollama does not expose the target page's HTTP status or final redirect URL. A su
 
 ### Upgrading from 1.x
 
-2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.4.1:
+2.0.0 merges the former `dsh-ollama-web-client` package into `dsh-ollama-web`. Remove the old package before installing 2.5.0:
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
+dsh plugin --profile <profile> add dsh-ollama-web@2.5.0
 ```
 
-The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.4.1`. Leaving the old client installed can register the settings card twice and is not supported.
+The 1.x updater checks both old packages and only auto-installs the current major. Because 2.0.0 is not published as a new `dsh-ollama-web-client`, it will not move you to 2.0.0; the upgrade is manual. In the desktop app, remove the `dsh-ollama-web-client` bundle in **Plugins**, then install `dsh-ollama-web@2.5.0`. Leaving the old client installed can register the settings card twice and is not supported.
 
 ## Configure
 

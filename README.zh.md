@@ -26,7 +26,7 @@
 1. 添加包。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.4.1
+   dsh plugin --profile desktop add dsh-ollama-web@2.5.0
    ```
 
    如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -93,14 +93,14 @@ Ollama 不返回目标页面的 HTTP 状态或最终 redirect URL。成功时向
 
 ### 从 1.x 迁移
 
-2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.4.1 前请先删除旧包：
+2.0.0 将原 `dsh-ollama-web-client` 包合并到 `dsh-ollama-web`。安装 2.5.0 前请先删除旧包：
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
+dsh plugin --profile <profile> add dsh-ollama-web@2.5.0
 ```
 
-1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.4.1`。保留旧 client 可能导致设置卡片重复注册，不受支持。
+1.x 更新器会检查旧的两个包，自动更新仅限当前主版本。由于 2.0.0 不再发布新的 `dsh-ollama-web-client`，1.x 不会自动升级到 2.0.0，需要手动迁移。桌面版请在 **Plugins** 中删除 `dsh-ollama-web-client` bundle，再安装 `dsh-ollama-web@2.5.0`。保留旧 client 可能导致设置卡片重复注册，不受支持。
 
 ## 配置
 

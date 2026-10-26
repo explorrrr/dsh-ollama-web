@@ -21,7 +21,7 @@ half.
 
 | DSH | Plugin |
 |---|---|
-| 0.2.1-rc.2 (tested) | 2.4.x |
+| 0.2.1-rc.2 (tested) | 2.5.x |
 | 0.3.x | 3.0 (planned) |
 
 The package declares `engines.dsh` `>=0.2.1-rc.1 <0.3.0` and the same range for
