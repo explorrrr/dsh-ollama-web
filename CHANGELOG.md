@@ -13,6 +13,8 @@ All notable changes to this project are documented here. The format follows
   `enableFetchProvider` and `web.fetchProvider` together. The card also shows
   which provider DSH is currently using when Ollama is not selected, and warns
   when a profile patch leaves the `web` row with only one provider field.
+- The update card and host log report when the profile `package.json` /
+  `pnpm-lock.yaml` still record a version different from the installed package.
 
 ### Changed
 
@@ -22,6 +24,14 @@ All notable changes to this project are documented here. The format follows
   to manage the search selection from the card.
 - Documentation now calls out that a `web` profile patch replaces the whole row
   config and that both `searchProvider` and `fetchProvider` must be pinned.
+
+### Fixed
+
+- Self-update now rewrites an exact profile `package.json` dependency pin to the
+  installed version after a successful swap, so a later pnpm install does not
+  silently revert the update. `pnpm-lock.yaml` is not rewritten without pnpm; a
+  stale lock is reported in the update status, card and host log instead, and
+  `--frozen-lockfile` fails loudly until it is refreshed.
 
 ## [2.4.1] - 2026-10-25
 

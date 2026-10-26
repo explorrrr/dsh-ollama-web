@@ -202,6 +202,12 @@ window.__ModuleLoader__.load({
       updateManual: 'Update manually',
       updateManualHint: 'Use Plugins to reinstall this package, or follow the README commands.',
       updateCheckUnavailable: 'The host update service did not answer.',
+      updateRecordWarning: 'The profile records are out of date.',
+      updateRecordHint: 'Run pnpm install --lockfile-only in the profile, or reinstall from Plugins.',
+      updateRecordDeclared: 'package.json',
+      updateRecordLocked: 'pnpm-lock.yaml',
+      updateRecordInstalled: 'Installed',
+      updateRecordUnreadable: 'The profile records could not be read; reinstall from Plugins or run pnpm install.',
       overridden: 'Overridden',
       reset: 'Reset to default',
       invalidNumber: 'Enter a number, or leave blank to use the default.',
@@ -309,6 +315,12 @@ window.__ModuleLoader__.load({
       updateManual: '手動で更新',
       updateManualHint: 'Pluginsからこのパッケージを再インストールするか、READMEのコマンドを実行してください。',
       updateCheckUnavailable: 'Hostの更新サービスが応答しませんでした。',
+      updateRecordWarning: 'プロファイルの記録が古いままです。',
+      updateRecordHint: 'profileで pnpm install --lockfile-only を実行するか、Pluginsから再インストールしてください。',
+      updateRecordDeclared: 'package.json',
+      updateRecordLocked: 'pnpm-lock.yaml',
+      updateRecordInstalled: 'インストール済み',
+      updateRecordUnreadable: 'プロファイルの記録を読み取れませんでした。Pluginsから再インストールするか pnpm install を実行してください。',
       overridden: '上書き',
       reset: '既定に戻す',
       invalidNumber: '数値を入力するか、空欄で既定値を使ってください。',
@@ -416,6 +428,12 @@ window.__ModuleLoader__.load({
       updateManual: '手动更新',
       updateManualHint: '在 Plugins 中重新安装此包，或按 README 的命令操作。',
       updateCheckUnavailable: 'Host 更新服务没有响应。',
+      updateRecordWarning: 'profile 记录仍是旧版本。',
+      updateRecordHint: '在 profile 中运行 pnpm install --lockfile-only，或从 Plugins 重新安装。',
+      updateRecordDeclared: 'package.json',
+      updateRecordLocked: 'pnpm-lock.yaml',
+      updateRecordInstalled: '已安装',
+      updateRecordUnreadable: '无法读取 profile 记录。请从 Plugins 重新安装或运行 pnpm install。',
       overridden: '已覆盖',
       reset: '恢复默认',
       invalidNumber: '请填数字；留空表示使用默认值。',
@@ -914,6 +932,31 @@ window.__ModuleLoader__.load({
         }
 
         const shownError = update.error || (status && status.error) || null;
+        const records = status && status.records ? status.records : null;
+        let recordText = null;
+        if (records !== null
+          && (records.mismatch === true
+            || (typeof records.message === 'string' && records.message.length > 0))) {
+          const details = [];
+          if (typeof records.declaredVersion === 'string' && records.declaredVersion.length > 0) {
+            details.push(labels('updateRecordDeclared') + ': ' + records.declaredVersion);
+          }
+          if (typeof records.lockedVersion === 'string' && records.lockedVersion.length > 0) {
+            details.push(labels('updateRecordLocked') + ': ' + records.lockedVersion);
+          }
+          if (typeof current === 'string' && current.length > 0) {
+            details.push(labels('updateRecordInstalled') + ': ' + current);
+          }
+          const hasRecordedVersion = (
+            typeof records.declaredVersion === 'string' && records.declaredVersion.length > 0
+          ) || (
+            typeof records.lockedVersion === 'string' && records.lockedVersion.length > 0
+          );
+          recordText = !hasRecordedVersion && typeof records.message === 'string'
+            ? labels('updateRecordUnreadable')
+            : labels('updateRecordWarning') + ' ' + details.join(' · ') + ' '
+              + labels('updateRecordHint');
+        }
         const actions = [];
         actions.push(react.createElement(primitives.Button, {
           key: 'check',
@@ -1011,6 +1054,11 @@ window.__ModuleLoader__.load({
             'data-tone': tone,
             'aria-live': 'polite',
           }, statusText),
+          recordText ? react.createElement('p', {
+            key: 'records',
+            className: 'dsh-ollama-web-updates-warning',
+            'data-tone': 'warning',
+          }, recordText) : null,
           shownError ? react.createElement('p', {
             key: 'error',
             className: 'dsh-ollama-web-updates-status',

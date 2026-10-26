@@ -213,6 +213,26 @@ export function makeRelease({
   return { pkg, target };
 }
 
+export function writeProfileLock(profileDir, { name = PACKAGE_NAME, specifier, version } = {}) {
+  if (typeof version !== 'string') throw new Error('writeProfileLock requires a version');
+  const declared = specifier ?? version;
+  writeText(
+    join(profileDir, 'pnpm-lock.yaml'),
+    "lockfileVersion: '9.0'\n\n"
+      + 'importers:\n\n'
+      + '  .:\n'
+      + '    dependencies:\n'
+      + `      ${name}:\n`
+      + `        specifier: ${declared}\n`
+      + `        version: ${version}\n\n`
+      + 'packages:\n\n'
+      + `  ${name}@${version}:\n`
+      + '    resolution: {integrity: sha512-test}\n\n'
+      + 'snapshots:\n\n'
+      + `  ${name}@${version}: {}\n`,
+  );
+}
+
 export function makeProfile({
   root,
   version = '1.0.0',

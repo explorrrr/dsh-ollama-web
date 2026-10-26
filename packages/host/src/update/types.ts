@@ -69,6 +69,20 @@ export type UpdateState =
 
 export type UpdatePhase = 'idle' | 'checking' | 'installing' | 'saving';
 
+/** The profile's saved dependency and lockfile entry compared with the installed copy. */
+export interface ProfileRecordState {
+  /** The dependency value in the profile package.json, when one is recorded. */
+  readonly declaredSpecifier: string | null;
+  /** The declared exact version, or null for a range, file/link spec or missing entry. */
+  readonly declaredVersion: string | null;
+  /** The version recorded by the pnpm lockfile importer, or null when unknown. */
+  readonly lockedVersion: string | null;
+  /** Whether either recorded version differs from the installed package version. */
+  readonly mismatch: boolean;
+  /** A short diagnostic for a mismatch or unreadable record. */
+  readonly message: string | null;
+}
+
 /** Whether the latest release's `engines.dsh` accepts the running DSH. */
 export interface DshCompatibility {
   /** The running DSH version, or null when the host could not determine it. */
@@ -106,6 +120,8 @@ export interface UpdateStatus {
   readonly ageLimited: boolean;
   readonly ageUnknown: boolean;
   readonly staleProcess: boolean;
+  /** The profile's package.json / pnpm-lock.yaml view of the installed copy. */
+  readonly records: ProfileRecordState;
 }
 
 export interface UpdatePrefs {

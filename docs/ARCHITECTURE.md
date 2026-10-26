@@ -55,8 +55,10 @@ applied by the host at runtime and are not visible to the card.
        -> running DSH version + release engines.dsh compatibility gate
        -> SHA-512 SRI check -> safe tar extraction -> staging
        -> atomic rename of the installed package dir (+ rollback)
+       -> reconcileProfileRecords: exact package.json pin -> new version
+       -> read pnpm-lock.yaml importer and report drift
        -> <profile>/data/dsh-ollama-web/update-state.json
-  -> UpdateStatus
+  -> UpdateStatus (including records)
 ```
 
 The update service never reads the Ollama API key, search query, fetch URL or
@@ -83,6 +85,7 @@ Connection RPC.
 | `src/update/registry.ts` | Packument parsing, registry fallback, optional `minimumReleaseAge` |
 | `src/update/tar.ts` | Safe `package/` tar extraction |
 | `src/update/install.ts` | Install detection, staging, SRI, swap/rollback, crash recovery |
+| `src/update/records.ts` | Profile package.json exact-pin reconciliation and lockfile drift detection |
 | `src/update/lock.ts` | Profile-wide install lock and stale-lock recovery |
 | `src/update/state.ts` | Atomic prefs/state/journal persistence |
 | `src/update/service.ts` | Check/install/auto-update orchestration |

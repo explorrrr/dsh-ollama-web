@@ -10,11 +10,22 @@ All notable changes to this project are documented here. The format follows
 
 - `web.searchProvider` / `web.fetchProvider` switches in the row settings card,
   with effective-provider status and warnings for a partial `web` row config.
+- `UpdateStatus.records` and an update-card warning when the profile
+  `package.json` or `pnpm-lock.yaml` records a different version from the
+  installed package.
 
 ### Changed
 
 - The card writes the provider selection through `ctx.configForms.get('web')`
   and writes `enableFetchProvider` together with `web.fetchProvider: ollama`.
+- `reconcileProfileRecords` rewrites only an exact profile `package.json` pin
+  after a successful swap and reports a stale lockfile instead of editing it.
+
+### Security
+
+- The updater still runs no npm/pnpm command or lifecycle script. The manifest
+  write is atomic, limited to the `dsh-ollama-web` dependency value, and
+  preserves the rest of the profile manifest. `pnpm-lock.yaml` is not rewritten.
 
 ## [2.4.1] - 2026-10-25
 

@@ -78,6 +78,13 @@ but it cannot make an untrusted endpoint trustworthy.
   hardlinks, devices, absolute paths, `..` segments, duplicates and oversized
   entries are rejected.
 - No npm/pnpm command or package lifecycle script is executed.
+- After a successful swap, the updater may rewrite only the exact
+  `dsh-ollama-web` dependency value in the profile `package.json` when the
+  recorded exact version is at or below the installed version. Other fields are
+  preserved. The write is atomic and limited to the 0600 profile manifest.
+- The profile `pnpm-lock.yaml` is not rewritten. A stale lock is reported in the
+  update status, card and host log; the next normal `pnpm install` resolves the
+  new version, while `--frozen-lockfile` fails instead of silently reverting.
 - Auto-update is opt-in, default off, limited to the same major version, and
   respects a `minimumReleaseAge` explicitly configured in the profile. When the
   setting is absent or `0`, there is no age wait.
@@ -87,9 +94,7 @@ but it cannot make an untrusted endpoint trustworthy.
 - The update RPC accepts no version, URL, path or package spec from the browser.
 - Release settings and the solo self-review policy are documented in
   [docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md).
-- The profile's `package.json` / `pnpm-lock.yaml` are not rewritten; a later
-  pnpm operation can reinstall the recorded version. See
-  [docs/UPDATES.md](docs/UPDATES.md).
+- See [docs/UPDATES.md](docs/UPDATES.md) for the profile-record behavior.
 
 ## Key handling
 

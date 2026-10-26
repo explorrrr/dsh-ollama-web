@@ -148,9 +148,10 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 
 - **確認:** Host が npm registry（失敗時は npmmirror）を参照し、プロファイルの pnpm `minimumReleaseAge` を**明示設定時のみ**尊重します。未設定・読めない・不正値・`0` は待機なしです。設定された年齢より新しいリリースは待機中として表示され、自動ではインストールされません。
 - **対応バージョン:** 更新対象の `engines.dsh` と実行中の DSH バージョン（`DSH_CLIENT_VERSION` または `DSH_APP_VERSION`）を照合します。非対応と判定したリリースはブロックし、判定できない場合は自動更新を保留します（手動のインストールボタンは利用できます）。
-- **インストール:** tarball を1つ取得し、npm の SHA-512 integrity とアーカイブを検証してから、インストール済みパッケージをアトミックに置換します。途中で失敗した場合は元のコピーにロールバックします。
+- **インストール:** tarball を1つ取得し、npm の SHA-512 integrity とアーカイブを検証してから、インストール済みパッケージをアトミックに置換します。途中で失敗した場合は元のコピーにロールバックします。成功後、profile の `package.json` が exact pin なら新バージョンに書き換えます。
 - **自動更新（opt-in）:** 既定は OFF です。有効にすると6時間ごとに確認し、実行中のDSHに対応する**同一メジャー**の新しいリリースだけを自動導入します。メジャー更新は明示ボタンが必要です。
-- **注意:** `link:` やプロファイル外ディレクトリの開発インストールは変更しません。DSH 0.2.1 には第三者の更新 API がないため、インストール済みファイルを直接置換します。profile の `package.json` / `pnpm-lock.yaml` は旧バージョンのままなので、記録も更新する場合は **Plugins**（または CLI）で再インストールしてください。
+- **プロファイル記録:** updater は pnpm を実行せず、`pnpm-lock.yaml` も書き換えません。lockfile が旧バージョンのままなら、カードと Host ログで警告します。profile で `pnpm install --lockfile-only` を実行するか、**Plugins** から再インストールして更新してください。それまでの通常の `pnpm install` は新バージョンを解決し、`--frozen-lockfile` は旧バージョンへ黙って戻らず失敗します。
+- **注意:** `link:` やプロファイル外ディレクトリの開発インストールは変更しません。DSH 0.2.1 には第三者の更新 API がないため、インストール済みファイルを直接置換します。
 
 詳細は [docs/UPDATES.md](docs/UPDATES.md) を参照してください。
 
@@ -162,6 +163,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 - クエリ・URL・API キーをログに残さず、テレメトリや独自セッションイベントもありません。
 - 検索と任意の取得は既定で `ollama.com` にのみ接続します。更新は、明示操作時、自動更新が有効な時、または最後の成功確認から5分以上経って更新画面を開いた時だけ npm registry（失敗時は npmmirror）に接続し、送るのはパッケージ名だけです。`baseURL` を変えると、キー・クエリ・取得 URL の送信先を自分で選ぶことになります。
 - 更新 tarball は npm の SHA-512 integrity と照合し、symlink・path traversal・過大エントリを拒否します。npm lifecycle script は実行しません。
+- 自己更新の成功時、updater は profile `package.json` の `dsh-ollama-web` exact pin だけを書き換えることがあります。npm/pnpm は実行せず、`pnpm-lock.yaml` も書き換えません。
 - 自動更新は確認なしで新しいコードを導入します。opt-in で、同一メジャーに限定されています。
 - Client カードはサードパーティへの外部通信をしません。更新状態の取得と操作だけを、DSH の同一オリジン Connection RPC で Host に問い合わせます。`innerHTML` / `dangerouslySetInnerHTML` は使用しません。
 - リリースとセルフレビューの設定: [docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md)。

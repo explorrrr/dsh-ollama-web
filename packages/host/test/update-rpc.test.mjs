@@ -24,6 +24,13 @@ const STATUS = {
   ageLimited: false,
   ageUnknown: false,
   staleProcess: false,
+  records: {
+    declaredSpecifier: '1.0.0',
+    declaredVersion: '1.0.0',
+    lockedVersion: '1.0.0',
+    mismatch: false,
+    message: null,
+  },
 };
 
 function fakeService(overrides = {}) {

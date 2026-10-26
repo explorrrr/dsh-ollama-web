@@ -158,9 +158,10 @@ When the optional fetch provider is enabled and pinned, `web_fetch` sends only `
 
 - **Check:** the host reads the npm registry (fallback: npmmirror) and honours the profile's pnpm `minimumReleaseAge` only when it is explicitly set. Unset, unreadable, invalid or `0` means no age wait. A release newer than a configured age is shown as waiting instead of being installed.
 - **Compatibility:** the updater compares the release's `engines.dsh` with the running DSH version (`DSH_CLIENT_VERSION` or `DSH_APP_VERSION`). A known-incompatible release is blocked; if compatibility cannot be verified, auto-update pauses while the manual Install button remains available.
-- **Install:** downloads one tarball, verifies the npm SHA-512 integrity and the archive, then atomically replaces the installed package. A failed swap rolls the previous copy back.
+- **Install:** downloads one tarball, verifies the npm SHA-512 integrity and the archive, then atomically replaces the installed package. A failed swap rolls the previous copy back. After a successful swap it also rewrites an exact profile `package.json` pin to the new version.
 - **Auto-update (opt-in):** off by default. When enabled, the host checks every 6 hours and installs a newer **same-major** release that supports the running DSH. Major updates require the explicit button.
-- **Caveats:** a `link:` or external-directory development install is never modified. DSH 0.2.1 has no third-party update API, so the updater replaces installed files directly. The profile's `package.json` and `pnpm-lock.yaml` still record the previous version; reinstall through **Plugins** (or the CLI) if you want those records updated.
+- **Profile records:** the updater does not run pnpm and does not rewrite `pnpm-lock.yaml`. If the lockfile still records the old version, the card and the host log report it. Run `pnpm install --lockfile-only` in the profile (or reinstall through **Plugins**) to refresh it. Until then a normal `pnpm install` resolves the new version, and `--frozen-lockfile` fails instead of silently installing the old one.
+- **Caveats:** a `link:` or external-directory development install is never modified. DSH 0.2.1 has no third-party update API, so the updater replaces installed files directly.
 
 See [docs/UPDATES.md](docs/UPDATES.md) for details.
 
@@ -172,6 +173,7 @@ See [docs/UPDATES.md](docs/UPDATES.md) for details.
 - No query, URL or API key logging, no telemetry, no custom session events.
 - Search and optional fetch contact only `ollama.com` by default. Updates contact the npm registry (fallback: npmmirror) only on explicit action, while auto-update is enabled, or when the update screen opens after five minutes without a successful check, and send only the package name. Changing `baseURL` changes where the key, queries and fetch URLs go.
 - Update tarballs are checked against the npm SHA-512 integrity; symlinks, traversal and oversized entries are rejected. No npm lifecycle script runs.
+- On a successful self-update the updater may rewrite only the exact `dsh-ollama-web` dependency value in the profile `package.json`. It does not run npm/pnpm and does not rewrite `pnpm-lock.yaml`.
 - Auto-update installs new code without a prompt. It is opt-in and limited to the current major version.
 - The client card makes no third-party external request. It reads update state and performs update actions only through DSH's same-origin Connection RPC to the host. It does not use `innerHTML` / `dangerouslySetInnerHTML`.
 - Release and self-review settings: [docs/RELEASE-HARDENING.md](docs/RELEASE-HARDENING.md).

@@ -15,6 +15,7 @@ import {
   makeTempDir,
   readJson,
   writeJson,
+  writeProfileLock,
 } from './update-helpers.mjs';
 
 function packageTarball(version) {
@@ -28,20 +29,31 @@ function packageTarball(version) {
 function makeService({
   root,
   version = '1.1.0',
+  profileVersion = '1.0.0',
+  manifestVersion,
+  lockVersion,
   publishedAt = '2026-10-01T00:00:00.000Z',
   minAge,
   profileMinimumReleaseAge = 0,
   now = Date.parse('2026-10-02T00:00:00.000Z'),
   runningDir,
   prefs,
+  logger,
   dshVersion = '0.2.1-rc.2',
   dshRange = '>=0.2.1-rc.1 <0.3.0',
 } = {}) {
-  const profile = makeProfile({ root, minimumReleaseAge: profileMinimumReleaseAge });
+  const profile = makeProfile({ root, version: profileVersion, minimumReleaseAge: profileMinimumReleaseAge });
+  if (manifestVersion !== undefined) {
+    const manifest = readJson(join(profile.profileDir, 'package.json'));
+    manifest.dependencies[PACKAGE_NAME] = manifestVersion;
+    writeJson(join(profile.profileDir, 'package.json'), manifest);
+  }
+  if (lockVersion !== undefined) writeProfileLock(profile.profileDir, { version: lockVersion });
   const bytes = packageTarball(version);
   const { pkg, target } = makeRelease({ version, tarball: bytes, publishedAt, dshRange });
   const tarballs = { [target.pkg.tarball]: bytes };
   const calls = [];
+  const logs = [];
   const fetchImpl = makeRegistryResponder({ pkg, tarballs, calls });
   const dataDir = join(profile.profileDir, 'data', 'dsh-ollama-web');
   if (prefs !== undefined) writeJson(join(dataDir, 'update-prefs.json'), prefs);
@@ -49,17 +61,21 @@ function makeService({
     profile: profile.profile,
     packageName: PACKAGE_NAME,
     packageDir: runningDir ?? profile.packageDir,
-    runningVersion: '1.0.0',
+    runningVersion: profileVersion,
     dshVersion,
     dataDir,
     fetchImpl,
     registries: [REGISTRY],
     ...(minAge === undefined ? {} : { minReleaseAgeMinutes: minAge }),
+    logger: (message, error) => {
+      logs.push({ message, error });
+      logger?.(message, error);
+    },
     now: () => now,
     autoUpdateIntervalMs: 3_600_000,
     startupDelayMs: 3_600_000,
   });
-  return { profile, pkg, target, bytes, calls, service, dataDir };
+  return { profile, pkg, target, bytes, calls, logs, service, dataDir };
 }
 
 test('status is read-only and starts with no network call', async () => {
@@ -120,6 +136,12 @@ test('installs the package and reports a restart', async () => {
     assert.equal(status.staleProcess, true);
     assert.equal(status.installed?.needsRestart, true);
     assert.equal(readJson(join(ctx.profile.packageDir, 'package.json')).version, '1.1.0');
+    const profileManifest = readJson(join(ctx.profile.profileDir, 'package.json'));
+    assert.equal(profileManifest.dependencies[PACKAGE_NAME], '1.1.0');
+    assert.equal(status.records.declaredVersion, '1.1.0');
+    assert.equal(status.records.lockedVersion, null);
+    assert.equal(status.records.mismatch, false);
+    assert.equal(status.records.message, null);
     assert.equal(existsSync(join(ctx.profile.packageDir, 'client.js')), true);
     assert.equal(existsSync(join(ctx.profile.packageDir, 'node_modules', 'legacy-dep', 'index.js')), true);
     const state = readJson(join(ctx.dataDir, 'update-state.json'));
@@ -130,6 +152,79 @@ test('installs the package and reports a restart', async () => {
     assert.equal(Array.isArray(state.backups), true);
     assert.equal(state.backups.length, 1);
     assert.equal(existsSync(join(ctx.dataDir, 'update.lock')), false);
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('rewrites a stale exact pin even when the running copy is newer', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({
+      root,
+      version: '2.5.0',
+      profileVersion: '2.4.1',
+      manifestVersion: '2.0.0',
+    });
+    await ctx.service.check({ fresh: true });
+    const status = await ctx.service.install({ allowMajor: false });
+    const profileManifest = readJson(join(ctx.profile.profileDir, 'package.json'));
+    assert.equal(profileManifest.dependencies[PACKAGE_NAME], '2.5.0');
+    assert.equal(status.records.declaredVersion, '2.5.0');
+    assert.equal(status.records.mismatch, false);
+    assert.equal(status.records.message, null);
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('reports a stale lockfile after rewriting the profile pin', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({ root, lockVersion: '1.0.0' });
+    await ctx.service.check({ fresh: true });
+    const status = await ctx.service.install({ allowMajor: false });
+    const profileManifest = readJson(join(ctx.profile.profileDir, 'package.json'));
+    assert.equal(profileManifest.dependencies[PACKAGE_NAME], '1.1.0');
+    assert.equal(status.records.declaredVersion, '1.1.0');
+    assert.equal(status.records.lockedVersion, '1.0.0');
+    assert.equal(status.records.mismatch, true);
+    assert.match(status.records.message, /pnpm-lock\.yaml records 1\.0\.0/);
+    assert.ok(ctx.logs.some((entry) => /pnpm-lock\.yaml still records 1\.0\.0/.test(entry.message)));
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('leaves a range pin unchanged and reports it', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({ root, manifestVersion: '^1.0.0' });
+    await ctx.service.check({ fresh: true });
+    const status = await ctx.service.install({ allowMajor: false });
+    const profileManifest = readJson(join(ctx.profile.profileDir, 'package.json'));
+    assert.equal(profileManifest.dependencies[PACKAGE_NAME], '^1.0.0');
+    assert.equal(status.records.declaredSpecifier, '^1.0.0');
+    assert.equal(status.records.declaredVersion, null);
+    assert.equal(status.records.mismatch, false);
+    assert.ok(ctx.logs.some((entry) => /records the range \^1\.0\.0/.test(entry.message)));
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('logs profile record drift on startup', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({ root, manifestVersion: '2.0.0' });
+    const status = await ctx.service.status();
+    assert.equal(status.records.mismatch, true);
+    assert.match(status.records.message, /package\.json records 2\.0\.0/);
+    assert.ok(ctx.logs.some((entry) => /package\.json records 2\.0\.0/.test(entry.message)));
     ctx.service.dispose();
   } finally {
     cleanup(root);
