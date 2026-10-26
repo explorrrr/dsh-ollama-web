@@ -10,15 +10,20 @@ The host peer range is `@deepseek-ai/dsh-web >=0.2.1-rc.1 <0.3.0`. The package's
 client bundle depends on the `plugins.row.config` / `configForms` contract, the
 `plugins.detail.section` slot, the official
 `@deepseek-ai/dsh-client-ui-primitives` module, and the shell's `connection`
-service. The bundle is served from the same package as the host provider.
+service. Provider selection also uses `ctx.configForms.get('web')` to write
+`web.searchProvider` / `web.fetchProvider`; this is the same transport the
+built-in Web search settings page uses. The bundle is served from the same
+package as the host provider.
 
 ## Fetch provider requirements
 
 The optional fetch provider uses DSH's `registerFetchProvider` seam and returns
 the `WebFetchResult` shape (`url`, `statusCode`, `body`, `truncated`). It is
 registered unconditionally when the seam exists; `available()` follows the live
-`enableFetchProvider` setting. Users must also pin `web.fetchProvider: ollama`
-because the default composition already mounts the HTTP fetch provider.
+`enableFetchProvider` setting. The settings card writes `enableFetchProvider`
+and `web.fetchProvider: ollama` together. A manual profile patch must also pin
+`web.fetchProvider: ollama` because the default composition already mounts the
+HTTP fetch provider, and a `web` entry replaces the whole row config.
 
 Ollama's `/api/web_fetch` response is `{ title, content, links }` and has no
 target HTTP status or final URL. The provider reports `statusCode: 200` for a

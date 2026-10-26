@@ -1,4 +1,5 @@
-# Example: install the package, then pin the Ollama search provider.
+# Example: install the package, then use the settings card for provider
+# selection or pin both provider fields here.
 - insert:
     - id: ollama-web
       name: dsh-ollama-web
@@ -12,9 +13,12 @@
         fetchPath: /api/web_fetch
         fetchTimeoutMs: 30000
         fetchMaxChars: 100000
-        # Set to true together with the fetchProvider: ollama pin below.
+        # When set, keep web.fetchProvider: ollama pinned below as well.
+        # The settings card writes both values together.
         enableFetchProvider: false
 
+# A web entry replaces the whole row config, so pin both fields. The settings
+# card writes this selection instead when web provider settings are available.
 - id: web
   config:
     searchProvider: ollama

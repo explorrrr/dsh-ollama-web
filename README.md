@@ -31,7 +31,14 @@ One package provides the `web_search` backend, the optional fetch provider and t
 
    Replace `desktop` with your profile name if needed. You can also use **Plugins -> Add plugin** in the Web UI. npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
 
-2. Pin the search provider in `~/.dsh/profiles/<profile>/cordis.patch.yml`.
+2. Activate the provider in the settings card (recommended), or pin it manually.
+
+   Open **Plugins -> `dsh-ollama-web` -> `ollama-web` -> Configure** and turn on
+   **Use Ollama for web search**. The card writes `web.searchProvider` for you;
+   no profile patch is needed.
+
+   For a manual pin, add **both** fields to
+   `~/.dsh/profiles/<profile>/cordis.patch.yml`:
 
    ```yaml
    - id: web
@@ -44,11 +51,18 @@ One package provides the `web_search` backend, the optional fetch provider and t
      disabled: true
    ```
 
-   `fetchProvider: http` keeps `web_fetch` on DSH's built-in HTTP provider.
+   `fetchProvider: http` keeps `web_fetch` on DSH's built-in HTTP provider. A
+   `web` entry replaces the whole row config, so keep both fields when you edit
+   it. The card shows which provider is currently effective even when Ollama is
+   not selected.
 
 ### Optional Ollama fetch provider
 
-To use Ollama for `web_fetch`, enable the provider **and** pin it. Both entries are required:
+To use Ollama for `web_fetch`, turn on **Use Ollama for web fetch** in the card.
+The card writes `enableFetchProvider: true` and `web.fetchProvider: ollama`
+together, so the provider is registered and pinned in one save.
+
+For a manual pin, both entries are required:
 
 ```yaml
 - id: web
@@ -61,9 +75,32 @@ To use Ollama for `web_fetch`, enable the provider **and** pin it. Both entries 
     enableFetchProvider: true
 ```
 
-`web` replaces its whole config, so keep `searchProvider: ollama` when you change `fetchProvider`. With only `enableFetchProvider: true`, `web_fetch` reports `WEB_PROVIDER_AMBIGUOUS` because both the HTTP and Ollama fetch providers are usable. With only `fetchProvider: ollama`, it reports `WEB_PROVIDER_CONFIGURED_UNAVAILABLE` because the Ollama provider is disabled. You can also enable the provider from the settings card, but the `web.fetchProvider: ollama` pin still belongs in the profile patch.
+`web` replaces its whole config, so keep `searchProvider: ollama` when you
+change `fetchProvider`. With only `enableFetchProvider: true`, `web_fetch`
+reports `WEB_PROVIDER_AMBIGUOUS` when both the HTTP and Ollama fetch providers
+are usable. With only `fetchProvider: ollama`, it reports
+`WEB_PROVIDER_CONFIGURED_UNAVAILABLE` because the Ollama provider is disabled.
+The settings card handles both fields together; these warnings apply when you
+edit the profile patch by hand.
 
 Ollama does not expose the target page's HTTP status or final redirect URL. A successful Ollama fetch is reported to DSH as `HTTP 200` for the requested URL; title, main content and links are folded into the text result. Keep `fetchProvider: http` when target status fidelity or DSH's local SSRF boundary matters.
+
+### Provider selection and the profile patch
+
+- The card writes DSH's `web` settings namespace, not `cordis.patch.yml`. The
+  profile patch remains the deployment default; remove an `- id: web` entry if
+  you want the card to own the selection.
+- If a profile patch pins `searchProvider: ollama`, the card shows the search
+  switch as pinned and disabled. Remove that patch line to manage it from the
+  card. The fetch switch can still override a pinned fetch provider with the
+  built-in HTTP provider.
+- The built-in Web search settings page edits the same `web` selection. Use one
+  surface at a time; a conflicting save is refused and the card keeps your
+  draft.
+- `DSH_WEB_SEARCH_PROVIDER` / `DSH_WEB_FETCH_PROVIDER` environment variables
+  override the saved selection at runtime. The card cannot see those
+  environment variables, so its status reflects the saved `web` config.
+
 
 ### Upgrading from 1.x
 
@@ -97,7 +134,7 @@ Enter it in the settings card (**Plugins -> `dsh-ollama-web` -> `ollama-web` -> 
 | `fetchPath` | `/api/web_fetch` | Absolute path under the baseURL path, same origin |
 | `fetchTimeoutMs` | `30000` | 1000-120000 ms |
 | `fetchMaxChars` | `100000` | 1-200000 characters |
-| `enableFetchProvider` | `false` | Live boolean; requires `web.fetchProvider: ollama` |
+| `enableFetchProvider` | `false` | Live boolean; the card writes it together with `web.fetchProvider` |
 | `apiKey` | unset | Secret; prefer the card or `OLLAMA_API_KEY` |
 
 `apiKeyEnv` accepts only `OLLAMA_*` names. Other environment variables and credential references are rejected before a request is made.

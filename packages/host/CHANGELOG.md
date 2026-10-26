@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `web.searchProvider` / `web.fetchProvider` switches in the row settings card,
+  with effective-provider status and warnings for a partial `web` row config.
+
+### Changed
+
+- The card writes the provider selection through `ctx.configForms.get('web')`
+  and writes `enableFetchProvider` together with `web.fetchProvider: ollama`.
+
 ## [2.4.1] - 2026-10-25
 
 ### Changed

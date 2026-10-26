@@ -1,6 +1,7 @@
 # The bundle row loads the host provider and serves the package's `./client`
-# browser half. It deliberately does not seize the web seam: pin
-# `searchProvider: ollama` in your own profile patch.
+# browser half. It deliberately does not seize the web seam: use the Configure
+# card's provider switches, or pin both `searchProvider` and `fetchProvider`
+# in your own profile patch. A `web` entry replaces the whole row config.
 - insert:
     - id: ollama-web
       name: dsh-ollama-web

@@ -69,8 +69,40 @@ function loadClient(react, document) {
   return { exports, required, definition };
 }
 
-function mockContext(connection) {
-  const calls = { registrations: [], injections: [], served: null, locale: null };
+function makeWebForm(options = {}) {
+  let snapshot = {
+    status: options.status ?? 'ready',
+    writable: options.writable ?? true,
+    value: options.value ?? { searchProvider: 'deepseek-official', fetchProvider: 'http' },
+    base: options.base ?? { searchProvider: 'deepseek-official', fetchProvider: 'http' },
+    user: options.user ?? {},
+    revision: options.revision ?? 1,
+  };
+  const listeners = new Set();
+  const mutations = [];
+  const result = options.result ?? true;
+  return {
+    mutations,
+    getSnapshot() {
+      return snapshot;
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    async mutate(ops, revision) {
+      mutations.push({ ops, revision });
+      return typeof result === 'function' ? result(ops, revision) : result;
+    },
+    setSnapshot(next) {
+      snapshot = next;
+      for (const listener of [...listeners]) listener();
+    },
+  };
+}
+
+function mockContext(connection, webForm = makeWebForm()) {
+  const calls = { registrations: [], injections: [], served: null, locale: null, webForm };
   const ctx = {
     effect(fn) {
       const dispose = fn();
@@ -92,6 +124,9 @@ function mockContext(connection) {
       whileServed(namespaces, fn) {
         calls.served = namespaces;
         return fn();
+      },
+      get(name) {
+        return name === 'web' ? webForm : undefined;
       },
     },
     slots: {
@@ -156,8 +191,9 @@ function findButton(tree, label) {
   return findElement(tree, (node) => node.type === 'Button' && flatText(node.props.children).includes(label));
 }
 
-function findSwitch(tree) {
-  return findElement(tree, (node) => node.type === 'Switch');
+function findSwitch(tree, label) {
+  return findElement(tree, (node) => node.type === 'Switch'
+    && (label === undefined || node.props.label === label));
 }
 
 function statusLine(tree) {
@@ -277,7 +313,7 @@ test('summary view is the localized description', () => {
   assert.equal(rowRegistration(calls).component({ view: 'summary' }), 'description');
 });
 
-test('page view renders the value fields, fetch toggle, secret field, support, and updates', () => {
+test('page view renders the value fields, provider switches, secret field, support, and updates', () => {
   const react = makeReact();
   const { exports } = loadClient(react);
   const { ctx, calls } = mockContext(fakeConnection().connection);
@@ -300,10 +336,17 @@ test('page view renders the value fields, fetch toggle, secret field, support, a
   assert.equal(fields.at(-1).type, 'SettingsSecretField');
   assert.equal(fields.at(-1).props.text, '');
   assert.ok(fields.some((field) => field.props.id.endsWith('snippetMax')));
-  const fetchToggle = fields.find((field) => field.props.className === 'dsh-ollama-web-fetch-toggle');
-  assert.ok(fetchToggle);
-  assert.equal(fetchToggle.props.children[0].props.children[0].type, 'Switch');
-  assert.equal(fetchToggle.props.children[0].props.children[0].props.checked, false);
+  const providerSection = fields.find((field) => field.props.className === 'dsh-ollama-web-fetch-toggle');
+  assert.ok(providerSection);
+  const searchSwitch = findSwitch(providerSection, 'useOllamaSearch');
+  const fetchSwitch = findSwitch(providerSection, 'useOllamaFetch');
+  assert.ok(searchSwitch);
+  assert.ok(fetchSwitch);
+  assert.equal(searchSwitch.props.checked, false);
+  assert.equal(fetchSwitch.props.checked, false);
+  assert.match(flatText(providerSection), /providerUsing/);
+  assert.match(flatText(providerSection), /deepseek-official/);
+  assert.match(flatText(providerSection), /providerFetchHttp/);
   assert.equal(tree.props.children[1].props.className, 'dsh-ollama-web-support');
   assert.equal(typeof tree.props.children[2].type, 'function');
   assert.equal(tree.props.children[2].props.view, 'card');
@@ -328,6 +371,18 @@ test('all locale dictionaries expose the same keys and support copy', () => {
       'enableFetchProvider',
       'enableFetchProviderHint',
       'enableFetchProviderWarning',
+      'useOllamaSearch',
+      'useOllamaSearchHint',
+      'useOllamaFetch',
+      'useOllamaFetchHint',
+      'providerUsing',
+      'providerAutomatic',
+      'providerPinned',
+      'providerIncomplete',
+      'providerFetchDisabled',
+      'providerFetchUnselected',
+      'providerFetchAmbiguous',
+      'providerWebUnavailable',
       'fetchPath',
       'fetchTimeoutMs',
       'fetchMaxChars',
@@ -457,11 +512,13 @@ test('editing a numeric field and saving sends a revision-fenced operation', asy
   assert.equal(tree.props.state.dirty, false);
 });
 
-test('toggling the fetch provider saves a boolean operation', async () => {
+test('toggling the fetch provider saves the web pin before the local switch', async () => {
   const react = makeReact();
   const { exports } = loadClient(react);
-  const { ctx, calls } = mockContext(fakeConnection().connection);
+  const webForm = makeWebForm();
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
   exports.apply(ctx);
+  const events = [];
   const mutations = [];
   const form = {
     state: {
@@ -471,21 +528,33 @@ test('toggling the fetch provider saves a boolean operation', async () => {
       revision: 4,
     },
     mutate: async (ops, revision) => {
+      events.push('local');
       mutations.push({ ops, revision });
       return true;
     },
   };
+  const webMutate = webForm.mutate;
+  webForm.mutate = async (ops, revision) => {
+    events.push('web');
+    return webMutate(ops, revision);
+  };
 
   let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
-  let fields = tree.props.children[0];
-  let toggle = fields.find((field) => field.props.className === 'dsh-ollama-web-fetch-toggle');
+  const toggle = findSwitch(tree, 'useOllamaFetch');
   assert.ok(toggle);
-  toggle.props.children[0].props.children[0].props.onChange(true);
+  toggle.props.onChange(true);
 
   tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   assert.equal(tree.props.state.dirty, true);
   await tree.props.onSave();
 
+  assert.deepEqual(events, ['web', 'local']);
+  assert.equal(webForm.mutations.length, 1);
+  assert.equal(webForm.mutations[0].revision, 1);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(webForm.mutations[0].ops)),
+    [{ op: 'set', path: ['fetchProvider'], value: 'ollama' }],
+  );
   assert.equal(mutations.length, 1);
   assert.equal(mutations[0].revision, 4);
   assert.deepEqual(
@@ -495,6 +564,255 @@ test('toggling the fetch provider saves a boolean operation', async () => {
 
   tree = react.render(rowRegistration(calls).component, { view: 'page', form });
   assert.equal(tree.props.state.dirty, false);
+});
+
+test('turning on web search pins fetchProvider when the web row has no fetch value', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const webForm = makeWebForm({
+    revision: 5,
+    value: { searchProvider: 'deepseek-official' },
+    base: { searchProvider: 'deepseek-official' },
+  });
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
+  exports.apply(ctx);
+  let localMutated = false;
+  const form = {
+    state: {
+      status: 'ready',
+      writable: true,
+      value: { baseURL: 'https://ollama.com' },
+      revision: 7,
+    },
+    mutate: async () => {
+      localMutated = true;
+      return true;
+    },
+  };
+
+  let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  const searchSwitch = findSwitch(tree, 'useOllamaSearch');
+  assert.ok(searchSwitch);
+  searchSwitch.props.onChange(true);
+
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  assert.equal(tree.props.state.dirty, true);
+  await tree.props.onSave();
+
+  assert.equal(localMutated, false);
+  assert.equal(webForm.mutations.length, 1);
+  assert.equal(webForm.mutations[0].revision, 5);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(webForm.mutations[0].ops)),
+    [
+      { op: 'set', path: ['searchProvider'], value: 'ollama' },
+      { op: 'set', path: ['fetchProvider'], value: 'http' },
+    ],
+  );
+});
+
+test('turning off web search returns to the deployment default', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const webForm = makeWebForm({
+    revision: 2,
+    value: { searchProvider: 'ollama', fetchProvider: 'http' },
+    base: { searchProvider: 'deepseek-official', fetchProvider: 'http' },
+  });
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
+  exports.apply(ctx);
+  const form = {
+    state: { status: 'ready', writable: true, value: {}, revision: 1 },
+    mutate: async () => true,
+  };
+
+  let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  const searchSwitch = findSwitch(tree, 'useOllamaSearch');
+  assert.equal(searchSwitch.props.checked, true);
+  searchSwitch.props.onChange(false);
+
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  await tree.props.onSave();
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(webForm.mutations[0].ops)),
+    [{ op: 'set', path: ['searchProvider'], value: 'deepseek-official' }],
+  );
+});
+
+test('turning off web fetch selects HTTP and disables the provider', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const webForm = makeWebForm({
+    revision: 3,
+    value: { searchProvider: 'deepseek-official', fetchProvider: 'ollama' },
+    base: { searchProvider: 'deepseek-official', fetchProvider: 'ollama' },
+  });
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
+  exports.apply(ctx);
+  const localMutations = [];
+  const form = {
+    state: {
+      status: 'ready',
+      writable: true,
+      value: { enableFetchProvider: true },
+      revision: 4,
+    },
+    mutate: async (ops, revision) => {
+      localMutations.push({ ops, revision });
+      return true;
+    },
+  };
+
+  let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  const fetchSwitch = findSwitch(tree, 'useOllamaFetch');
+  assert.equal(fetchSwitch.props.checked, true);
+  fetchSwitch.props.onChange(false);
+
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  await tree.props.onSave();
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(webForm.mutations[0].ops)),
+    [{ op: 'set', path: ['fetchProvider'], value: 'http' }],
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(localMutations[0].ops)),
+    [{ op: 'set', path: ['enableFetchProvider'], value: false }],
+  );
+});
+
+test('a profile patch pin locks the search switch but not the fetch switch', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const webForm = makeWebForm({
+    value: { searchProvider: 'ollama', fetchProvider: 'ollama' },
+    base: { searchProvider: 'ollama', fetchProvider: 'ollama' },
+  });
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
+  exports.apply(ctx);
+  const form = {
+    state: { status: 'ready', writable: true, value: { enableFetchProvider: true }, revision: 1 },
+    mutate: async () => true,
+  };
+  const tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  const searchSwitch = findSwitch(tree, 'useOllamaSearch');
+  const fetchSwitch = findSwitch(tree, 'useOllamaFetch');
+  assert.equal(searchSwitch.props.checked, true);
+  assert.equal(searchSwitch.props.disabled, true);
+  assert.equal(fetchSwitch.props.checked, true);
+  assert.equal(fetchSwitch.props.disabled, false);
+  assert.match(flatText(tree), /providerPinned/);
+});
+
+test('warns when the web row has only one provider field', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const webForm = makeWebForm({
+    value: { searchProvider: 'ollama' },
+    base: { searchProvider: 'ollama' },
+  });
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
+  exports.apply(ctx);
+  const form = {
+    state: { status: 'ready', writable: true, value: {}, revision: 1 },
+    mutate: async () => true,
+  };
+  const tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  assert.match(flatText(tree), /providerIncomplete/);
+});
+
+test('falls back to the local fetch switch when web settings are unavailable', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const webForm = makeWebForm({ status: 'unavailable' });
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
+  exports.apply(ctx);
+  const form = {
+    state: {
+      status: 'ready',
+      writable: true,
+      value: { enableFetchProvider: false },
+      revision: 1,
+    },
+    mutate: async () => true,
+  };
+  const tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  assert.equal(findSwitch(tree, 'useOllamaSearch'), undefined);
+  const legacy = findSwitch(tree, 'enableFetchProvider');
+  assert.ok(legacy);
+  assert.equal(legacy.props.checked, false);
+  assert.match(flatText(tree), /providerWebUnavailable/);
+});
+
+test('a failed web selection save keeps the draft and reports failure', async () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const webForm = makeWebForm({ result: false });
+  const { ctx, calls } = mockContext(fakeConnection().connection, webForm);
+  exports.apply(ctx);
+  let localMutated = false;
+  const form = {
+    state: { status: 'ready', writable: true, value: {}, revision: 1 },
+    mutate: async () => {
+      localMutated = true;
+      return true;
+    },
+  };
+  let tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  findSwitch(tree, 'useOllamaSearch').props.onChange(true);
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  await tree.props.onSave();
+  tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  assert.equal(tree.props.state.failed, true);
+  assert.equal(tree.props.state.dirty, true);
+  assert.equal(webForm.mutations.length, 1);
+  assert.equal(localMutated, false);
+});
+
+test('shows the registered but unselected fetch provider', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  const { ctx, calls } = mockContext(fakeConnection().connection);
+  exports.apply(ctx);
+  const form = {
+    state: {
+      status: 'ready',
+      writable: true,
+      value: { enableFetchProvider: true },
+      revision: 1,
+    },
+    mutate: async () => true,
+  };
+  const tree = react.render(rowRegistration(calls).component, { view: 'page', form });
+  assert.match(flatText(tree), /providerFetchUnselected/);
+});
+
+test('provider helpers build complete and minimal web mutations', () => {
+  const react = makeReact();
+  const { exports } = loadClient(react);
+  assert.equal(exports.providerOffTarget('searchProvider', 'ollama', 'deepseek-official'), 'deepseek-official');
+  assert.equal(exports.providerOffTarget('searchProvider', 'ollama', 'ollama'), null);
+  assert.equal(exports.providerOffTarget('fetchProvider', 'ollama', 'ollama'), 'http');
+  assert.equal(exports.providerOffTarget('fetchProvider', 'ollama', undefined), 'http');
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(exports.buildWebOps(
+      { searchProvider: 'ollama', fetchProvider: null },
+      { searchProvider: 'deepseek-official', fetchProvider: undefined },
+    ))),
+    [{ op: 'set', path: ['searchProvider'], value: 'ollama' }],
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(exports.buildWebOps(
+      { searchProvider: 'ollama', fetchProvider: 'http' },
+      { searchProvider: 'deepseek-official', fetchProvider: undefined },
+    ))),
+    [
+      { op: 'set', path: ['searchProvider'], value: 'ollama' },
+      { op: 'set', path: ['fetchProvider'], value: 'http' },
+    ],
+  );
+  assert.equal(exports.webIsDirty(undefined, {}), false);
+  assert.equal(exports.webIsDirty({ searchProvider: 'ollama' }, { searchProvider: 'ollama' }), false);
+  assert.equal(exports.webIsDirty({ searchProvider: 'ollama' }, { searchProvider: 'deepseek-official' }), true);
 });
 
 test('an invalid number blocks saving', async () => {
