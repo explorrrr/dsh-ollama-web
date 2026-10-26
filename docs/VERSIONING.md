@@ -37,6 +37,10 @@ Examples from this repository:
   documented synthetic-200 tradeoff.
 - `2.4.1` — CI-only patch: GitHub Actions update to the Node.js 24 artifact
   actions and the CodeQL action.
+- `2.5.0` — provider selection switches in the settings card (the effective
+  `web` provider is shown, and a partial `web` row is reported), plus profile
+  `package.json` exact-pin reconciliation and `pnpm-lock.yaml` drift reporting
+  after self-update.
 - `3.0.0` — planned for DSH 0.3 compatibility or another breaking change.
 
 The project treats `0.x` as bootstrap/unstable. From `1.0.0` onward the table
@@ -89,7 +93,7 @@ of the 2.0 release workflow.
 
 | DSH | Plugin |
 |---|---|
-| 0.2.1-rc.2 | 2.4.x |
+| 0.2.1-rc.2 | 2.5.x |
 | 0.3.x | 3.0 (planned) |
 
 The update feature uses DSH's `connection` RPC and the plugin manager's
@@ -109,5 +113,5 @@ release; it reports the latest release as incompatible instead.
 
 1.x published two packages and the updater only installs releases in the current
 major. 2.0.0 is therefore a manual migration: remove `dsh-ollama-web-client`,
-then install `dsh-ollama-web@2.4.1`. See
+then install `dsh-ollama-web@2.5.0`. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

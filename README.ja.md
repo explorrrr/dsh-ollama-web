@@ -26,7 +26,7 @@ Ollama Cloud の Web 検索と、任意の Web 取得を [DeepSeek Harness](http
 1. パッケージを追加します。
 
    ```bash
-   dsh plugin --profile desktop add dsh-ollama-web@2.4.1
+   dsh plugin --profile desktop add dsh-ollama-web@2.5.0
    ```
 
    `desktop` 以外のプロファイルでは `desktop` を置き換えてください。Web UI の **Plugins → Add plugin** から追加しても構いません。npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
@@ -94,14 +94,14 @@ Ollama は対象ページの HTTP status や最終 redirect URL を返しませ�
 
 ### 1.x からの移行
 
-2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.4.1 を入れる前に旧パッケージを削除してください。
+2.0.0 では旧 `dsh-ollama-web-client` パッケージを `dsh-ollama-web` に統合しました。2.5.0 を入れる前に旧パッケージを削除してください。
 
 ```bash
 dsh plugin --profile <profile> remove dsh-ollama-web-client
-dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
+dsh plugin --profile <profile> add dsh-ollama-web@2.5.0
 ```
 
-1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.4.1` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
+1.x の updater は旧2パッケージの両方を確認し、自動更新は同一メジャーのみです。2.0.0 では新しい `dsh-ollama-web-client` を publish しないため、1.x から 2.0.0 へは自動で移行しません。手動で移行してください。desktop では **Plugins** で `dsh-ollama-web-client` bundle を削除してから `dsh-ollama-web@2.5.0` をインストールします。旧 client を残すと設定カードが二重登録される可能性があり、サポート対象外です。
 
 ## 設定
 
