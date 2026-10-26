@@ -79,9 +79,9 @@ but it cannot make an untrusted endpoint trustworthy.
   entries are rejected.
 - No npm/pnpm command or package lifecycle script is executed.
 - After a successful swap, the updater may rewrite only the exact
-  `dsh-ollama-web` dependency value in the profile `package.json` when it
-  matched the previously installed version. Other fields are preserved. The
-  write is atomic and limited to the 0600 profile manifest.
+  `dsh-ollama-web` dependency value in the profile `package.json` when the
+  recorded exact version is at or below the installed version. Other fields are
+  preserved. The write is atomic and limited to the 0600 profile manifest.
 - The profile `pnpm-lock.yaml` is not rewritten. A stale lock is reported in the
   update status, card and host log; the next normal `pnpm install` resolves the
   new version, while `--frozen-lockfile` fails instead of silently reverting.

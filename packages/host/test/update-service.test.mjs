@@ -158,6 +158,28 @@ test('installs the package and reports a restart', async () => {
   }
 });
 
+test('rewrites a stale exact pin even when the running copy is newer', async () => {
+  const root = makeTempDir();
+  try {
+    const ctx = makeService({
+      root,
+      version: '2.5.0',
+      profileVersion: '2.4.1',
+      manifestVersion: '2.0.0',
+    });
+    await ctx.service.check({ fresh: true });
+    const status = await ctx.service.install({ allowMajor: false });
+    const profileManifest = readJson(join(ctx.profile.profileDir, 'package.json'));
+    assert.equal(profileManifest.dependencies[PACKAGE_NAME], '2.5.0');
+    assert.equal(status.records.declaredVersion, '2.5.0');
+    assert.equal(status.records.mismatch, false);
+    assert.equal(status.records.message, null);
+    ctx.service.dispose();
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('reports a stale lockfile after rewriting the profile pin', async () => {
   const root = makeTempDir();
   try {

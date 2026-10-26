@@ -82,8 +82,8 @@ DSH matrix remains in [COMPATIBILITY.md](COMPATIBILITY.md).
 6. renames each installed directory to a hidden backup and moves the staged
    directory into place. If any target fails, every earlier target is restored;
 7. after a successful swap, rewrites the profile `package.json` dependency when
-   it is an exact version equal to the previously installed version, then reads
-   the `pnpm-lock.yaml` importer and reports any stale lock.
+   it is an exact version at or below the installed version, then reads the
+   `pnpm-lock.yaml` importer and reports any stale lock.
 
 A failed check, download, verification or swap leaves the installed version in
 place. A journal written before the swap lets the next host start roll back an
@@ -151,9 +151,10 @@ Profile Manager's remove/install flow.
 After a successful swap:
 
 - the running and on-disk package version changes immediately;
-- when the profile `package.json` records an exact version equal to the
-  previously installed version, the updater atomically rewrites that one
-  dependency value to the new version. Other manifest fields are preserved.
+- when the profile `package.json` records an exact version at or below the
+  installed version, the updater atomically rewrites that one dependency value
+  to the new version. Other manifest fields are preserved. An exact pin newer
+  than the installed copy is left unchanged and reported;
 - a range, `file:` / `link:` specifier or missing dependency is left unchanged
   and reported;
 - `pnpm-lock.yaml` is **not** rewritten. The updater reads the pnpm v9 importer

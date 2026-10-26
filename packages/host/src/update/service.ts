@@ -493,7 +493,6 @@ export class UpdateService {
         const records = await reconcileProfileRecords({
           profile: this.options.profile,
           packageName: this.options.packageName,
-          previousVersion: current,
           installedVersion: result.version,
         });
         if (records.warning !== null) this.log(`ollama-web: ${records.warning}`);

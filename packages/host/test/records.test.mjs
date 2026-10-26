@@ -91,7 +91,7 @@ test('reports an unreadable manifest without throwing', () => {
   }
 });
 
-test('rewrites only the exact dependency pin and preserves other fields', async () => {
+test('rewrites an exact dependency pin older than the installed version', async () => {
   const root = makeTempDir();
   try {
     const setup = makeProfile({ root, version: '2.0.0' });
@@ -99,7 +99,6 @@ test('rewrites only the exact dependency pin and preserves other fields', async 
     const result = await reconcileProfileRecords({
       profile: setup.profile,
       packageName: PACKAGE_NAME,
-      previousVersion: '2.0.0',
       installedVersion: '2.4.1',
     });
     assert.equal(result.manifestUpdated, true);
@@ -116,6 +115,25 @@ test('rewrites only the exact dependency pin and preserves other fields', async 
   }
 });
 
+test('leaves an exact pin newer than the installed version unchanged', async () => {
+  const root = makeTempDir();
+  try {
+    const setup = makeProfile({ root, version: '3.0.0' });
+    const result = await reconcileProfileRecords({
+      profile: setup.profile,
+      packageName: PACKAGE_NAME,
+      installedVersion: '2.5.0',
+    });
+    assert.equal(result.manifestUpdated, false);
+    assert.equal(manifest(setup).dependencies[PACKAGE_NAME], '3.0.0');
+    assert.equal(result.state.declaredVersion, '3.0.0');
+    assert.equal(result.state.mismatch, true);
+    assert.match(result.warning, /newer than the installed 2\.5\.0/);
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('reports a stale lockfile after rewriting the manifest', async () => {
   const root = makeTempDir();
   try {
@@ -124,7 +142,6 @@ test('reports a stale lockfile after rewriting the manifest', async () => {
     const result = await reconcileProfileRecords({
       profile: setup.profile,
       packageName: PACKAGE_NAME,
-      previousVersion: '2.0.0',
       installedVersion: '2.4.1',
     });
     assert.equal(result.manifestUpdated, true);
@@ -145,7 +162,6 @@ test('leaves a range unchanged and reports why', async () => {
     const result = await reconcileProfileRecords({
       profile: setup.profile,
       packageName: PACKAGE_NAME,
-      previousVersion: '2.0.0',
       installedVersion: '2.4.1',
     });
     assert.equal(result.manifestUpdated, false);
@@ -163,7 +179,6 @@ test('leaves a file specifier and a missing dependency unchanged', async () => {
     const result = await reconcileProfileRecords({
       profile: setup.profile,
       packageName: PACKAGE_NAME,
-      previousVersion: '2.0.0',
       installedVersion: '2.4.1',
     });
     assert.equal(result.manifestUpdated, false);
@@ -176,7 +191,6 @@ test('leaves a file specifier and a missing dependency unchanged', async () => {
     const missingResult = await reconcileProfileRecords({
       profile: missing.profile,
       packageName: PACKAGE_NAME,
-      previousVersion: '2.0.0',
       installedVersion: '2.4.1',
     });
     assert.equal(missingResult.manifestUpdated, false);
@@ -210,7 +224,6 @@ test('a failed manifest write becomes a warning instead of failing the update', 
     const result = await reconcileProfileRecords({
       profile: setup.profile,
       packageName: PACKAGE_NAME,
-      previousVersion: '2.0.0',
       installedVersion: '2.4.1',
     });
     assert.equal(result.manifestUpdated, false);
@@ -229,7 +242,6 @@ test('reconcile is idempotent when the manifest already names the installed vers
     const result = await reconcileProfileRecords({
       profile: setup.profile,
       packageName: PACKAGE_NAME,
-      previousVersion: '2.0.0',
       installedVersion: '2.4.1',
     });
     assert.equal(result.manifestUpdated, false);

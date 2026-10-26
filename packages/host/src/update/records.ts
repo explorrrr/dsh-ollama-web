@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { chmod, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { parseVersion, satisfiesRange } from './semver.js';
+import { compareVersions, parseVersion, satisfiesRange } from './semver.js';
 import type { ProfileInfo, ProfileRecordState } from './types.js';
 
 const MANIFEST_FILE = 'package.json';
@@ -151,8 +151,6 @@ async function writeManifest(profileDir: string, raw: string, manifest: Record<s
 export interface ReconcileProfileRecordsOptions {
   readonly profile: ProfileInfo;
   readonly packageName: string;
-  /** The version the update replaced; only a matching exact pin is rewritten. */
-  readonly previousVersion: string | null;
   readonly installedVersion: string;
 }
 
@@ -192,6 +190,7 @@ export async function reconcileProfileRecords(
   }
 
   const entry = dependencyOf(manifest, options.packageName);
+  const declared = entry === undefined ? null : exactVersion(entry.specifier);
   const warnings: string[] = [];
   let manifestUpdated = false;
 
@@ -201,20 +200,22 @@ export async function reconcileProfileRecords(
     warnings.push(`The profile package.json does not record ${options.packageName}, so its version was left unchanged.`);
   } else if (entry.specifier === options.installedVersion) {
     // Already pinned to the new version.
-  } else if (options.previousVersion !== null && exactVersion(entry.specifier) === options.previousVersion) {
-    try {
-      const section = manifest[entry.field];
-      if (!isRecord(section)) throw new Error('dependency section is not an object');
-      section[options.packageName] = options.installedVersion;
-      await writeManifest(options.profile.dir, raw, manifest);
-      manifestUpdated = true;
-    } catch (error) {
-      warnings.push(`The profile package.json could not be updated: ${errorText(error)}`);
+  } else if (declared !== null) {
+    if (compareVersions(declared, options.installedVersion) <= 0) {
+      try {
+        const section = manifest[entry.field];
+        if (!isRecord(section)) throw new Error('dependency section is not an object');
+        section[options.packageName] = options.installedVersion;
+        await writeManifest(options.profile.dir, raw, manifest);
+        manifestUpdated = true;
+      } catch (error) {
+        warnings.push(`The profile package.json could not be updated: ${errorText(error)}`);
+      }
+    } else {
+      warnings.push(
+        `The profile package.json records ${entry.specifier}, which is newer than the installed ${options.installedVersion}; it was left unchanged.`,
+      );
     }
-  } else if (exactVersion(entry.specifier) !== null) {
-    warnings.push(
-      `The profile package.json records ${entry.specifier}, not the previous ${options.previousVersion ?? 'version'}; it was left unchanged.`,
-    );
   } else if (satisfiesRange(options.installedVersion, entry.specifier) === true) {
     warnings.push(
       `The profile package.json records the range ${entry.specifier}, which includes ${options.installedVersion}; the range was left unchanged.`,

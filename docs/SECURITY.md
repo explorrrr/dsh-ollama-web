@@ -74,9 +74,9 @@ DNS-pinning/SSRF boundary does not apply.
   entries.
 - No npm/pnpm command or lifecycle script runs during an update.
 - After a successful swap, the updater may rewrite only the exact
-  `dsh-ollama-web` dependency value in the profile `package.json` when it
-  matched the previously installed version. The write is atomic and limited to
-  the 0600 profile manifest; other fields are preserved.
+  `dsh-ollama-web` dependency value in the profile `package.json` when the
+  recorded exact version is at or below the installed version. The write is
+  atomic and limited to the 0600 profile manifest; other fields are preserved.
 - The profile `pnpm-lock.yaml` is not rewritten. A stale lock is reported in the
   update status, card and host log; a normal `pnpm install` resolves the new
   version, while `--frozen-lockfile` fails instead of silently reverting.
