@@ -31,7 +31,14 @@
 
    如果不是 `desktop` 配置，请替换 `desktop`。也可以在 Web UI 中通过 **Plugins → Add plugin** 添加。npm：[dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
 
-2. 在 `~/.dsh/profiles/<profile>/cordis.patch.yml` 中固定搜索提供方。
+2. 在设置卡片中启用（推荐），或手动固定提供方。
+
+   打开 **Plugins → `dsh-ollama-web` → `ollama-web` → Configure**，启用
+   **使用 Ollama 进行网页搜索**。卡片会写入 `web.searchProvider`，无需修改
+   profile patch。
+
+   手动固定时，请在 `~/.dsh/profiles/<profile>/cordis.patch.yml` 中同时写入
+   **两个**字段：
 
    ```yaml
    - id: web
@@ -45,10 +52,16 @@
    ```
 
    `fetchProvider: http` 表示 `web_fetch` 继续使用 DSH 内置的 HTTP 提供方。
+   `web` 条目会替换整个行 config，编辑时请保留两个字段。即使未选择 Ollama，
+   卡片也会显示当前实际使用的提供方。
 
 ### 可选的 Ollama 抓取提供方
 
-要让 `web_fetch` 使用 Ollama，必须同时启用并固定提供方：
+要让 `web_fetch` 使用 Ollama，请在卡片中启用 **使用 Ollama 抓取网页**。
+卡片会同时写入 `enableFetchProvider: true` 和 `web.fetchProvider: ollama`，
+一次保存即可完成注册与固定。
+
+手动配置时，以下两个条目都需要：
 
 ```yaml
 - id: web
@@ -61,9 +74,22 @@
     enableFetchProvider: true
 ```
 
-`web` 会替换整个 config，因此修改 `fetchProvider` 时也要保留 `searchProvider: ollama`。只设置 `enableFetchProvider: true` 会让 HTTP 与 Ollama 两个提供方都可用，触发 `WEB_PROVIDER_AMBIGUOUS`；只设置 `fetchProvider: ollama` 则提供方未启用，触发 `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`。也可以在设置卡片中启用，但 `web.fetchProvider: ollama` 的固定仍需写在 profile patch 中。
+`web` 会替换整个 config，因此修改 `fetchProvider` 时也要保留 `searchProvider: ollama`。只设置 `enableFetchProvider: true` 会让 HTTP 与 Ollama 两个提供方都可用，触发 `WEB_PROVIDER_AMBIGUOUS`；只设置 `fetchProvider: ollama` 则提供方未启用，触发 `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`。设置卡片会同时处理两个字段；上述警告适用于手动编辑 profile patch 的情况。
 
 Ollama 不返回目标页面的 HTTP 状态或最终 redirect URL。成功时向 DSH 返回请求 URL 和 `HTTP 200`，并把 title、正文和 links 合并为文本。若需要准确的目标状态或 DSH 的本地 SSRF 边界，请保留 `fetchProvider: http`。
+
+### 提供方选择与 profile patch
+
+- 卡片写入 DSH 的 `web` settings 命名空间，不会编辑 `cordis.patch.yml`。
+  profile patch 仍是部署默认值；若希望由卡片管理，请删除 `- id: web` 条目。
+- 如果 profile patch 固定了 `searchProvider: ollama`，卡片的搜索开关会显示为
+  已固定且禁用。若要从卡片修改，请删除该 patch 行。抓取开关仍可用内置 HTTP
+  提供方覆盖已固定的抓取提供方。
+- 内置的 Web search 设置页也会编辑同一个 `web` 选择。请勿同时操作；
+  冲突的保存会被拒绝，卡片会保留草稿。
+- `DSH_WEB_SEARCH_PROVIDER` / `DSH_WEB_FETCH_PROVIDER` 环境变量会在运行时覆盖
+  保存值。卡片看不到这些环境变量，因此状态基于保存的 `web` config。
+
 
 ### 从 1.x 迁移
 
@@ -97,7 +123,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 | `fetchPath` | `/api/web_fetch` | baseURL 路径前缀下、同一 origin 的绝对路径 |
 | `fetchTimeoutMs` | `30000` | 1000-120000 ms |
 | `fetchMaxChars` | `100000` | 1-200000 个字符 |
-| `enableFetchProvider` | `false` | live boolean；需要 `web.fetchProvider: ollama` |
+| `enableFetchProvider` | `false` | live boolean；卡片会与 `web.fetchProvider` 一起写入 |
 | `apiKey` | 未设置 | 密钥；优先使用设置卡片或 `OLLAMA_API_KEY` |
 
 `apiKeyEnv` 仅接受 `OLLAMA_*` 环境变量名；其他环境变量或凭据引用会在请求前被拒绝。

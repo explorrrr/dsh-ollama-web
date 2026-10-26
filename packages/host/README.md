@@ -10,10 +10,12 @@ See the repository [README](../../README.md) for install, configuration,
 security notes and compatibility. This package registers the `ollama` search
 provider on `ctx.web` and talks to `https://ollama.com/api/web_search` by
 default. It can also register an `ollama` fetch provider for
-`https://ollama.com/api/web_fetch`; this is opt-in via
-`enableFetchProvider: true` plus `web.fetchProvider: ollama`, and the default
-`web_fetch` remains DSH's credential-free HTTP provider. The same package
-serves `client.js` as the `ollama-web` row's browser half.
+`https://ollama.com/api/web_fetch`; this is opt-in via the card's
+**Use Ollama for web fetch** switch, or via
+`enableFetchProvider: true` plus `web.fetchProvider: ollama` in a manual
+profile patch. The default `web_fetch` remains DSH's credential-free HTTP
+provider. The same package serves `client.js` as the `ollama-web` row's browser
+half.
 
 ## Compatibility
 
@@ -30,12 +32,26 @@ for the tested matrix and the automatic update guard.
 
 ## Optional fetch provider
 
-Set `enableFetchProvider: true` and pin `web.fetchProvider: ollama` in the
-profile patch. The provider sends `{ url }` to `/api/web_fetch`, folds
-`title`/`content`/`links` into a text result, and caps the text at
-`fetchMaxChars`. Ollama does not expose the target HTTP status or final URL, so
-a successful fetch is reported as HTTP 200 for the requested URL. Keep
-`fetchProvider: http` when those semantics or DSH's local SSRF boundary matter.
+Turn on **Use Ollama for web fetch** in the settings card. The card writes
+`enableFetchProvider: true` and `web.fetchProvider: ollama` together, so a
+manual profile patch is not needed. For a manual configuration, set
+`enableFetchProvider: true` and pin `web.fetchProvider: ollama`; a `web` patch
+replaces the row config, so keep both provider fields. The provider sends
+`{ url }` to `/api/web_fetch`, folds `title`/`content`/`links` into a text
+result, and caps the text at `fetchMaxChars`. Ollama does not expose the target
+HTTP status or final URL, so a successful fetch is reported as HTTP 200 for the
+requested URL. Keep `fetchProvider: http` when those semantics or DSH's local
+SSRF boundary matter.
+
+## Provider selection
+
+The card edits DSH's `web` settings namespace: **Use Ollama for web search**
+writes `searchProvider`, and the fetch switch writes `enableFetchProvider` plus
+`fetchProvider`. The card shows the provider DSH is currently using even when
+Ollama is not selected. A profile patch that pins `searchProvider: ollama` is
+shown as pinned; remove that patch line to manage the search selection from the
+card. Environment overrides (`DSH_WEB_SEARCH_PROVIDER` /
+`DSH_WEB_FETCH_PROVIDER`) are not visible to the card.
 
 ## Updates
 

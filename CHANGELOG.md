@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Provider selection switches in the settings card. **Use Ollama for web
+  search** writes `web.searchProvider`; **Use Ollama for web fetch** writes
+  `enableFetchProvider` and `web.fetchProvider` together. The card also shows
+  which provider DSH is currently using when Ollama is not selected, and warns
+  when a profile patch leaves the `web` row with only one provider field.
+
+### Changed
+
+- The card writes the `web` selection through `ctx.configForms.get('web')`,
+  the same transport as the built-in Web search settings page. A profile patch
+  that pins `searchProvider: ollama` is shown as pinned; remove that patch line
+  to manage the search selection from the card.
+- Documentation now calls out that a `web` profile patch replaces the whole row
+  config and that both `searchProvider` and `fetchProvider` must be pinned.
+
 ## [2.4.1] - 2026-10-25
 
 ### Changed

@@ -25,6 +25,25 @@ the bundle detail page, and writes settings through the DSH Plugin Manager's
 static donation link; the link is inert until clicked and adds no external
 network call to the plugin.
 
+## Provider selection flow
+
+```text
+[Configure card: Use Ollama for web search/fetch]
+  -> ctx.configForms.get('web')
+  -> settings mutate [web.searchProvider / web.fetchProvider]
+  -> live @deepseek-ai/dsh-web provider selection
+  -> the card also writes the row's enableFetchProvider through its own form
+```
+
+The card is opt-in: the host bundle still does not set `web.searchProvider` or
+`web.fetchProvider` in `cordis.patch.yml`. The card displays the effective
+`web` value so a user can see which provider DSH is using when Ollama is not
+selected. A `web` profile patch replaces the whole row config; the card writes
+both provider fields when it changes a selection and fills a missing
+`fetchProvider` with `http`, and warns when the composed row has only one field.
+`DSH_WEB_SEARCH_PROVIDER` / `DSH_WEB_FETCH_PROVIDER` environment overrides are
+applied by the host at runtime and are not visible to the card.
+
 ## Update flow
 
 ```text
@@ -41,8 +60,9 @@ network call to the plugin.
 ```
 
 The update service never reads the Ollama API key, search query, fetch URL or
-session state. The client bundle never makes an external network request; it only uses
-the same-origin Connection RPC.
+session state. It does not run pnpm or any package lifecycle script. The client
+bundle never makes an external network request; it only uses the same-origin
+Connection RPC.
 
 ## Package modules
 
@@ -75,15 +95,18 @@ the same-origin Connection RPC.
 DSH attaches the browser half to the Loader row whose specifier is the bare
 package name (`ollama-web` -> `dsh-ollama-web`). The bundle registers the
 `plugins.row.config` card keyed `dsh-ollama-web#ollama-web`, the
-`plugins.detail.section` update/support sections, and a live fetch-provider
-toggle with its own static stylesheet.
+`plugins.detail.section` update/support sections, provider-selection switches
+that write the `web` settings namespace, and a live fetch-provider toggle with
+its own static stylesheet.
 
 ## IDs
 
 - Search provider id: `ollama`
 - Fetch provider id: `ollama` (separate DSH fetch registry)
+- Built-in HTTP fetch provider id: `http`
 - Host loader row: `ollama-web`
 - Config namespace: `ollama-web`
+- Web provider settings namespace: `web`
 - Client card key: `dsh-ollama-web#ollama-web`
 - Client module id: `dsh-ollama-web`
 - Update RPC channel: `/ollama-web-update`

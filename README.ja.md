@@ -31,7 +31,14 @@ Ollama Cloud の Web 検索と、任意の Web 取得を [DeepSeek Harness](http
 
    `desktop` 以外のプロファイルでは `desktop` を置き換えてください。Web UI の **Plugins → Add plugin** から追加しても構いません。npm: [dsh-ollama-web](https://www.npmjs.com/package/dsh-ollama-web)
 
-2. `~/.dsh/profiles/<profile>/cordis.patch.yml` で検索先を固定します。
+2. 設定カードで有効化する（推奨）か、手動で pin します。
+
+   **Plugins → `dsh-ollama-web` → `ollama-web` → Configure** を開き、
+   **Web検索にOllamaを使う** をオンにします。カードが `web.searchProvider` を
+   書き込むため、profile patch は不要です。
+
+   手動で pin する場合は、`~/.dsh/profiles/<profile>/cordis.patch.yml` に
+   **両方**のフィールドを追加します。
 
    ```yaml
    - id: web
@@ -45,10 +52,16 @@ Ollama Cloud の Web 検索と、任意の Web 取得を [DeepSeek Harness](http
    ```
 
    `fetchProvider: http` は `web_fetch` に DSH 内蔵の HTTP provider を使う指定です。
+   `web` エントリは行の config 全体を置換するため、編集時は両方のフィールドを残してください。
+   カードは Ollama が選択されていない場合も、現在有効な provider を表示します。
 
 ### 任意の Ollama 取得 provider
 
-`web_fetch` に Ollama を使うには、provider の有効化と pin の**両方**が必要です。
+`web_fetch` に Ollama を使うには、カードの **Web取得にOllamaを使う** をオンにします。
+カードは `enableFetchProvider: true` と `web.fetchProvider: ollama` を同時に書き込むため、
+1回の保存で provider の登録と pin が完了します。
+
+手動で設定する場合は、次の2エントリが必要です。
 
 ```yaml
 - id: web
@@ -61,9 +74,23 @@ Ollama Cloud の Web 検索と、任意の Web 取得を [DeepSeek Harness](http
     enableFetchProvider: true
 ```
 
-`web` は config 全体を置換するため、`fetchProvider` を変えるときも `searchProvider: ollama` を残してください。`enableFetchProvider: true` だけでは HTTP と Ollama の2 provider が使える状態になり `WEB_PROVIDER_AMBIGUOUS`、`fetchProvider: ollama` だけでは provider が無効で `WEB_PROVIDER_CONFIGURED_UNAVAILABLE` になります。設定カードからも有効化できますが、`web.fetchProvider: ollama` の pin は profile patch に必要です。
+`web` は config 全体を置換するため、`fetchProvider` を変えるときも `searchProvider: ollama` を残してください。`enableFetchProvider: true` だけでは HTTP と Ollama の2 provider が使える状態になり `WEB_PROVIDER_AMBIGUOUS`、`fetchProvider: ollama` だけでは provider が無効で `WEB_PROVIDER_CONFIGURED_UNAVAILABLE` になります。設定カードは両方をまとめて扱います。これらの警告は profile patch を手編集する場合のものです。
 
 Ollama は対象ページの HTTP status や最終 redirect URL を返しません。成功時はリクエスト URL と `HTTP 200` を DSH に返し、title・本文・links をテキストに畳みます。対象 status の正確さや DSH の local SSRF 境界が必要な場合は `fetchProvider: http` を維持してください。
+
+### provider 選択と profile patch
+
+- カードは DSH の `web` settings 名前空間を書き、`cordis.patch.yml` は編集しません。
+  profile patch はデプロイ既定として残ります。カードに管理させたい場合は
+  `- id: web` エントリを削除してください。
+- profile patch が `searchProvider: ollama` を pin している場合、カードの検索スイッチは
+  pinned + disabled になります。カードから変更するには patch の該当行を削除してください。
+  取得スイッチは、pin されている取得 provider を内蔵 HTTP provider で上書きできます。
+- 内蔵の Web search 設定ページも同じ `web` 選択を編集します。同時に使わず、
+  どちらか一方で操作してください。競合した保存は拒否され、カードは draft を保持します。
+- `DSH_WEB_SEARCH_PROVIDER` / `DSH_WEB_FETCH_PROVIDER` 環境変数は実行時に保存値より
+  優先されます。カードからは見えないため、表示は保存された `web` config に基づきます。
+
 
 ### 1.x からの移行
 
@@ -97,7 +124,7 @@ dsh plugin --profile <profile> add dsh-ollama-web@2.4.1
 | `fetchPath` | `/api/web_fetch` | baseURLのパス配下・同一originの絶対パス |
 | `fetchTimeoutMs` | `30000` | 1000〜120000 ms |
 | `fetchMaxChars` | `100000` | 1〜200000文字 |
-| `enableFetchProvider` | `false` | live boolean。`web.fetchProvider: ollama` と併用 |
+| `enableFetchProvider` | `false` | live boolean。カードが `web.fetchProvider` と同時に書き込みます |
 | `apiKey` | 未設定 | secret。カードか `OLLAMA_API_KEY` 推奨 |
 
 `apiKeyEnv` は `OLLAMA_*` の環境変数名のみ受け付けます。それ以外の環境変数や資格情報参照はリクエスト前に拒否されます。
