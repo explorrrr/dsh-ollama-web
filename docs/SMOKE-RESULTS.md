@@ -1,10 +1,51 @@
 # Smoke results
 
-Date: 2026-10-25 (2.4.1); 2.4.0, 2.3.0, 2.2.0, 2.1.0, 2.0.0, 1.2.0 and 1.1.0
-checks were recorded earlier.
+Date: 2026-10-26 (2.5.0); 2.4.1, 2.4.0, 2.3.0, 2.2.0, 2.1.0, 2.0.0,
+1.2.0 and 1.1.0 checks were recorded earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The 2.4.1 and 2.4.0 checks are package-level
-unless noted; the full isolated DSH/browser result remains the 1.2.0 run below.
+Environment: DSH 0.2.1-rc.2, macOS. The 2.5.0, 2.4.1 and 2.4.0 checks are
+package-level unless noted; the full isolated DSH/browser result remains the
+1.2.0 run below.
+
+## 2.5.0 provider selection and profile record checks (local)
+
+- [x] `CI=true pnpm verify` passed: typecheck, build, 193 tests,
+      `check-versions`, `check-dist`, `check-client` and release-notes
+      extraction.
+- [x] `node scripts/smoke.mjs` passed: search provider plus optional fetch
+      provider registration.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/update/records.js`,
+      `dist/update/service.js`, `dist/update/install.js`,
+      `dist/fetch-provider.js`, `dist/index.js`, `cordis.patch.yml` and
+      `package.json` at 2.5.0 (69 files).
+- [x] npm `latest` points to `2.5.0`; the GitHub Release `v2.5.0` has
+      `dsh-ollama-web-2.5.0.tgz` and `SHA512SUMS`.
+- [x] Published `dsh-ollama-web@2.5.0` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`f626c0c5766bc60ecf7e534c5191aca485945193dfde45504062ba6ddc143f2bbbc371beacd149719ae5c89dbe302369651d6787486c0c3ba536816175bf6620`).
+- [x] Published package contains `client.js`, `dist/update/records.js`,
+      `dist/update/service.js`, `dist/update/install.js`,
+      `dist/fetch-provider.js`, `dist/index.js` and `cordis.patch.yml`.
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.5.0` with the same
+      digest; workflow ref is `refs/tags/v2.5.0`, path is
+      `.github/workflows/release.yml`, and commit is
+      `e0d2e020e735a258d6a9e9a229f12db1e70dd1a5`.
+- [x] The release workflow passed the DSH tag/version checks, build, tests,
+      `pnpm check`, `pnpm audit --prod`, npm trusted publishing, npm tarball
+      integrity verification, package-half checks, GitHub Release creation and
+      asset upload in one run.
+- [x] PR CI passed on #38, #39 and #40, including `test (22)`, `test (24)`,
+      `analyze`, `review` and CodeQL.
+- [x] Tests cover provider selection, the partial `web` row warning,
+      `configForms` unavailable fallback, failed save/draft retention, stale
+      exact pins, newer exact pins, ranges/file/link/missing dependencies,
+      lockfile drift, malformed records, write failures and the update
+      status/log path.
+- [ ] The packaged DSH/browser card smoke was not rerun against a disposable
+      desktop profile in the release environment. Automated client tests and
+      the host smoke passed; the live card interaction remains a manual
+      post-release check.
 
 ## 2.4.1 CI-only patch checks (local)
 
