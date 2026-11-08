@@ -46,7 +46,7 @@
     "@deepseek-ai/schemastery": "^3.18.5"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/cordis": "^4.1.0",
     "@deepseek-ai/dsh-web": "0.2.1-rc.2",
     "@types/node": "^22.0.0",
     "typescript": "^5.9.0"
