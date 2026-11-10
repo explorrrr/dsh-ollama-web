@@ -41,6 +41,8 @@ Examples from this repository:
   `web` provider is shown, and a partial `web` row is reported), plus profile
   `package.json` exact-pin reconciliation and `pnpm-lock.yaml` drift reporting
   after self-update.
+- `2.5.1` — toolchain-only patch: CodeQL and pnpm action pins, and the
+  development toolchain aligned with DSH 0.2.2-rc.1.
 - `3.0.0` — planned for DSH 0.3 compatibility or another breaking change.
 
 The project treats `0.x` as bootstrap/unstable. From `1.0.0` onward the table
@@ -113,5 +115,5 @@ release; it reports the latest release as incompatible instead.
 
 1.x published two packages and the updater only installs releases in the current
 major. 2.0.0 is therefore a manual migration: remove `dsh-ollama-web-client`,
-then install `dsh-ollama-web@2.5.0`. See
+then install `dsh-ollama-web@2.5.1`. See
 [UPDATES.md](UPDATES.md#upgrading-from-1x).

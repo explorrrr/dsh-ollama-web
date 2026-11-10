@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-11-11
+
+### Changed
+
+- Updated the GitHub Actions pins: `github/codeql-action` 4.39.3 for CodeQL and
+  `pnpm/action-setup` 6.1.1 for CI and the release workflow.
+- Aligned the development toolchain with DSH 0.2.2-rc.1: `@deepseek-ai/dsh-web`
+  0.2.2-rc.1, `@deepseek-ai/cordis` ^4.1.0 and `@deepseek-ai/schemastery`
+  ^3.19.0. The workspace now resolves a single copy of each.
+- Raised the `@deepseek-ai/schemastery` dependency minimum to 3.19.0. Its
+  runtime code is identical to 3.18.5; the types and behavior do not change.
+
+### Notes
+
+- No runtime, API or client changes. The built `dist` output is identical to
+  2.5.0, so the browser/update smoke is not repeated.
+- The tested DSH matrix is unchanged: DSH 0.2.1-rc.2 on Node.js 22/24.
+  Building against DSH 0.2.2-rc.1 types is not a compatibility claim for it.
+- The tag-triggered release is the first real run of `pnpm/action-setup` 6.1.1.
+
 ## [2.5.0] - 2026-10-26
 
 ### Added

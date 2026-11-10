@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-11-11
+
+### Changed
+
+- GitHub Actions pins updated to `github/codeql-action` 4.39.3 and
+  `pnpm/action-setup` 6.1.1.
+- Development toolchain aligned with DSH 0.2.2-rc.1 (`@deepseek-ai/dsh-web`
+  0.2.2-rc.1, `@deepseek-ai/cordis` ^4.1.0, `@deepseek-ai/schemastery`
+  ^3.19.0), resolving a single copy of each. The schemastery runtime is
+  unchanged; the `dist` output is identical to 2.5.0.
+
 ## [2.5.0] - 2026-10-26
 
 ### Added
