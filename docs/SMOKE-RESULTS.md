@@ -1,11 +1,50 @@
 # Smoke results
 
-Date: 2026-10-26 (2.5.0); 2.4.1, 2.4.0, 2.3.0, 2.2.0, 2.1.0, 2.0.0,
+Date: 2026-11-11 (2.5.1); 2.5.0, 2.4.1, 2.4.0, 2.3.0, 2.2.0, 2.1.0, 2.0.0,
 1.2.0 and 1.1.0 checks were recorded earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The 2.5.0, 2.4.1 and 2.4.0 checks are
-package-level unless noted; the full isolated DSH/browser result remains the
-1.2.0 run below.
+Environment: DSH 0.2.1-rc.2, macOS. The 2.5.1, 2.5.0, 2.4.1 and 2.4.0 checks
+are package-level unless noted; the full isolated DSH/browser result remains
+the 1.2.0 run below. The 2.5.1 typecheck used the DSH 0.2.2-rc.1 development
+types; the tested matrix in COMPATIBILITY.md stays at 0.2.1-rc.2.
+
+## 2.5.1 toolchain-only patch checks (local)
+
+- [x] `CI=true pnpm verify` passed: typecheck, build, 193 tests,
+      `check-versions`, `check-dist`, `check-client` and release-notes
+      extraction (`version ok: dsh-ollama-web@2.5.1`).
+- [x] `node scripts/smoke.mjs` passed: search provider plus optional fetch
+      provider registration.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/index.js`,
+      `dist/fetch-provider.js`, `dist/update/install.js`,
+      `dist/update/records.js`, `dist/update/service.js`,
+      `cordis.patch.yml` and `package.json` at 2.5.1 (69 files).
+- [x] The built `dist` output is byte-identical to 2.5.0 (42 files, SHA-256
+      list compared).
+- [x] The development workspace resolves a single
+      `@deepseek-ai/schemastery` 3.19.0 and a single `@deepseek-ai/cordis`
+      4.1.0 against the `@deepseek-ai/dsh-web` 0.2.2-rc.1 type surface.
+- [x] npm `latest` points to `2.5.1`; the GitHub Release `v2.5.1` has
+      `dsh-ollama-web-2.5.1.tgz` (94,573 bytes) and `SHA512SUMS`.
+- [x] Published `dsh-ollama-web@2.5.1` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`fcfe280a1d9df273813095775b3d7f5b18956ae1099d8b181d61c82b4882f20b267c18203e4481c91a6f6f5c82f25b982bb7956e93c7253e1d91a84143f918aa`).
+- [x] Published package contains `client.js`, `dist/index.js`,
+      `dist/fetch-provider.js`, `dist/update/service.js`,
+      `dist/update/install.js`, `dist/update/records.js` and
+      `cordis.patch.yml`.
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.5.1` with the same
+      digest; workflow ref is `refs/tags/v2.5.1`, path is
+      `.github/workflows/release.yml`, and commit is
+      `c6e41dcbf4f19579b049ab2c9a69870f4a013c8a`.
+- [x] The tag-triggered release (`runs/42924065861`) passed the build and
+      publish jobs in one pass, including `pnpm/action-setup` 6.1.1.
+- [x] PR CI passed on #48 and #49, including `test (22)`, `test (24)`,
+      `analyze`, `review` and CodeQL.
+- [ ] The packaged DSH/browser card smoke was not rerun. The runtime bundle
+      and `dist` output are identical to 2.5.0; the toolchain-only change does
+      not alter the card.
 
 ## 2.5.0 provider selection and profile record checks (local)
 
