@@ -1,7 +1,66 @@
 # npm provenance verification
 
-Date: 2026-11-11 (2.5.1); 2.5.0, 2.4.1, 2.4.0, 2.3.0, 2.2.0, 2.1.0, 2.0.0,
-1.2.0 and 1.1.0 checks were recorded earlier.
+Date: 2026-11-16 (2.5.2); 2.5.1, 2.5.0, 2.4.1, 2.4.0, 2.3.0, 2.2.0, 2.1.0,
+2.0.0, 1.2.0 and 1.1.0 checks were recorded earlier.
+
+## 2.5.2
+
+`dsh-ollama-web@2.5.2` was published by GitHub Actions through npm trusted
+publishing (OIDC). No `NPM_TOKEN` is used.
+
+### Attestations
+
+| Package | Attestation |
+|---|---|
+| `dsh-ollama-web@2.5.2` | <https://registry.npmjs.org/-/npm/v1/attestations/dsh-ollama-web@2.5.2> |
+
+It uses SLSA provenance v1. Decoded build information:
+
+```text
+workflow.ref:        refs/tags/v2.5.2
+workflow.repository: https://github.com/explorrrr/dsh-ollama-web
+workflow.path:       .github/workflows/release.yml
+git commit:          5a235f73e42b1214cdb1dfb6b0dbebb12e8119a7
+builder:             https://github.com/actions/runner/github-hosted
+invocation:          https://github.com/explorrrr/dsh-ollama-web/actions/runs/43781495161/attempts/1
+```
+
+The tag commit is the same:
+
+```bash
+git rev-parse 'v2.5.2^{commit}'
+# 5a235f73e42b1214cdb1dfb6b0dbebb12e8119a7
+```
+
+### Subject digests
+
+| Package | npm tarball SHA-512 | SLSA subject |
+|---|---|---|
+| `dsh-ollama-web@2.5.2` | `bf868d48e41f2790a5155179f54876c941a6139f449b56a8c384a200ec6a798945fcffde8a36fc4e8943ffefa0d156edde6e1578e50dae7a20269c7ea9308ab9` | matches |
+
+npm reports the same digest as
+`sha512-v4aNSOQfJ5ClFVF59Uh2yUGmE59Em1aow4SiAOxqeYlF/P/eijb8TolD/++g0Vbt3m4VeOUNrnogJpx+qTCKuQ==`.
+The GitHub Release `v2.5.2` `SHA512SUMS` contains the same hash, computed from
+the npm tarball downloaded by the release workflow. npm `latest` points to
+`2.5.2`; the registry publish time is `2026-11-16T00:45:06.826Z`.
+
+The release ran in a single `publish` job pass after the `npm` environment's
+five-minute wait timer. The GitHub Release was published at
+`2026-11-16T00:45:21Z` with `dsh-ollama-web-2.5.2.tgz` (94,629 bytes) and
+`SHA512SUMS`. The published package contains the same client/host halves as
+2.5.1 (69 files); the built `dist` output is identical to 2.5.1.
+
+### Reproduce
+
+```bash
+npm view dsh-ollama-web@2.5.2 dist.attestations
+npm view dsh-ollama-web@2.5.2 dist.tarball dist.integrity
+
+mkdir -p /tmp/prov-check-252 && cd /tmp/prov-check-252
+curl -fsSL "$(npm view dsh-ollama-web@2.5.2 dist.tarball)" -o dsh-ollama-web-2.5.2.tgz
+shasum -a 512 dsh-ollama-web-2.5.2.tgz
+tar -tzf dsh-ollama-web-2.5.2.tgz | grep -E 'package/(client\.js|dist/fetch-provider\.js|dist/index\.js|dist/update/records\.js|dist/update/service\.js|cordis\.patch\.yml)'
+```
 
 ## 2.5.1
 
