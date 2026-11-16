@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.2] - 2026-11-16
+
+### Changed
+
+- Aligned the development toolchain with DSH 0.2.2-rc.2: `@deepseek-ai/dsh-web`
+  0.2.2-rc.2 as a devDependency. Its transitive DSH packages and `zod` 4.6.6
+  move with it; the production dependency set is still only
+  `@deepseek-ai/schemastery`.
+- Updated the pnpm `minimumReleaseAgeExclude` entries to the 0.2.2-rc.2 DSH
+  packages, including the new `@deepseek-ai/dsh-error` and
+  `@deepseek-ai/dsh-package-manifest`, so a configured `minimumReleaseAge`
+  accepts a fresh lockfile install.
+
+### Notes
+
+- No runtime, API or client changes. The built `dist` output is identical to
+  2.5.1, so the browser/update smoke is not repeated.
+- The tested DSH matrix is unchanged: DSH 0.2.1-rc.2 on Node.js 22/24.
+  Building against DSH 0.2.2-rc.2 types is not a compatibility claim for it.
+
 ## [2.5.1] - 2026-11-11
 
 ### Changed
