@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.3] - 2026-11-23
+
+### Changed
+
+- Development toolchain aligned with DSH 0.2.2-rc.5 (`@deepseek-ai/dsh-web`
+  0.2.2-rc.5 devDependency), with the pnpm `minimumReleaseAgeExclude` entries
+  updated to match. The `dist` output is identical to 2.5.2 and the production
+  dependency set is unchanged.
+- dependency-review workflow pinned to `actions/dependency-review-action`
+  5.0.1.
+
 ## [2.5.2] - 2026-11-16
 
 ### Changed

@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.3] - 2026-11-23
+
+### Changed
+
+- Aligned the development toolchain with DSH 0.2.2-rc.5: `@deepseek-ai/dsh-web`
+  0.2.2-rc.5 as a devDependency. Its transitive DSH packages move to rc.5; the
+  production dependency set is still only `@deepseek-ai/schemastery`.
+- Updated the pnpm `minimumReleaseAgeExclude` entries to the 0.2.2-rc.5 DSH
+  packages, so a configured `minimumReleaseAge` accepts a fresh lockfile
+  install.
+- Bumped the dependency-review workflow pin to
+  `actions/dependency-review-action` 5.0.1.
+
+### Notes
+
+- No runtime, API or client changes. The built `dist` output is identical to
+  2.5.2, so the browser/update smoke is not repeated.
+- The tested DSH matrix is unchanged: DSH 0.2.1-rc.2 on Node.js 22/24.
+  Building against DSH 0.2.2-rc.5 types is not a compatibility claim for it.
+- The rc.5 web seam adds an optional `llmProvider` search request field and
+  prefers the DeepSeek provider for an unpinned search on a DeepSeek route.
+  The settings card pins `web.searchProvider: ollama`, so the supported path
+  is unchanged.
+
 ## [2.5.2] - 2026-11-16
 
 ### Changed
