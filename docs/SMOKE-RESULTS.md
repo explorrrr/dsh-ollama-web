@@ -1,13 +1,62 @@
 # Smoke results
 
-Date: 2026-11-16 (2.5.2); 2.5.1, 2.5.0, 2.4.1, 2.4.0, 2.3.0, 2.2.0, 2.1.0,
-2.0.0, 1.2.0 and 1.1.0 checks were recorded earlier.
+Date: 2026-11-23 (2.5.3); 2.5.2, 2.5.1, 2.5.0, 2.4.1, 2.4.0, 2.3.0, 2.2.0,
+2.1.0, 2.0.0, 1.2.0 and 1.1.0 checks were recorded earlier.
 
-Environment: DSH 0.2.1-rc.2, macOS. The 2.5.2, 2.5.1, 2.5.0, 2.4.1 and 2.4.0
-checks are package-level unless noted; the full isolated DSH/browser result
-remains the 1.2.0 run below. The 2.5.2 typecheck used the DSH 0.2.2-rc.2
-development types (2.5.1 used 0.2.2-rc.1); the tested matrix in
+Environment: DSH 0.2.1-rc.2, macOS. The 2.5.3, 2.5.2, 2.5.1, 2.5.0, 2.4.1 and
+2.4.0 checks are package-level unless noted; the full isolated DSH/browser
+result remains the 1.2.0 run below. The 2.5.3 typecheck used the DSH 0.2.2-rc.5
+development types (2.5.2 used rc.2; 2.5.1 used rc.1); the tested matrix in
 COMPATIBILITY.md stays at 0.2.1-rc.2.
+
+## 2.5.3 toolchain-only patch checks (local)
+
+- [x] `CI=true pnpm verify` passed: typecheck, build, 193 tests,
+      `check-versions`, `check-dist`, `check-client` and release-notes
+      extraction (`version ok: dsh-ollama-web@2.5.3`).
+- [x] `node scripts/smoke.mjs` passed: search provider plus optional fetch
+      provider registration.
+- [x] `pnpm audit --prod` found no known vulnerabilities.
+- [x] `pnpm install --frozen-lockfile --config.minimumReleaseAge=10080` passes.
+      Before the `minimumReleaseAgeExclude` update, the same command failed with
+      `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION` on the nine 0.2.2-rc.5 DSH
+      packages.
+- [x] `npm pack --dry-run` includes `client.js`, `dist/index.js`,
+      `dist/fetch-provider.js`, `dist/update/install.js`,
+      `dist/update/records.js`, `dist/update/service.js`,
+      `cordis.patch.yml` and `package.json` at 2.5.3 (69 files).
+- [x] The built `dist` output is byte-identical to 2.5.2 (42 files, directory
+      comparison against a clean 2.5.2 worktree build); `client.js` is
+      identical too.
+- [x] The development workspace typechecks against the `@deepseek-ai/dsh-web`
+      0.2.2-rc.5 type surface with a single `@deepseek-ai/schemastery` 3.19.0
+      and a single `@deepseek-ai/cordis` 4.1.0.
+- [x] The rc.5 type changes used here are additive: `WebSearchRequest` gains an
+      optional `llmProvider`, and an unpinned search prefers the DeepSeek
+      provider for the request's model route. The settings card pins
+      `web.searchProvider: ollama`, so the supported path is unchanged. The 193
+      tests include the real rc.5 `WebRuntime` integration path.
+- [x] npm `latest` points to `2.5.3`; the GitHub Release `v2.5.3` has
+      `dsh-ollama-web-2.5.3.tgz` (94,700 bytes) and `SHA512SUMS`.
+- [x] Published `dsh-ollama-web@2.5.3` tarball SHA-512 matches npm
+      `dist.integrity` and the GitHub Release `SHA512SUMS`
+      (`9022ed47aac29efb2e172e2e04b38ac67909f65e901da5bf7f66ec59758b7d676e1ca30e9d4c8fbf28884ad346f910e1a1c1ffd1115dc159949e844549184b72`).
+- [x] Published package contains `client.js`, `dist/index.js`,
+      `dist/fetch-provider.js`, `dist/update/service.js`,
+      `dist/update/install.js`, `dist/update/records.js` and
+      `cordis.patch.yml`; the packaged manifest is 2.5.3 with only
+      `@deepseek-ai/schemastery` as a runtime dependency.
+- [x] SLSA provenance subject is `pkg:npm/dsh-ollama-web@2.5.3` with the same
+      digest; workflow ref is `refs/tags/v2.5.3`, path is
+      `.github/workflows/release.yml`, and commit is
+      `9b81de534dad9897586e3be34b8851a51edc830d`.
+- [x] The tag-triggered release (`runs/45092948808`) passed the build and
+      publish jobs in one pass, including the `npm` environment wait timer.
+- [x] PR CI passed on #54, #55 and #56, including `test (22)`, `test (24)`,
+      `analyze`, `review` and CodeQL.
+- [ ] The packaged DSH/browser card smoke was not rerun. The runtime bundle and
+      `dist` output are identical to 2.5.2; the toolchain-only change does not
+      alter the card.
 
 ## 2.5.2 toolchain-only patch checks (local)
 
